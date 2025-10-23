@@ -1,0 +1,66 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  custId    String   @unique
+  name      String
+  contactNo String
+  address   String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paymentCollections PaymentCollection[]
+}
+
+model PaymentMode {
+  id          Int      @id @default(autoincrement())
+  paymentMode String
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  typeOfPayments TypeOfPayment[]
+  paymentCollections PaymentCollection[]
+}
+
+model TypeOfPayment {
+  id            Int         @id @default(autoincrement())
+  paymentModeId Int
+  typeOfMode    String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  paymentMode   PaymentMode @relation(fields: [paymentModeId], references: [id])
+  paymentCollections PaymentCollection[]
+}
+
+model PaymentCollection {
+  id              Int      @id @default(autoincrement())
+  date            DateTime
+  receiptNo       String   @unique
+  customerId      Int
+  recAmt          Float
+  paymentModeId   Int
+  typeOfPaymentId Int?
+  remarks         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  customer        Customer @relation(fields: [customerId], references: [id])
+  paymentMode     PaymentMode @relation(fields: [paymentModeId], references: [id])
+  typeOfPayment   TypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  branch    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
