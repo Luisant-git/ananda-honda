@@ -39,8 +39,8 @@ const Login = ({ onLogin }) => {
                 required
               >
                 <option value="" disabled>Select Branch</option>
-                <option value="Main Branch">Main Branch</option>
-                <option value="Service Center">Service Center</option>
+                <option value="Bellandur">Bellandur</option>
+                <option value="Electronic city">Electronic city</option>
               </select>
             </div>
             <div className="relative">
