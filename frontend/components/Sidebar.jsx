@@ -78,7 +78,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
             <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>
 
             <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
-                {/* Add report links here later */}
+                <li><NavLink view="reports" label="Reports" isSubmenu /></li>
             </NavGroup>
 
             <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>

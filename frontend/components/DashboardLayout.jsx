@@ -7,6 +7,7 @@ import PaymentMode from '../pages/PaymentMode';
 import TypeOfPayment from '../pages/TypeOfPayment';
 import PaymentCollection from '../pages/PaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
+import Reports from '../pages/Reports';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -22,6 +23,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <TypeOfPayment />;
       case 'payment_collection':
         return <PaymentCollection />;
+      case 'reports':
+        return <Reports />;
       case 'change_password':
         return <ChangePassword />;
       case 'dashboard':
