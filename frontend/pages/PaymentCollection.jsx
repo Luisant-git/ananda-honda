@@ -12,6 +12,7 @@ const PaymentCollection = () => {
   const [paymentModes, setPaymentModes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [loadedCustomer, setLoadedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +80,7 @@ const PaymentCollection = () => {
         receiptNo: payment.receiptNo,
         custId: payment.customer.custId,
         name: payment.customer.name,
+        contactNo: payment.customer.contactNo,
         recAmt: payment.recAmt,
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
@@ -88,6 +90,7 @@ const PaymentCollection = () => {
         typeOfPaymentId: payment.typeOfPaymentId
       }));
       setPayments(formattedData);
+      setFilteredPayments(formattedData);
     } catch (error) {
       console.error('Error fetching payments:', error);
     }
@@ -97,18 +100,29 @@ const PaymentCollection = () => {
     if (selectedCustomerId === 'new') {
       setIsNewCustomer(true);
       setLoadedCustomer(null);
+      setFilteredPayments(payments);
     } else if (selectedCustomerId) {
       const customer = customers.find(c => c.id === parseInt(selectedCustomerId));
       setLoadedCustomer(customer || null);
       setIsNewCustomer(false);
+      const customerPayments = payments.filter(payment => payment.customerId === parseInt(selectedCustomerId));
+      setFilteredPayments(customerPayments.map((payment, index) => ({ ...payment, sNo: index + 1 })));
     } else {
       setLoadedCustomer(null);
       setIsNewCustomer(false);
+      setFilteredPayments(payments);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate mobile number for new customer
+    if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
+      toast.error('Mobile number must be exactly 10 digits');
+      return;
+    }
+    
     try {
       let customerId = loadedCustomer?.id;
       
@@ -196,9 +210,16 @@ const PaymentCollection = () => {
     if (customer === 'new') {
       setSelectedCustomerId('new');
       setSearchTerm('+ Add New Customer');
+      setIsNewCustomer(true);
+      setLoadedCustomer(null);
+      setFilteredPayments(payments);
     } else {
       setSelectedCustomerId(customer.id.toString());
       setSearchTerm(customer.name);
+      setLoadedCustomer(customer);
+      setIsNewCustomer(false);
+      const customerPayments = payments.filter(payment => payment.customerId === customer.id);
+      setFilteredPayments(customerPayments.map((payment, index) => ({ ...payment, sNo: index + 1 })));
     }
     setShowDropdown(false);
   };
@@ -209,6 +230,7 @@ const PaymentCollection = () => {
     { header: 'ReceiptNo', accessor: 'receiptNo' },
     { header: 'CustId', accessor: 'custId' },
     { header: 'Name', accessor: 'name' },
+    { header: 'Contact No', accessor: 'contactNo' },
     { header: 'RecAmt', accessor: 'recAmt' },
     { header: 'PaymentMode', accessor: 'paymentMode' },
     { header: 'TypeOfPayment', accessor: 'typeOfPayment' },
@@ -232,6 +254,7 @@ const PaymentCollection = () => {
                   setShowDropdown(true);
                   setSelectedCustomerId('');
                   setLoadedCustomer(null);
+                  setFilteredPayments(payments);
                 }}
                 onFocus={() => setShowDropdown(true)}
                 placeholder="Search by name or contact number"
@@ -264,12 +287,6 @@ const PaymentCollection = () => {
               )}
             </div>
           </div>
-          <button 
-            onClick={handleLoadCustomer}
-            className="w-full sm:w-auto bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg"
-          >
-            Load
-          </button>
         </div>
         
         {(loadedCustomer || isNewCustomer) && (
@@ -283,7 +300,21 @@ const PaymentCollection = () => {
                   </div>
                   <div>
                     <label className="text-sm text-brand-text-secondary">Mobile Number *</label>
-                    <input type="text" value={newCustomerData.contactNo} onChange={(e) => setNewCustomerData({...newCustomerData, contactNo: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required />
+                    <input 
+                      type="text" 
+                      value={newCustomerData.contactNo} 
+                      onChange={(e) => {
+                        const numericValue = e.target.value.replace(/\D/g, '');
+                        if (numericValue.length > 10) {
+                          toast.error('Mobile number cannot exceed 10 digits');
+                          return;
+                        }
+                        setNewCustomerData({...newCustomerData, contactNo: numericValue});
+                      }} 
+                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" 
+                      placeholder="Enter 10 digit mobile number"
+                      maxLength="10"
+                      required />
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -351,13 +382,13 @@ const PaymentCollection = () => {
 
       <DataTable 
         columns={columns} 
-        data={payments} 
-        actionButtons={(payment) => (
-          <div className="flex gap-2">
-            <button onClick={() => handleEdit(payment)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(payment)} className="text-red-600 hover:underline">Delete</button>
-          </div>
-        )}
+        data={filteredPayments} 
+        // actionButtons={(payment) => (
+        //   <div className="flex gap-2">
+        //     <button onClick={() => handleEdit(payment)} className="text-blue-600 hover:underline">Edit</button>
+        //     <button onClick={() => handleDelete(payment)} className="text-red-600 hover:underline">Delete</button>
+        //   </div>
+        // )}
       />
 
       <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title={isEditMode ? "Edit Payment" : "Payment Entry"}>

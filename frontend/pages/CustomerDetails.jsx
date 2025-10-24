@@ -6,12 +6,14 @@ import { customerApi } from '../api/customerApi.js';
 
 const CustomerDetails = () => {
   const [customers, setCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [formData, setFormData] = useState({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
+  const [filters, setFilters] = useState({ selectedCustomer: '', fromDate: '', toDate: '' });
 
   useEffect(() => {
     fetchCustomers();
@@ -25,13 +27,47 @@ const CustomerDetails = () => {
         ...customer
       }));
       setCustomers(formattedData);
+      setFilteredCustomers(formattedData);
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
   };
 
+  const handleFilterLoad = () => {
+    let filtered = [...customers];
+    
+    if (filters.selectedCustomer) {
+      filtered = filtered.filter(customer => customer.custId === filters.selectedCustomer);
+    }
+    
+    if (filters.fromDate || filters.toDate) {
+      filtered = filtered.filter(customer => {
+        const customerDate = new Date(customer.createdAt);
+        const fromDate = filters.fromDate ? new Date(filters.fromDate) : null;
+        const toDate = filters.toDate ? new Date(filters.toDate) : null;
+        
+        if (fromDate && customerDate < fromDate) return false;
+        if (toDate && customerDate > toDate) return false;
+        return true;
+      });
+    }
+    
+    setFilteredCustomers(filtered.map((customer, index) => ({ ...customer, sNo: index + 1 })));
+  };
+
+  const handleLoadAll = () => {
+    setFilters({ selectedCustomer: '', fromDate: '', toDate: '' });
+    setFilteredCustomers(customers);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!/^\d{10}$/.test(formData.contactNo)) {
+      toast.error('Mobile number must be exactly 10 digits');
+      return;
+    }
+    
     try {
       if (isEditMode) {
         await customerApi.update(editingCustomer.id, formData);
@@ -100,22 +136,37 @@ const CustomerDetails = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <div className="flex flex-col">
             <label className="text-sm font-medium text-brand-text-secondary mb-1">Select Customer</label>
-            <select className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent">
-              <option>Select</option>
+            <select 
+              value={filters.selectedCustomer}
+              onChange={(e) => setFilters({...filters, selectedCustomer: e.target.value})}
+              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent">
+              <option value="">Select</option>
               {customers.map(c => <option key={c.custId} value={c.custId}>{c.name}</option>)}
             </select>
           </div>
           <div className="flex flex-col">
             <label className="text-sm font-medium text-brand-text-secondary mb-1">From:</label>
-            <input type="date" className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" />
+            <input 
+              type="date" 
+              value={filters.fromDate}
+              onChange={(e) => setFilters({...filters, fromDate: e.target.value})}
+              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" />
           </div>
           <div className="flex flex-col">
             <label className="text-sm font-medium text-brand-text-secondary mb-1">To:</label>
-            <input type="date" className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" />
+            <input 
+              type="date" 
+              value={filters.toDate}
+              onChange={(e) => setFilters({...filters, toDate: e.target.value})}
+              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" />
           </div>
           <div className="flex gap-2">
-            <button className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg">Load</button>
-            <button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Load All</button>
+            <button 
+              onClick={handleFilterLoad}
+              className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg">Load</button>
+            <button 
+              onClick={handleLoadAll}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Load All</button>
           </div>
           <button 
             onClick={handleAddNew}
@@ -127,7 +178,7 @@ const CustomerDetails = () => {
       
       <DataTable 
         columns={columns} 
-        data={customers} 
+        data={filteredCustomers} 
         actionButtons={(customer) => (
           <div className="flex gap-2">
             <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
@@ -144,7 +195,21 @@ const CustomerDetails = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Mobile Number</label>
-            <input type="text" value={formData.contactNo} onChange={(e) => setFormData({...formData, contactNo: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required />
+            <input 
+              type="text" 
+              value={formData.contactNo} 
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/\D/g, '');
+                if (numericValue.length > 10) {
+                  toast.error('Mobile number cannot exceed 10 digits');
+                  return;
+                }
+                setFormData({...formData, contactNo: numericValue});
+              }} 
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" 
+              placeholder="Enter 10 digit mobile number"
+              maxLength="10"
+              required />
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Address</label>
