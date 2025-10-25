@@ -248,9 +248,9 @@ const PaymentCollection = () => {
     const printDate = new Date();
     const formattedDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
     const printContent = `
-      <div style="width: 210mm; height: 297mm; font-family: Arial, sans-serif; font-size: 12px; display: block;">
+      <div style="width: 210mm; height: 148mm; font-family: Arial, sans-serif; font-size: 12px; display: flex;">
         <!-- First Receipt -->
-        <div style="width: 100%; height: 148mm; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
+        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
             <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
@@ -302,7 +302,7 @@ const PaymentCollection = () => {
         </div>
         
         <!-- Second Receipt (Duplicate) -->
-        <div style="width: 100%; height: 148mm; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
+        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
             <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
