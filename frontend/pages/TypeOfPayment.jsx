@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import { typeOfPaymentApi } from '../api/typeOfPaymentApi.js';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 
-const TypeOfPayment = () => {
+const TypeOfPayment = ({ user }) => {
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -121,12 +121,12 @@ const TypeOfPayment = () => {
       <DataTable 
         columns={columns} 
         data={typeOfPayments} 
-        actionButtons={(item) => (
+        actionButtons={user?.role === 'SUPER_ADMIN' ? (item) => (
           <div className="flex gap-2">
             <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(item)} className="text-red-600 hover:underline">Delete</button>
           </div>
-        )}
+        ) : null}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Type of Payment" : "Add Type of Payment"}>

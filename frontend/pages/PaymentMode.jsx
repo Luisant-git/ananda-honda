@@ -4,7 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 
-const PaymentMode = () => {
+const PaymentMode = ({ user }) => {
   const [paymentModes, setPaymentModes] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -103,12 +103,12 @@ const PaymentMode = () => {
       <DataTable 
         columns={columns} 
         data={paymentModes} 
-        actionButtons={(mode) => (
+        actionButtons={user?.role === 'SUPER_ADMIN' ? (mode) => (
           <div className="flex gap-2">
             <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(mode)} className="text-red-600 hover:underline">Delete</button>
           </div>
-        )}
+        ) : null}
       />
       
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Payment Mode" : "Add Payment Mode"}>

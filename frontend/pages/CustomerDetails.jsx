@@ -4,7 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { customerApi } from '../api/customerApi.js';
 
-const CustomerDetails = () => {
+const CustomerDetails = ({ user }) => {
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -179,12 +179,12 @@ const CustomerDetails = () => {
       <DataTable 
         columns={columns} 
         data={filteredCustomers} 
-        actionButtons={(customer) => (
+        actionButtons={user?.role === 'SUPER_ADMIN' ? (customer) => (
           <div className="flex gap-2">
             <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(customer)} className="text-red-600 hover:underline">Delete</button>
           </div>
-        )}
+        ) : null}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Customer" : "Customer Entry"}>

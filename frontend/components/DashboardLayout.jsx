@@ -16,11 +16,11 @@ const DashboardLayout = ({ user, onLogout }) => {
   const renderView = () => {
     switch (currentView) {
       case 'customer_details':
-        return <CustomerDetails />;
+        return <CustomerDetails user={user} />;
       case 'payment_mode':
-        return <PaymentMode />;
+        return <PaymentMode user={user} />;
       case 'type_of_payment':
-        return <TypeOfPayment />;
+        return <TypeOfPayment user={user} />;
       case 'payment_collection':
         return <PaymentCollection />;
       case 'reports':
