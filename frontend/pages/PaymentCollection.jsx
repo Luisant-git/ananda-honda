@@ -270,12 +270,12 @@ const PaymentCollection = () => {
               ${payment.paymentMode === 'FINANCE' ? `<strong>FINANCE</strong><br>Hypothycation ${payment.typeOfPayment}` : ''}
             </div>
           </div>
-          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
+          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <tr style="background: #ddd;">
-              <th style="border: 1px solid #000; padding: 5px;">COLLECTIONTYPE</th>
-              <th style="border: 1px solid #000; padding: 5px;">AMOUNT</th>
-              <th style="border: 1px solid #000; padding: 5px;">REMARKS</th>
+              <th style="border: 1px solid #000; padding: 5px;">Collection Type</th>
+              <th style="border: 1px solid #000; padding: 5px;">Amount</th>
+              <th style="border: 1px solid #000; padding: 5px;">Remarks</th>
             </tr>
             <tr>
               <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.typeOfCollection || 'N/A'}</td>
@@ -288,10 +288,10 @@ const PaymentCollection = () => {
             <div><strong>Total: ${payment.recAmt}</strong></div>
           </div>
           <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
-            <small>Issued Subject to Realisation of Cheque.<br>
-            Price ruling at the time of delivery will be charged.<br>
-            Any refund through cheques only within 25 working days.<br>
-            Subject To BANGALORE Jurisdiction.</small>
+            <small style="font-family: 'Times New Roman', Times, serif;">• Issued Subject to Realisation of Cheque.<br>
+            • Price ruling at the time of delivery will be charged.<br>
+            • Any refund through cheques only within 25 working days.<br>
+            • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
             <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
@@ -322,12 +322,12 @@ const PaymentCollection = () => {
               ${payment.paymentMode === 'FINANCE' ? `<strong>FINANCE</strong><br>Hypothycation ${payment.typeOfPayment}` : ''}
             </div>
           </div>
-          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
+          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <tr style="background: #ddd;">
-              <th style="border: 1px solid #000; padding: 5px;">COLLECTIONTYPE</th>
-              <th style="border: 1px solid #000; padding: 5px;">AMOUNT</th>
-              <th style="border: 1px solid #000; padding: 5px;">REMARKS</th>
+              <th style="border: 1px solid #000; padding: 5px;">Collection Type</th>
+              <th style="border: 1px solid #000; padding: 5px;">Amount</th>
+              <th style="border: 1px solid #000; padding: 5px;">Remarks</th>
             </tr>
             <tr>
               <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.typeOfCollection || 'N/A'}</td>
@@ -340,10 +340,10 @@ const PaymentCollection = () => {
             <div><strong>Total: ${payment.recAmt}</strong></div>
           </div>
           <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
-            <small>Issued Subject to Realisation of Cheque.<br>
-            Price ruling at the time of delivery will be charged.<br>
-            Any refund through cheques only within 25 working days.<br>
-            Subject To BANGALORE Jurisdiction.</small>
+            <small style="font-family: 'Times New Roman', Times, serif;">• Issued Subject to Realisation of Cheque.<br>
+            • Price ruling at the time of delivery will be charged.<br>
+            • Any refund through cheques only within 25 working days.<br>
+            • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
             <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
