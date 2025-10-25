@@ -311,7 +311,7 @@ const PaymentCollection = () => {
             • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
-            <p>For, Ananda Motowings Private Limited<br><br><br>Authorised Signatory</p>
+            <p>For, Ananda Motowings Private Limited<br><br><br><br>Authorised Signatory</p>
           </div>
           <div style="font-size: 8px; margin-top: 10px;">
             Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}
@@ -367,7 +367,7 @@ const PaymentCollection = () => {
             • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
-            <p>For, Ananda Motowings Private Limited<br><br><br>Authorised Signatory</p>
+            <p>For, Ananda Motowings Private Limited<br><br><br><br>Authorised Signatory</p>
           </div>
           <div style="font-size: 8px; margin-top: 10px;">
             Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}
