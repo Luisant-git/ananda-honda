@@ -8,6 +8,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
     reports: false,
   });
 
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
   };
@@ -60,7 +63,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
       <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)}></div>
       <aside className={`bg-brand-surface text-brand-text-primary w-64 fixed top-0 left-0 h-full z-40 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:flex-shrink-0 flex flex-col border-r border-brand-border`}>
          <div className="flex items-center justify-between p-4 border-b border-brand-border">
-            <h1 className="text-xl font-bold">Ananda Honda</h1>
+            <h1 className="text-xl font-bold">Ananda Motowings Private Limited</h1>
              <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-brand-text-secondary hover:text-brand-text-primary">
                 <CloseIcon />
             </button>
@@ -69,12 +72,14 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
           <ul className="space-y-2">
             <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>
             
-            <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
-              <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
-              <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
-              <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>
-              <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>
-            </NavGroup>
+            {isSuperAdmin && (
+              <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
+                <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
+                <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
+                <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>
+                <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>
+              </NavGroup>
+            )}
 
             <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>
 

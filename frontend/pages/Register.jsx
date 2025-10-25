@@ -30,7 +30,7 @@ const Register = ({ onRegister, onBackToLogin }) => {
     <div className="flex items-center justify-center min-h-screen bg-brand-bg">
       <div className="w-full max-w-md p-8 space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-brand-text-primary">Ananda Honda</h1>
+          <h1 className="text-4xl font-bold text-brand-text-primary">Ananda Motowings Private Limited</h1>
         </div>
         <div className="bg-brand-surface p-8 rounded-lg shadow-2xl border border-brand-border">
           <h2 className="text-xl font-semibold text-center text-brand-text-secondary mb-6">Create New Account</h2>

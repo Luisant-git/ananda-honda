@@ -7,6 +7,7 @@ import { customerApi } from '../api/customerApi.js';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 import { typeOfPaymentApi } from '../api/typeOfPaymentApi.js';
 import { typeOfCollectionApi } from '../api/typeOfCollectionApi.js';
+import hondaLogo from '../assets/honda-logo.png';
 
 const PaymentCollection = () => {
   const [customers, setCustomers] = useState([]);
@@ -252,7 +253,10 @@ const PaymentCollection = () => {
         <!-- First Receipt -->
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 5px;">
+              <img src="${hondaLogo}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
+              <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            </div>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
           </div>
           <div style="text-align: center; background: #ddd; padding: 5px; margin-bottom: 10px;">
@@ -294,7 +298,7 @@ const PaymentCollection = () => {
             • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
-            <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
+            <p>For, Ananda Motowings Private Limited<br><br><br>Authorised Signatory</p>
           </div>
           <div style="font-size: 8px; margin-top: 10px;">
             Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}
@@ -304,7 +308,10 @@ const PaymentCollection = () => {
         <!-- Second Receipt (Duplicate) -->
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 5px;">
+              <img src="${hondaLogo}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
+              <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            </div>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
           </div>
           <div style="text-align: center; background: #ddd; padding: 5px; margin-bottom: 10px;">
@@ -346,7 +353,7 @@ const PaymentCollection = () => {
             • Subject To BANGALORE Jurisdiction.</small>
           </div>
           <div style="text-align: right;">
-            <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
+            <p>For, Ananda Motowings Private Limited<br><br><br>Authorised Signatory</p>
           </div>
           <div style="font-size: 8px; margin-top: 10px;">
             Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}

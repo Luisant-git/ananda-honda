@@ -40,7 +40,7 @@ const Header = ({ user, onLogout, toggleSidebar }) => {
             <button onClick={toggleSidebar} className="text-brand-text-secondary hover:text-brand-text-primary focus:outline-none md:hidden mr-4">
                 <MenuIcon />
             </button>
-            <h1 className="text-xl font-semibold hidden md:block">Ananda Honda</h1>
+            <h1 className="text-xl font-semibold hidden md:block">Ananda Motowings Private Limited</h1>
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-sm text-brand-text-secondary hidden sm:block">{formatDate(currentDateTime)}</span>

@@ -32,7 +32,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ChangePassword />;
       case 'dashboard':
       default:
-        return <div className="p-6"><h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1><p className="text-brand-text-secondary mt-2">Welcome to your Ananda Honda Dashboard.</p></div>;
+        return <div className="p-6"><h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1><p className="text-brand-text-secondary mt-2">Welcome to your Ananda Motowings Private Limited Dashboard.</p></div>;
     }
   };
 
