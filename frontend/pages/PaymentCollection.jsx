@@ -248,13 +248,25 @@ const PaymentCollection = () => {
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const printDate = new Date();
     const formattedDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
-    const printContent = `
+    
+    // Convert image to base64 for reliable printing
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = 40;
+      canvas.height = 25;
+      ctx.drawImage(img, 0, 0, 40, 25);
+      const logoDataUrl = canvas.toDataURL('image/png');
+      
+      const printContent = `
       <div style="width: 210mm; height: 148mm; font-family: Arial, sans-serif; font-size: 12px; display: flex;">
         <!-- First Receipt -->
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 5px;">
-              <img src="${hondaLogo}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
+              <img src="${logoDataUrl}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
               <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
             </div>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
@@ -287,8 +299,9 @@ const PaymentCollection = () => {
               <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.remarks.length > 20 ? payment.remarks.substring(0, 20) + '...' : payment.remarks}</td>
             </tr>
           </table>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <div>${payment.paymentMode}: ${payment.recAmt}</div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 10px;">
+            <div>Payment Mode: ${payment.paymentMode.toLowerCase()}</div>
+            <div>Payment Type: ${(payment.typeOfPayment || 'N/A').toLowerCase()}</div>
             <div><strong>Total: ${payment.recAmt}</strong></div>
           </div>
           <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
@@ -309,7 +322,7 @@ const PaymentCollection = () => {
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
           <div style="text-align: center; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 5px;">
-              <img src="${hondaLogo}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
+              <img src="${logoDataUrl}" alt="Honda Logo" style="width: 40px; height: 25px; margin-right: 8px;" />
               <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
             </div>
             <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
@@ -342,8 +355,9 @@ const PaymentCollection = () => {
               <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.remarks.length > 20 ? payment.remarks.substring(0, 20) + '...' : payment.remarks}</td>
             </tr>
           </table>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <div>${payment.paymentMode}: ${payment.recAmt}</div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 10px;">
+            <div>Payment Mode: ${payment.paymentMode.toLowerCase()}</div>
+            <div>Payment Type: ${(payment.typeOfPayment || 'N/A').toLowerCase()}</div>
             <div><strong>Total: ${payment.recAmt}</strong></div>
           </div>
           <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
@@ -360,25 +374,28 @@ const PaymentCollection = () => {
           </div>
         </div>
       </div>
-    `;
+      `;
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Payment Receipt - ${payment.receiptNo}</title>
+            <style>
+              @page { size: A5 landscape; margin: 0; }
+              body { margin: 0; padding: 0; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    };
     
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Payment Receipt - ${payment.receiptNo}</title>
-          <style>
-            @page { size: A5 landscape; margin: 0; }
-            body { margin: 0; padding: 0; }
-          </style>
-        </head>
-        <body>
-          ${printContent}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+    img.src = hondaLogo;
   };
 
   const columns = [
