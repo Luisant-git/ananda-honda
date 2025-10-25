@@ -6,11 +6,13 @@ import { paymentCollectionApi } from '../api/paymentCollectionApi.js';
 import { customerApi } from '../api/customerApi.js';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 import { typeOfPaymentApi } from '../api/typeOfPaymentApi.js';
+import { typeOfCollectionApi } from '../api/typeOfCollectionApi.js';
 
 const PaymentCollection = () => {
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
+  const [typeOfCollections, setTypeOfCollections] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -22,7 +24,7 @@ const PaymentCollection = () => {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
-  const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', remarks: '' });
+  const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', remarks: '' });
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
 
@@ -30,6 +32,7 @@ const PaymentCollection = () => {
     fetchCustomers();
     fetchPaymentModes();
     fetchTypeOfPayments();
+    fetchTypeOfCollections();
     fetchPayments();
   }, []);
 
@@ -70,6 +73,15 @@ const PaymentCollection = () => {
     }
   };
 
+  const fetchTypeOfCollections = async () => {
+    try {
+      const data = await typeOfCollectionApi.getAll();
+      setTypeOfCollections(data.filter(type => type.status === 'Enable'));
+    } catch (error) {
+      console.error('Error fetching type of collections:', error);
+    }
+  };
+
   const fetchPayments = async () => {
     try {
       const data = await paymentCollectionApi.getAll();
@@ -81,13 +93,17 @@ const PaymentCollection = () => {
         custId: payment.customer.custId,
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
+        address: payment.customer.address,
         recAmt: payment.recAmt,
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
+        typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
+        enteredBy: payment.user?.username || 'N/A',
         remarks: payment.remarks,
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
-        typeOfPaymentId: payment.typeOfPaymentId
+        typeOfPaymentId: payment.typeOfPaymentId,
+        typeOfCollectionId: payment.typeOfCollectionId
       }));
       setPayments(formattedData);
       setFilteredPayments(formattedData);
@@ -139,6 +155,8 @@ const PaymentCollection = () => {
         recAmt: parseFloat(formData.recAmt),
         paymentModeId: parseInt(formData.paymentModeId),
         typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
+        typeOfCollectionId: formData.typeOfCollectionId ? parseInt(formData.typeOfCollectionId) : undefined,
+        enteredBy: JSON.parse(localStorage.getItem('user'))?.id,
         remarks: formData.remarks
       };
       
@@ -154,7 +172,7 @@ const PaymentCollection = () => {
       setIsEditMode(false);
       setEditingPayment(null);
       setIsNewCustomer(false);
-      setFormData({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', remarks: '' });
+      setFormData({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', remarks: '' });
       setNewCustomerData({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
       fetchPayments();
     } catch (error) {
@@ -174,6 +192,7 @@ const PaymentCollection = () => {
       recAmt: payment.recAmt.toString(),
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || '',
+      typeOfCollectionId: payment.typeOfCollectionId?.toString() || '',
       remarks: payment.remarks
     });
     setIsPaymentModalOpen(true);
@@ -224,6 +243,137 @@ const PaymentCollection = () => {
     setShowDropdown(false);
   };
 
+  const handlePrint = (payment) => {
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const printDate = new Date();
+    const formattedDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
+    const printContent = `
+      <div style="width: 210mm; height: 148mm; font-family: Arial, sans-serif; font-size: 12px; display: flex;">
+        <!-- First Receipt -->
+        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
+          <div style="text-align: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
+          </div>
+          <div style="text-align: center; background: #ddd; padding: 5px; margin-bottom: 10px;">
+            <strong>RECEIPT</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <div>
+              <strong>To: ${payment.name}</strong><br>
+              ${payment.address || 'LOCALITY OF WALK-IN CUSTOMER'}<br>
+            </div>
+            <div style="text-align: right;">
+              <strong>Receipt</strong> ${payment.receiptNo}<br>
+              <strong>As per</strong> ${payment.custId}<br><br>
+              <strong>Date</strong> ${new Date(payment.date).toLocaleDateString('en-GB')}<br><br>
+              ${payment.paymentMode === 'FINANCE' ? `<strong>FINANCE</strong><br>Hypothycation ${payment.typeOfPayment}` : ''}
+            </div>
+          </div>
+          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #ddd;">
+              <th style="border: 1px solid #000; padding: 5px;">COLLECTIONTYPE</th>
+              <th style="border: 1px solid #000; padding: 5px;">AMOUNT</th>
+              <th style="border: 1px solid #000; padding: 5px;">REMARKS</th>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.typeOfCollection || 'N/A'}</td>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">₹${payment.recAmt}</td>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.remarks.length > 20 ? payment.remarks.substring(0, 20) + '...' : payment.remarks}</td>
+            </tr>
+          </table>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <div>${payment.paymentMode}: ${payment.recAmt}</div>
+            <div><strong>Total: ${payment.recAmt}</strong></div>
+          </div>
+          <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
+            <small>Issued Subject to Realisation of Cheque.<br>
+            Price ruling at the time of delivery will be charged.<br>
+            Any refund through cheques only within 25 working days.<br>
+            Subject To BANGALORE Jurisdiction.</small>
+          </div>
+          <div style="text-align: right;">
+            <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
+          </div>
+          <div style="font-size: 8px; margin-top: 10px;">
+            Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}
+          </div>
+        </div>
+        
+        <!-- Second Receipt (Duplicate) -->
+        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
+          <div style="text-align: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+            <p style="margin: 2px 0; font-size: 10px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>9738066600<br>GSTIN: 29ABBCA7185M1Z2</p>
+          </div>
+          <div style="text-align: center; background: #ddd; padding: 5px; margin-bottom: 10px;">
+            <strong>RECEIPT</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <div>
+              <strong>To: ${payment.name}</strong><br>
+              ${payment.address || 'LOCALITY OF WALK-IN CUSTOMER'}<br>
+            </div>
+            <div style="text-align: right;">
+              <strong>Receipt</strong> ${payment.receiptNo}<br>
+              <strong>As per</strong> ${payment.custId}<br><br>
+              <strong>Date</strong> ${new Date(payment.date).toLocaleDateString('en-GB')}<br><br>
+              ${payment.paymentMode === 'FINANCE' ? `<strong>FINANCE</strong><br>Hypothycation ${payment.typeOfPayment}` : ''}
+            </div>
+          </div>
+          <p style="margin: 10px 0;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || 'N/A'} <span style="float: right;">Page: 1</span></p>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr style="background: #ddd;">
+              <th style="border: 1px solid #000; padding: 5px;">COLLECTIONTYPE</th>
+              <th style="border: 1px solid #000; padding: 5px;">AMOUNT</th>
+              <th style="border: 1px solid #000; padding: 5px;">REMARKS</th>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.typeOfCollection || 'N/A'}</td>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">₹${payment.recAmt}</td>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center;">${payment.remarks.length > 20 ? payment.remarks.substring(0, 20) + '...' : payment.remarks}</td>
+            </tr>
+          </table>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <div>${payment.paymentMode}: ${payment.recAmt}</div>
+            <div><strong>Total: ${payment.recAmt}</strong></div>
+          </div>
+          <div style="border: 1px solid #000; padding: 5px; margin-bottom: 10px;">
+            <small>Issued Subject to Realisation of Cheque.<br>
+            Price ruling at the time of delivery will be charged.<br>
+            Any refund through cheques only within 25 working days.<br>
+            Subject To BANGALORE Jurisdiction.</small>
+          </div>
+          <div style="text-align: right;">
+            <p>For, ANANDA MOTORS<br><br>Authorised Signatory</p>
+          </div>
+          <div style="font-size: 8px; margin-top: 10px;">
+            Entered by: ${payment.enteredBy} &nbsp;&nbsp; Printed by: ${currentUser?.username || 'N/A'} &nbsp;&nbsp; Printed on: ${formattedDate}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payment Receipt - ${payment.receiptNo}</title>
+          <style>
+            @page { size: A5 landscape; margin: 0; }
+            body { margin: 0; padding: 0; }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Date', accessor: 'date', render: (value) => {
@@ -240,6 +390,7 @@ const PaymentCollection = () => {
     { header: 'Amount', accessor: 'recAmt' },
     { header: 'PaymentMode', accessor: 'paymentMode' },
     { header: 'PaymentType', accessor: 'typeOfPayment' },
+    { header: 'CollectionType', accessor: 'typeOfCollection' },
     { header: 'Remarks', accessor: 'remarks' },
   ];
 
@@ -389,12 +540,11 @@ const PaymentCollection = () => {
       <DataTable 
         columns={columns} 
         data={filteredPayments} 
-        // actionButtons={(payment) => (
-        //   <div className="flex gap-2">
-        //     <button onClick={() => handleEdit(payment)} className="text-blue-600 hover:underline">Edit</button>
-        //     <button onClick={() => handleDelete(payment)} className="text-red-600 hover:underline">Delete</button>
-        //   </div>
-        // )}
+        actionButtons={(payment) => (
+          <div className="flex gap-2">
+            <button onClick={() => handlePrint(payment)} className="text-green-600 hover:underline">Print</button>
+          </div>
+        )}
       />
 
       <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title={isEditMode ? "Edit Payment" : "Payment Entry"}>
@@ -423,6 +573,15 @@ const PaymentCollection = () => {
               <option value="">Select</option>
               {filteredTypeOfPayments.map(type => (
                 <option key={type.id} value={type.id}>{type.typeOfMode}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Type of Collection</label>
+            <select value={formData.typeOfCollectionId} onChange={(e) => setFormData({...formData, typeOfCollectionId: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent">
+              <option value="">Select</option>
+              {typeOfCollections.map(type => (
+                <option key={type.id} value={type.id}>{type.typeOfCollect}</option>
               ))}
             </select>
           </div>

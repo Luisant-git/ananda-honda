@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PaymentCollectionService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; remarks: string }) {
+  async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; enteredBy?: number; remarks: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
       orderBy: { id: 'desc' }
     });
@@ -18,12 +18,16 @@ export class PaymentCollectionService {
         ...data,
         date: new Date(data.date),
         receiptNo,
-        typeOfPaymentId: data.typeOfPaymentId || null
+        typeOfPaymentId: data.typeOfPaymentId || null,
+        typeOfCollectionId: data.typeOfCollectionId || null,
+        enteredBy: data.enteredBy || null
       },
       include: {
         customer: true,
         paymentMode: true,
-        typeOfPayment: true
+        typeOfPayment: true,
+        typeOfCollection: true,
+        user: true
       }
     });
   }
@@ -33,7 +37,9 @@ export class PaymentCollectionService {
       include: {
         customer: true,
         paymentMode: true,
-        typeOfPayment: true
+        typeOfPayment: true,
+        typeOfCollection: true,
+        user: true
       },
       orderBy: { id: 'desc' }
     });
@@ -45,18 +51,26 @@ export class PaymentCollectionService {
       include: {
         customer: true,
         paymentMode: true,
-        typeOfPayment: true
+        typeOfPayment: true,
+        typeOfCollection: true,
+        user: true
       }
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; remarks?: string }) {
+  async update(id: number, data: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; enteredBy?: number; remarks?: string }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);
     }
     if (data.typeOfPaymentId === undefined) {
       delete updateData.typeOfPaymentId;
+    }
+    if (data.typeOfCollectionId === undefined) {
+      delete updateData.typeOfCollectionId;
+    }
+    if (data.enteredBy === undefined) {
+      delete updateData.enteredBy;
     }
 
     return this.prisma.paymentCollection.update({
@@ -65,7 +79,9 @@ export class PaymentCollectionService {
       include: {
         customer: true,
         paymentMode: true,
-        typeOfPayment: true
+        typeOfPayment: true,
+        typeOfCollection: true,
+        user: true
       }
     });
   }

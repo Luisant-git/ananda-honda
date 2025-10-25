@@ -73,6 +73,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
               <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
               <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
               <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>
+              <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>
             </NavGroup>
 
             <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>
