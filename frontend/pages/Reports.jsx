@@ -62,9 +62,9 @@ const Reports = () => {
     { header: 'CustId', accessor: 'custId' },
     { header: 'Name', accessor: 'name' },
     { header: 'Contact No', accessor: 'contactNo' },
-    { header: 'RecAmt', accessor: 'recAmt' },
+    { header: 'Amount', accessor: 'recAmt' },
     { header: 'PaymentMode', accessor: 'paymentMode' },
-    { header: 'TypeOfPayment', accessor: 'typeOfPayment' },
+    { header: 'PaymentType', accessor: 'typeOfPayment' },
     { header: 'Remarks', accessor: 'remarks' }
   ];
 

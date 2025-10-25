@@ -104,7 +104,7 @@ const DataTable = ({ columns, data, actionButtons }) => {
               <tr key={rowIndex} className="bg-white border-b border-brand-border hover:bg-brand-hover">
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                    {String(item[col.accessor])}
+                    {col.render ? col.render(item[col.accessor]) : String(item[col.accessor])}
                   </td>
                 ))}
                  {actionButtons && (

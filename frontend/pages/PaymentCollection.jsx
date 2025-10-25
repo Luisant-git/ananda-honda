@@ -76,7 +76,7 @@ const PaymentCollection = () => {
       const formattedData = data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
-        date: new Date(payment.date).toLocaleDateString(),
+        date: payment.date,
         receiptNo: payment.receiptNo,
         custId: payment.customer.custId,
         name: payment.customer.name,
@@ -226,14 +226,20 @@ const PaymentCollection = () => {
 
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
-    { header: 'Date', accessor: 'date' },
+    { header: 'Date', accessor: 'date', render: (value) => {
+      const date = new Date(value);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } },
     { header: 'ReceiptNo', accessor: 'receiptNo' },
     { header: 'CustId', accessor: 'custId' },
     { header: 'Name', accessor: 'name' },
     { header: 'Contact No', accessor: 'contactNo' },
-    { header: 'RecAmt', accessor: 'recAmt' },
+    { header: 'Amount', accessor: 'recAmt' },
     { header: 'PaymentMode', accessor: 'paymentMode' },
-    { header: 'TypeOfPayment', accessor: 'typeOfPayment' },
+    { header: 'PaymentType', accessor: 'typeOfPayment' },
     { header: 'Remarks', accessor: 'remarks' },
   ];
 
@@ -397,10 +403,7 @@ const PaymentCollection = () => {
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label>
             <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Receipt No <span className="text-red-500">*</span></label>
-            <input type="text" value="Auto-generated" disabled className="w-full bg-gray-100 border border-brand-border text-brand-text-secondary rounded-lg p-2" />
-          </div>
+
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Received Amount <span className="text-red-500">*</span></label>
             <input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({...formData, recAmt: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required />
