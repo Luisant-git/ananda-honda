@@ -6,6 +6,7 @@ import CustomerDetails from '../pages/CustomerDetails';
 import PaymentMode from '../pages/PaymentMode';
 import TypeOfPayment from '../pages/TypeOfPayment';
 import TypeOfCollection from '../pages/TypeOfCollection';
+import VehicleModel from '../pages/VehicleModel';
 import PaymentCollection from '../pages/PaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
@@ -24,6 +25,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <TypeOfPayment user={user} />;
       case 'type_of_collection':
         return <TypeOfCollection user={user} />;
+      case 'vehicle_model':
+        return <VehicleModel user={user} />;
       case 'payment_collection':
         return <PaymentCollection />;
       case 'reports':

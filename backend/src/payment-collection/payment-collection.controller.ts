@@ -6,7 +6,7 @@ export class PaymentCollectionController {
   constructor(private readonly paymentCollectionService: PaymentCollectionService) {}
 
   @Post()
-  create(@Body() createPaymentCollectionDto: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; enteredBy?: number; remarks: string }) {
+  create(@Body() createPaymentCollectionDto: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks: string }) {
     return this.paymentCollectionService.create(createPaymentCollectionDto);
   }
 
@@ -21,7 +21,7 @@ export class PaymentCollectionController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentCollectionDto: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; enteredBy?: number; remarks?: string }) {
+  update(@Param('id') id: string, @Body() updatePaymentCollectionDto: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string }) {
     return this.paymentCollectionService.update(+id, updatePaymentCollectionDto);
   }
 

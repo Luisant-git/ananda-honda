@@ -7,6 +7,7 @@ import { customerApi } from '../api/customerApi.js';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 import { typeOfPaymentApi } from '../api/typeOfPaymentApi.js';
 import { typeOfCollectionApi } from '../api/typeOfCollectionApi.js';
+import { vehicleModelApi } from '../api/vehicleModelApi.js';
 import hondaLogo from '../assets/honda-logo.png';
 
 const PaymentCollection = () => {
@@ -14,6 +15,7 @@ const PaymentCollection = () => {
   const [paymentModes, setPaymentModes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [typeOfCollections, setTypeOfCollections] = useState([]);
+  const [vehicleModels, setVehicleModels] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -25,7 +27,7 @@ const PaymentCollection = () => {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
-  const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', remarks: '' });
+  const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', vehicleModelId: '', remarks: '' });
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
 
@@ -34,6 +36,7 @@ const PaymentCollection = () => {
     fetchPaymentModes();
     fetchTypeOfPayments();
     fetchTypeOfCollections();
+    fetchVehicleModels();
     fetchPayments();
   }, []);
 
@@ -83,6 +86,15 @@ const PaymentCollection = () => {
     }
   };
 
+  const fetchVehicleModels = async () => {
+    try {
+      const data = await vehicleModelApi.getAll();
+      setVehicleModels(data.filter(model => model.status === 'Enable'));
+    } catch (error) {
+      console.error('Error fetching vehicle models:', error);
+    }
+  };
+
   const fetchPayments = async () => {
     try {
       const data = await paymentCollectionApi.getAll();
@@ -99,12 +111,14 @@ const PaymentCollection = () => {
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
+        vehicleModel: payment.vehicleModel?.model || 'N/A',
         enteredBy: payment.user?.username || 'N/A',
         remarks: payment.remarks,
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
-        typeOfCollectionId: payment.typeOfCollectionId
+        typeOfCollectionId: payment.typeOfCollectionId,
+        vehicleModelId: payment.vehicleModelId
       }));
       setPayments(formattedData);
       setFilteredPayments(formattedData);
@@ -157,6 +171,7 @@ const PaymentCollection = () => {
         paymentModeId: parseInt(formData.paymentModeId),
         typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
         typeOfCollectionId: formData.typeOfCollectionId ? parseInt(formData.typeOfCollectionId) : undefined,
+        vehicleModelId: formData.vehicleModelId ? parseInt(formData.vehicleModelId) : undefined,
         enteredBy: JSON.parse(localStorage.getItem('user'))?.id,
         remarks: formData.remarks
       };
@@ -173,7 +188,7 @@ const PaymentCollection = () => {
       setIsEditMode(false);
       setEditingPayment(null);
       setIsNewCustomer(false);
-      setFormData({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', remarks: '' });
+      setFormData({ date: new Date().toISOString().split('T')[0], recAmt: '', paymentModeId: '', typeOfPaymentId: '', typeOfCollectionId: '', vehicleModelId: '', remarks: '' });
       setNewCustomerData({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
       fetchPayments();
     } catch (error) {
@@ -194,6 +209,7 @@ const PaymentCollection = () => {
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || '',
       typeOfCollectionId: payment.typeOfCollectionId?.toString() || '',
+      vehicleModelId: payment.vehicleModelId?.toString() || '',
       remarks: payment.remarks
     });
     setIsPaymentModalOpen(true);
@@ -415,6 +431,7 @@ const PaymentCollection = () => {
     { header: 'PaymentMode', accessor: 'paymentMode' },
     { header: 'PaymentType', accessor: 'typeOfPayment' },
     { header: 'CollectionType', accessor: 'typeOfCollection' },
+    { header: 'Vehicle Model', accessor: 'vehicleModel' },
     { header: 'Remarks', accessor: 'remarks' },
   ];
 
@@ -606,6 +623,15 @@ const PaymentCollection = () => {
               <option value="">Select</option>
               {typeOfCollections.map(type => (
                 <option key={type.id} value={type.id}>{type.typeOfCollect}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Model</label>
+            <select value={formData.vehicleModelId} onChange={(e) => setFormData({...formData, vehicleModelId: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent">
+              <option value="">Select</option>
+              {vehicleModels.map(model => (
+                <option key={model.id} value={model.id}>{model.model}</option>
               ))}
             </select>
           </div>

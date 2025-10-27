@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
+import { paymentCollectionApi } from '../api/paymentCollectionApi.js';
 
 const Reports = () => {
   const [reportData, setReportData] = useState([]);
@@ -10,13 +11,25 @@ const Reports = () => {
   }, []);
 
   const fetchReportData = async () => {
-    // Sample data - replace with actual API call
-    const sampleData = [
-      // { sNo: 1, date: '2024-01-15', receiptNo: 'RCP001', custId: 'C001', name: 'John Doe', contactNo: '9876543210', recAmt: 5000, paymentMode: 'ONLINE', typeOfPayment: 'HDFC Bank', remarks: 'Payment received' },
-      // { sNo: 2, date: '2024-01-16', receiptNo: 'RCP002', custId: 'C002', name: 'Jane Smith', contactNo: '9876543211', recAmt: 7500, paymentMode: 'FINANCE', typeOfPayment: 'L&T Finance', remarks: 'Advance payment' },
-      // { sNo: 3, date: '2024-01-17', receiptNo: 'RCP003', custId: 'C003', name: 'Bob Johnson', contactNo: '9876543212', recAmt: 3200, paymentMode: 'ONLINE', typeOfPayment: 'SBI Bank', remarks: 'Final payment' }
-    ];
-    setReportData(sampleData);
+    try {
+      const data = await paymentCollectionApi.getAll();
+      const formattedData = data.map((payment, index) => ({
+        sNo: index + 1,
+        date: new Date(payment.date).toLocaleDateString('en-GB'),
+        receiptNo: payment.receiptNo,
+        custId: payment.customer.custId,
+        name: payment.customer.name,
+        contactNo: payment.customer.contactNo,
+        recAmt: payment.recAmt,
+        paymentMode: payment.paymentMode.paymentMode,
+        typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
+        typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
+        remarks: payment.remarks
+      }));
+      setReportData(formattedData);
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+    }
   };
 
   const downloadExcel = () => {
@@ -65,6 +78,7 @@ const Reports = () => {
     { header: 'Amount', accessor: 'recAmt' },
     { header: 'PaymentMode', accessor: 'paymentMode' },
     { header: 'PaymentType', accessor: 'typeOfPayment' },
+    { header: 'CollectionType', accessor: 'typeOfCollection' },
     { header: 'Remarks', accessor: 'remarks' }
   ];
 
