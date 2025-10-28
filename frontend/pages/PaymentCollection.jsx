@@ -420,8 +420,8 @@ const PaymentCollection = () => {
               <img src="${logoDataUrl}" alt="Honda Logo" style="width: 60px; height: 40px;" />
             </div>
           </div>
-          
-          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px; font-size: 16px;">
+
+          <div style="text-align: center; color: #000; background: white; padding: 5px; margin-bottom: 15px; font-size: 16px; border: 2px solid #000;">
             <strong>RECEIPT</strong>
           </div>
           
@@ -524,7 +524,7 @@ const PaymentCollection = () => {
             </div>
           </div>
           
-          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px; font-size: 16px;">
+          <div style="text-align: center; color: #000; background: white; padding: 5px; margin-bottom: 15px; font-size: 16px; border: 2px solid #000;">
             <strong>RECEIPT</strong>
           </div>
           
