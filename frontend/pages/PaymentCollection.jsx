@@ -411,17 +411,17 @@ const PaymentCollection = () => {
       <div style="width: 210mm; height: 148mm; font-family: Arial, sans-serif; font-size: 12px; display: flex;">
         <!-- First Receipt -->
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 10px;">
             <div style="flex: 1;">
               <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>Contact No : +919071755550<br>GSTIN: 29ABBCA7185M1Z2</p>
+              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
             </div>
             <div style="margin-left: 10px;">
               <img src="${logoDataUrl}" alt="Honda Logo" style="width: 60px; height: 40px;" />
             </div>
           </div>
           
-          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px;">
+          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px; font-size: 16px;">
             <strong>RECEIPT</strong>
           </div>
           
@@ -459,7 +459,7 @@ const PaymentCollection = () => {
           
           <p style="margin: 10px 0; font-size: 11px;">We thankfully acknowledge the receipt of your payment towards for<br>Collection - ${
             payment.typeOfCollection || "N/A"
-          } <span style="float: right;">Page: 1</span></p>
+          }
           
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
             <tr>
@@ -478,7 +478,7 @@ const PaymentCollection = () => {
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
             <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
-            <div><strong>Customer Opting Finance</strong></div>
+            <div><strong>Customer Opting ${payment.paymentMode}</strong></div>
           </div>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
@@ -499,8 +499,8 @@ const PaymentCollection = () => {
             <strong>Received and Verified By</strong>
           </div>
           
-          <div style="text-align: right; margin-bottom: 15px;">
-            <div style="margin-top: 30px;"><strong>Authorised Signatory with Seal</strong></div>
+          <div style="text-align: right; margin-bottom: 5px;">
+            <div style="margin-top: 40px;"><strong>Authorised Signatory with Seal</strong></div>
           </div>
           
           <div style="font-size: 8px; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
@@ -514,17 +514,17 @@ const PaymentCollection = () => {
         
         <!-- Second Receipt (Duplicate) -->
         <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 10px;">
             <div style="flex: 1;">
               <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br>Contact No : +919071755550<br>GSTIN: 29ABBCA7185M1Z2</p>
+              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
             </div>
             <div style="margin-left: 10px;">
               <img src="${logoDataUrl}" alt="Honda Logo" style="width: 60px; height: 40px;" />
             </div>
           </div>
           
-          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px;">
+          <div style="text-align: center; background: #000; color: white; padding: 5px; margin-bottom: 15px; font-size: 16px;">
             <strong>RECEIPT</strong>
           </div>
           
@@ -553,7 +553,7 @@ const PaymentCollection = () => {
   
   <!-- Row 4: Mobile No | Vehicle Model -->
   <div style="padding: 2px;"><strong>Mobile No:</strong> ${
-    payment.contactNo || "N/A"
+    payment.contactNo
   }</div>
   <div style="padding: 2px;"><strong>Vehicle Model:</strong> ${
     payment.vehicleModel || "N/A"
@@ -562,7 +562,7 @@ const PaymentCollection = () => {
           
           <p style="margin: 10px 0; font-size: 11px;">We thankfully acknowledge the receipt of your payment towards for<br>Collection - ${
             payment.typeOfCollection || "N/A"
-          } <span style="float: right;">Page: 1</span></p>
+          }
           
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
             <tr>
@@ -581,7 +581,7 @@ const PaymentCollection = () => {
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
             <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
-            <div><strong>Customer Opting Finance</strong></div>
+            <div><strong>Customer Opting ${payment.paymentMode}</strong></div>
           </div>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
@@ -602,8 +602,8 @@ const PaymentCollection = () => {
             <strong>Received and Verified By</strong>
           </div>
           
-          <div style="text-align: right; margin-bottom: 15px;">
-            <div style="margin-top: 30px;"><strong>Authorised Signatory with Seal</strong></div>
+          <div style="text-align: right; margin-bottom: 5px;">
+            <div style="margin-top: 40px;"><strong>Authorised Signatory with Seal</strong></div>
           </div>
           
           <div style="font-size: 8px; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
