@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PaymentCollectionService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks: string }) {
+  async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
       orderBy: { id: 'desc' }
     });
@@ -62,7 +62,7 @@ export class PaymentCollectionService {
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string }) {
+  async update(id: number, data: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);

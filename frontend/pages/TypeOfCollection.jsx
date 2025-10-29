@@ -11,7 +11,7 @@ const TypeOfCollection = ({ user }) => {
   const [editingTypeOfCollection, setEditingTypeOfCollection] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [typeOfCollectionToDelete, setTypeOfCollectionToDelete] = useState(null);
-  const [formData, setFormData] = useState({ typeOfCollect: '', status: 'Enable' });
+  const [formData, setFormData] = useState({ typeOfCollect: '', status: 'Enable', disableVehicleModel: false });
 
   useEffect(() => {
     fetchTypeOfCollections();
@@ -24,7 +24,8 @@ const TypeOfCollection = ({ user }) => {
         sNo: index + 1,
         id: item.id,
         typeOfCollect: item.typeOfCollect,
-        status: item.status
+        status: item.status,
+        disableVehicleModel: item.disableVehicleModel
       }));
       setTypeOfCollections(formattedData);
     } catch (error) {
@@ -45,7 +46,7 @@ const TypeOfCollection = ({ user }) => {
       setIsModalOpen(false);
       setIsEditMode(false);
       setEditingTypeOfCollection(null);
-      setFormData({ typeOfCollect: '', status: 'Enable' });
+      setFormData({ typeOfCollect: '', status: 'Enable', disableVehicleModel: false });
       fetchTypeOfCollections();
     } catch (error) {
       toast.error('Error saving type of collection');
@@ -56,7 +57,7 @@ const TypeOfCollection = ({ user }) => {
   const handleEdit = (item) => {
     setIsEditMode(true);
     setEditingTypeOfCollection(item);
-    setFormData({ typeOfCollect: item.typeOfCollect, status: item.status });
+    setFormData({ typeOfCollect: item.typeOfCollect, status: item.status, disableVehicleModel: item.disableVehicleModel || false });
     setIsModalOpen(true);
   };
 
@@ -81,7 +82,7 @@ const TypeOfCollection = ({ user }) => {
   const handleAddNew = () => {
     setIsEditMode(false);
     setEditingTypeOfCollection(null);
-    setFormData({ typeOfCollect: '', status: 'Enable' });
+    setFormData({ typeOfCollect: '', status: 'Enable', disableVehicleModel: false });
     setIsModalOpen(true);
   };
 
@@ -124,6 +125,17 @@ const TypeOfCollection = ({ user }) => {
                     <option value="Enable">Enable</option>
                     <option value="Disable">Disable</option>
                 </select>
+            </div>
+            <div>
+                <label className="flex items-center space-x-2">
+                    <input 
+                        type="checkbox" 
+                        checked={formData.disableVehicleModel} 
+                        onChange={(e) => setFormData({...formData, disableVehicleModel: e.target.checked})} 
+                        className="rounded border-brand-border text-brand-accent focus:ring-brand-accent" 
+                    />
+                    <span className="text-sm font-medium text-brand-text-secondary">Disable Vehicle Model</span>
+                </label>
             </div>
              <div className="flex justify-end gap-4 pt-4">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Close</button>

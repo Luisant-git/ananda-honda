@@ -44,6 +44,7 @@ model TypeOfCollection {
   id          Int      @id @default(autoincrement())
   typeOfCollect  String
   status         String
+  disableVehicleModel Boolean @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   paymentCollections PaymentCollection[]
@@ -62,6 +63,7 @@ model PaymentCollection {
   id              Int      @id @default(autoincrement())
   date            DateTime
   receiptNo       String   @unique
+  refNo           String?
   customerId      Int
   recAmt          Float
   paymentModeId   Int
@@ -69,7 +71,7 @@ model PaymentCollection {
   typeOfCollectionId Int?
   vehicleModelId  Int?
   enteredBy       Int?
-  remarks         String
+  remarks         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   customer        Customer @relation(fields: [customerId], references: [id])

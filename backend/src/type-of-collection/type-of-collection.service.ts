@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TypeOfCollectionService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { typeOfCollect: string; status: string }) {
+  async create(data: { typeOfCollect: string; status: string; disableVehicleModel?: boolean }) {
     return this.prisma.typeOfCollection.create({
       data
     });
@@ -23,7 +23,7 @@ export class TypeOfCollectionService {
     });
   }
 
-  async update(id: number, data: { typeOfCollect?: string; status?: string }) {
+  async update(id: number, data: { typeOfCollect?: string; status?: string; disableVehicleModel?: boolean }) {
     return this.prisma.typeOfCollection.update({
       where: { id },
       data

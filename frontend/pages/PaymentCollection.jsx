@@ -34,6 +34,7 @@ const PaymentCollection = () => {
     typeOfPaymentId: "",
     typeOfCollectionId: "",
     vehicleModelId: "",
+    refNo: "",
     remarks: "",
   });
   const [isNewCustomer, setIsNewCustomer] = useState(false);
@@ -126,7 +127,8 @@ const PaymentCollection = () => {
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
         vehicleModel: payment.vehicleModel?.model || "N/A",
         enteredBy: payment.user?.username || "N/A",
-        remarks: payment.remarks,
+        refNo: payment.refNo || "N/A",
+        remarks: payment.remarks || "N/A",
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -201,6 +203,7 @@ const PaymentCollection = () => {
           ? parseInt(formData.vehicleModelId)
           : undefined,
         enteredBy: JSON.parse(localStorage.getItem("user"))?.id,
+        refNo: formData.refNo,
         remarks: formData.remarks,
       };
 
@@ -223,6 +226,7 @@ const PaymentCollection = () => {
         typeOfPaymentId: "",
         typeOfCollectionId: "",
         vehicleModelId: "",
+        refNo: "",
         remarks: "",
       });
       setNewCustomerData({
@@ -251,6 +255,7 @@ const PaymentCollection = () => {
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || "",
       typeOfCollectionId: payment.typeOfCollectionId?.toString() || "",
       vehicleModelId: payment.vehicleModelId?.toString() || "",
+      refNo: payment.refNo || "",
       remarks: payment.remarks,
     });
     setIsPaymentModalOpen(true);
@@ -471,7 +476,7 @@ const PaymentCollection = () => {
                 payment.recAmt
               }<br>${amountInWords}</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center;">${
-                payment.remarks
+                payment.remarks || "N/A"
               }</td>
             </tr>
           </table>
@@ -482,7 +487,7 @@ const PaymentCollection = () => {
           </div>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
-            <div><strong>Cheque No:</strong> ________________</div>
+            <div><strong>Ref No:</strong> ${payment.refNo || "N/A"}</div>
             <div style="margin-top: 5px;">${
               payment.typeOfPayment || "N/A"
             }</div>
@@ -574,7 +579,7 @@ const PaymentCollection = () => {
                 payment.recAmt
               }<br>${amountInWords}</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center;">${
-                payment.remarks
+                payment.remarks || "N/A"
               }</td>
             </tr>
           </table>
@@ -585,7 +590,7 @@ const PaymentCollection = () => {
           </div>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
-            <div><strong>Cheque No:</strong> ________________</div>
+            <div><strong>Ref No:</strong> ${payment.refNo || "N/A"}</div>
             <div style="margin-top: 5px;">${
               payment.typeOfPayment || "N/A"
             }</div>
@@ -661,6 +666,7 @@ const PaymentCollection = () => {
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
+    { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
   ];
 
@@ -982,9 +988,16 @@ const PaymentCollection = () => {
             </label>
             <select
               value={formData.typeOfCollectionId}
-              onChange={(e) =>
-                setFormData({ ...formData, typeOfCollectionId: e.target.value })
-              }
+              onChange={(e) => {
+                const selectedType = typeOfCollections.find(
+                  (type) => type.id === parseInt(e.target.value)
+                );
+                setFormData({ 
+                  ...formData, 
+                  typeOfCollectionId: e.target.value,
+                  vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId
+                });
+              }}
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
             >
               <option value="">Select</option>
@@ -995,28 +1008,48 @@ const PaymentCollection = () => {
               ))}
             </select>
           </div>
+          {(() => {
+            const selectedTypeOfCollection = typeOfCollections.find(
+              (type) => type.id === parseInt(formData.typeOfCollectionId)
+            );
+            return !selectedTypeOfCollection?.disableVehicleModel && (
+              <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                  Vehicle Model
+                </label>
+                <select
+                  value={formData.vehicleModelId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, vehicleModelId: e.target.value })
+                  }
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                >
+                  <option value="">Select</option>
+                  {vehicleModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Vehicle Model
+              Reference Number
             </label>
-            <select
-              value={formData.vehicleModelId}
+            <input
+              type="text"
+              value={formData.refNo}
               onChange={(e) =>
-                setFormData({ ...formData, vehicleModelId: e.target.value })
+                setFormData({ ...formData, refNo: e.target.value })
               }
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-            >
-              <option value="">Select</option>
-              {vehicleModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.model}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Remarks <span className="text-red-500">*</span>
+              Remarks
             </label>
             <textarea
               value={formData.remarks}
@@ -1025,7 +1058,6 @@ const PaymentCollection = () => {
               }
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               rows={2}
-              required
             ></textarea>
           </div>
           <div className="flex justify-end gap-4 pt-4">

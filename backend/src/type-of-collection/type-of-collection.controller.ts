@@ -6,7 +6,7 @@ export class TypeOfCollectionController {
   constructor(private readonly typeOfCollectionService: TypeOfCollectionService) {}
 
   @Post()
-  create(@Body() createTypeOfCollectionDto: { typeOfCollect: string; status: string }) {
+  create(@Body() createTypeOfCollectionDto: { typeOfCollect: string; status: string; disableVehicleModel?: boolean }) {
     return this.typeOfCollectionService.create(createTypeOfCollectionDto);
   }
 
@@ -21,7 +21,7 @@ export class TypeOfCollectionController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTypeOfCollectionDto: { typeOfCollect?: string; status?: string }) {
+  update(@Param('id') id: string, @Body() updateTypeOfCollectionDto: { typeOfCollect?: string; status?: string; disableVehicleModel?: boolean }) {
     return this.typeOfCollectionService.update(+id, updateTypeOfCollectionDto);
   }
 
