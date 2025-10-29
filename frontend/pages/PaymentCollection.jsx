@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
+import SearchableDropdown from "../components/SearchableDropdown";
 import { paymentCollectionApi } from "../api/paymentCollectionApi.js";
 import { customerApi } from "../api/customerApi.js";
 import { paymentModeApi } from "../api/paymentModeApi.js";
@@ -838,99 +839,39 @@ const PaymentCollection = () => {
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Payment Mode <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.paymentModeId}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  paymentModeId: e.target.value,
-                  typeOfPaymentId: "",
-                })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              required
-            >
-              <option value="">Select</option>
-              {paymentModes.map((mode) => (
-                <option key={mode.id} value={mode.id}>
-                  {mode.paymentMode}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Type of Payment Mode
-            </label>
-            <select
-              value={formData.typeOfPaymentId}
-              onChange={(e) =>
-                setFormData({ ...formData, typeOfPaymentId: e.target.value })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-            >
-              <option value="">Select</option>
-              {filteredTypeOfPayments.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.typeOfMode}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Type of Collection
-            </label>
-            <select
-              value={formData.typeOfCollectionId}
-              onChange={(e) => {
-                const selectedType = typeOfCollections.find(
-                  (type) => type.id === parseInt(e.target.value)
-                );
-                setFormData({ 
-                  ...formData, 
-                  typeOfCollectionId: e.target.value,
-                  vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId
-                });
-              }}
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-            >
-              <option value="">Select</option>
-              {typeOfCollections.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.typeOfCollect}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableDropdown
+            label="Payment Mode"
+            value={formData.paymentModeId}
+            onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })}
+            options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))}
+            required
+          />
+          <SearchableDropdown
+            label="Type of Payment Mode"
+            value={formData.typeOfPaymentId}
+            onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })}
+            options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))}
+          />
+          <SearchableDropdown
+            label="Type of Collection"
+            value={formData.typeOfCollectionId}
+            onChange={(value) => {
+              const selectedType = typeOfCollections.find(type => type.id === parseInt(value));
+              setFormData({ ...formData, typeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId });
+            }}
+            options={typeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
+          />
           {(() => {
             const selectedTypeOfCollection = typeOfCollections.find(
               (type) => type.id === parseInt(formData.typeOfCollectionId)
             );
             return !selectedTypeOfCollection?.disableVehicleModel && (
-              <div>
-                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-                  Vehicle Model
-                </label>
-                <select
-                  value={formData.vehicleModelId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, vehicleModelId: e.target.value })
-                  }
-                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                >
-                  <option value="">Select</option>
-                  {vehicleModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.model}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableDropdown
+                label="Vehicle Model"
+                value={formData.vehicleModelId}
+                onChange={(value) => setFormData({ ...formData, vehicleModelId: value })}
+                options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))}
+              />
             );
           })()}
           <div>

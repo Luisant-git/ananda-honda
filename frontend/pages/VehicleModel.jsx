@@ -87,7 +87,6 @@ const VehicleModel = () => {
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Vehicle Model', accessor: 'model' },
     { header: 'Status', accessor: 'status' },
-    { header: 'Created At', accessor: 'createdAt', render: (value) => new Date(value).toLocaleDateString() },
   ];
 
   return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import SearchableDropdown from '../components/SearchableDropdown';
 import { typeOfPaymentApi } from '../api/typeOfPaymentApi.js';
 import { paymentModeApi } from '../api/paymentModeApi.js';
 
@@ -131,15 +132,13 @@ const TypeOfPayment = ({ user }) => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Type of Payment" : "Add Type of Payment"}>
         <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Mode</label>
-                <select value={formData.paymentModeId} onChange={(e) => setFormData({...formData, paymentModeId: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required>
-                    <option value="">Select</option>
-                    {paymentModes.map(mode => (
-                      <option key={mode.id} value={mode.id}>{mode.paymentMode}</option>
-                    ))}
-                </select>
-            </div>
+            <SearchableDropdown
+              label="Payment Mode"
+              value={formData.paymentModeId}
+              onChange={(value) => setFormData({...formData, paymentModeId: value})}
+              options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))}
+              required
+            />
             <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Type of Payment Mode</label>
                 <input type="text" value={formData.typeOfMode} onChange={(e) => setFormData({...formData, typeOfMode: e.target.value})} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent" required />
