@@ -4,7 +4,7 @@ import { EmailIcon, LockIcon } from '../components/icons/Icons';
 import { authApi } from '../api/authApi.js';
 
 const Login = ({ onLogin, onShowRegister }) => {
-  const [formData, setFormData] = useState({ username: 'billing', password: '', branch: '' });
+  const [formData, setFormData] = useState({ username: 'billing', password: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -31,18 +31,7 @@ const Login = ({ onLogin, onShowRegister }) => {
         <div className="bg-brand-surface p-8 rounded-lg shadow-2xl border border-brand-border">
           <h2 className="text-xl font-semibold text-center text-brand-text-secondary mb-6">Sign in to start your session</h2>
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <select 
-                value={formData.branch}
-                onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                className="w-full px-4 py-3 bg-white border border-brand-border rounded-lg text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
-                required
-              >
-                <option value="" disabled>Select Branch</option>
-                <option value="Bellandur">Bellandur</option>
-                <option value="Electronic city">Electronic city</option>
-              </select>
-            </div>
+
             <div className="relative">
               <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-brand-text-secondary">
                 <EmailIcon />

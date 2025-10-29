@@ -6,7 +6,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() registerDto: { username: string; password: string; branch: string; role: 'SUPER_ADMIN' | 'USER' }) {
+  async register(@Body() registerDto: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' }) {
     try {
       return await this.authService.register(registerDto);
     } catch (error) {

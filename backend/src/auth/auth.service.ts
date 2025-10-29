@@ -6,20 +6,18 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(private prisma: PrismaService) {}
 
-  async register(data: { username: string; password: string; branch: string; role: 'SUPER_ADMIN' | 'USER' }) {
+  async register(data: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' }) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     
     return this.prisma.user.create({
       data: {
         username: data.username,
         password: hashedPassword,
-        branch: data.branch,
         role: data.role
       },
       select: {
         id: true,
         username: true,
-        branch: true,
         role: true,
         createdAt: true
       }
@@ -43,7 +41,6 @@ export class AuthService {
     return {
       id: user.id,
       username: user.username,
-      branch: user.branch,
       role: user.role
     };
   }
