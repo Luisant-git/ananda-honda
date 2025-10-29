@@ -4,7 +4,7 @@ import { EmailIcon, LockIcon } from '../components/icons/Icons';
 import { authApi } from '../api/authApi.js';
 
 const Login = ({ onLogin, onShowRegister }) => {
-  const [formData, setFormData] = useState({ username: 'billing', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -40,6 +40,7 @@ const Login = ({ onLogin, onShowRegister }) => {
                 type="text" 
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
+                placeholder="Enter username"
                 className="w-full px-4 py-3 bg-white border border-brand-border rounded-lg text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
                 required
               />
