@@ -413,205 +413,102 @@ const PaymentCollection = () => {
       const logoDataUrl = canvas.toDataURL("image/jpeg", 0.9);
 
       const printContent = `
-      <div style="width: 210mm; height: 148mm; font-family: Arial, sans-serif; font-size: 12px; display: flex;">
-        <!-- First Receipt -->
-        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 10px;">
+      <div style="width: 210mm; height: 297mm; font-family: Arial, sans-serif; font-size: 14px; padding: 20px; box-sizing: border-box;">
+        <div style="border: 1px solid #000; padding: 20px; height: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 25px;">
             <div style="flex: 1;">
-              <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
+              <h3 style="margin: 0; font-size: 28px; font-weight: bold; margin-bottom: 15px;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+              <p style="margin: 0; font-size: 16px; line-height: 1.6;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
             </div>
-            <div style="margin-left: 10px;">
-              <img src="${logoDataUrl}" alt="Honda Logo" style="width: 60px; height: 40px;" />
+            <div style="margin-left: 20px;">
+              <img src="${logoDataUrl}" alt="Honda Logo" style="width: 120px; height: 90px;" />
             </div>
           </div>
 
-          <div style="text-align: center; color: #000; background: white; padding: 5px; margin-bottom: 15px; font-size: 16px; border: 2px solid #000;">
+          <div style="text-align: center; color: #000; background: white; padding: 15px; margin-bottom: 30px; font-size: 24px; border: 3px solid #000;">
             <strong>RECEIPT</strong>
           </div>
           
-         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; font-size: 10px;">
+         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; font-size: 16px;">
   <!-- Row 1: Customer ID | Date -->
-  <div style="padding: 2px;"><strong>Customer ID:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>Customer ID:</strong> ${
     payment.custId
   }</div>
-  <div style="padding: 2px;"><strong>Date:</strong> ${new Date(
+  <div style="padding: 2px 5px 2px 5px;"><strong>Date:</strong> ${new Date(
     payment.date
   ).toLocaleDateString("en-GB")}</div>
   
   <!-- Row 2: To | Receipt No -->
-  <div style="padding: 2px;"><strong>To:</strong> ${payment.name}</div>
-  <div style="padding: 2px;"><strong>Receipt No:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>To:</strong> ${payment.name}</div>
+  <div style="padding: 2px 5px 2px 5px;"><strong>Receipt No:</strong> ${
     payment.receiptNo
   }</div>
   
   <!-- Row 3: Address | Payment Towards -->
-  <div style="padding: 2px;"><strong>Address:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>Address:</strong> ${
     payment.address || "N/A"
   }</div>
-  <div style="padding: 2px;"><strong>Payment Towards:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>Payment Towards:</strong> ${
     payment.typeOfCollection || "N/A"
   }</div>
   
   <!-- Row 4: Mobile No | Vehicle Model -->
-  <div style="padding: 2px;"><strong>Mobile No:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>Mobile No:</strong> ${
     payment.contactNo
   }</div>
-  <div style="padding: 2px;"><strong>Vehicle Model:</strong> ${
+  <div style="padding: 2px 5px 2px 5px;"><strong>Vehicle Model:</strong> ${
     payment.vehicleModel || "N/A"
   }</div>
 </div>
           
-          <p style="margin: 10px 0; font-size: 11px;">We thankfully acknowledge the receipt of your payment towards for<br>Collection - ${
+          <p style="margin: 25px 0; font-size: 16px;">We thankfully acknowledge the receipt of your payment towards for Collection - ${
             payment.typeOfCollection || "N/A"
           }
+          </p>
           
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 16px;">
             <tr>
-              <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 50%;">Received Amount:</td>
-              <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 50%;">REMARKS</td>
+              <td style="border: 1px solid #000; padding: 10px; font-weight: bold; width: 50%;">Received Amount:</td>
+              <td style="border: 1px solid #000; padding: 10px; font-weight: bold; width: 50%;">REMARKS</td>
             </tr>
             <tr>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">₹${
+              <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${
                 payment.recAmt
               }<br>${amountInWords}</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">${
+              <td style="border: 1px solid #000; padding: 10px; text-align: center;">${
                 payment.remarks || "N/A"
               }</td>
             </tr>
           </table>
           
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
             <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
             <div><strong>Customer Opting ${payment.paymentMode}</strong></div>
           </div>
           
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
             <div><strong>Ref No:</strong> ${payment.refNo || "N/A"}</div>
             <div style="margin-top: 5px;">${
               payment.typeOfPayment || "N/A"
             }</div>
           </div>
           
-          <div style="border: 1px solid #000; padding: 5px; margin-bottom: 15px; font-size: 9px;">
+          <div style="border: 1px solid #000; padding: 15px; margin-bottom: 30px; font-size: 14px;">
             <div>Issued Subject to Realisation of Cheque.</div>
             <div>Price ruling at the time of delivery will be charged.</div>
             <div>Any refund through cheques only within 25 working days.</div>
             <div>Subject To BANGALORE Jurisdiction.</div>
           </div>
           
-          <div style="text-align: right; margin-bottom: 15px;">
+          <div style="text-align: right; margin-bottom: 40px; margin-top: 20px; font-size: 16px;">
             <strong>Received and Verified By</strong>
           </div>
           
-          <div style="text-align: right; margin-bottom: 5px;">
-            <div style="margin-top: 40px;"><strong>Authorised Signatory with Seal</strong></div>
+          <div style="text-align: right; margin-bottom: 20px;">
+            <div style="margin-top: 60px; font-size: 16px;"><strong>Authorised Signatory with Seal</strong></div>
           </div>
           
-          <div style="font-size: 8px; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
-            <strong>Entered by:</strong> ${
-              payment.enteredBy
-            } &nbsp;&nbsp; <strong>Printed by:</strong> ${
-        currentUser?.username || "N/A"
-      } &nbsp;&nbsp; <strong>Printed on:</strong> ${formattedDate}
-          </div>
-        </div>
-        
-        <!-- Second Receipt (Duplicate) -->
-        <div style="width: 50%; padding: 10px; border: 1px solid #000; box-sizing: border-box;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 10px;">
-            <div style="flex: 1;">
-              <h3 style="margin: 0; font-size: 14px; font-weight: bold;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-              <p style="margin: 2px 0; font-size: 9px;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
-            </div>
-            <div style="margin-left: 10px;">
-              <img src="${logoDataUrl}" alt="Honda Logo" style="width: 60px; height: 40px;" />
-            </div>
-          </div>
-          
-          <div style="text-align: center; color: #000; background: white; padding: 5px; margin-bottom: 15px; font-size: 16px; border: 2px solid #000;">
-            <strong>RECEIPT</strong>
-          </div>
-          
-         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; font-size: 10px;">
-  <!-- Row 1: Customer ID | Date -->
-  <div style="padding: 2px;"><strong>Customer ID:</strong> ${
-    payment.custId
-  }</div>
-  <div style="padding: 2px;"><strong>Date:</strong> ${new Date(
-    payment.date
-  ).toLocaleDateString("en-GB")}</div>
-  
-  <!-- Row 2: To | Receipt No -->
-  <div style="padding: 2px;"><strong>To:</strong> ${payment.name}</div>
-  <div style="padding: 2px;"><strong>Receipt No:</strong> ${
-    payment.receiptNo
-  }</div>
-  
-  <!-- Row 3: Address | Payment Towards -->
-  <div style="padding: 2px;"><strong>Address:</strong> ${
-    payment.address || "N/A"
-  }</div>
-  <div style="padding: 2px;"><strong>Payment Towards:</strong> ${
-    payment.typeOfCollection || "N/A"
-  }</div>
-  
-  <!-- Row 4: Mobile No | Vehicle Model -->
-  <div style="padding: 2px;"><strong>Mobile No:</strong> ${
-    payment.contactNo
-  }</div>
-  <div style="padding: 2px;"><strong>Vehicle Model:</strong> ${
-    payment.vehicleModel || "N/A"
-  }</div>
-</div>
-          
-          <p style="margin: 10px 0; font-size: 11px;">We thankfully acknowledge the receipt of your payment towards for<br>Collection - ${
-            payment.typeOfCollection || "N/A"
-          }
-          
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 50%;">Received Amount:</td>
-              <td style="border: 1px solid #000; padding: 6px; font-weight: bold; width: 50%;">REMARKS</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">₹${
-                payment.recAmt
-              }<br>${amountInWords}</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">${
-                payment.remarks || "N/A"
-              }</td>
-            </tr>
-          </table>
-          
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
-            <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
-            <div><strong>Customer Opting ${payment.paymentMode}</strong></div>
-          </div>
-          
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px;">
-            <div><strong>Ref No:</strong> ${payment.refNo || "N/A"}</div>
-            <div style="margin-top: 5px;">${
-              payment.typeOfPayment || "N/A"
-            }</div>
-          </div>
-          
-          <div style="border: 1px solid #000; padding: 5px; margin-bottom: 15px; font-size: 9px;">
-            <div>Issued Subject to Realisation of Cheque.</div>
-            <div>Price ruling at the time of delivery will be charged.</div>
-            <div>Any refund through cheques only within 25 working days.</div>
-            <div>Subject To BANGALORE Jurisdiction.</div>
-          </div>
-          
-          <div style="text-align: right; margin-bottom: 15px;">
-            <strong>Received and Verified By</strong>
-          </div>
-          
-          <div style="text-align: right; margin-bottom: 5px;">
-            <div style="margin-top: 40px;"><strong>Authorised Signatory with Seal</strong></div>
-          </div>
-          
-          <div style="font-size: 8px; text-align: center; border-top: 1px solid #000; padding-top: 5px;">
+          <div style="font-size: 10px; text-align: center; border-top: 1px solid #000; padding-top: 10px; margin-top: 20px;">
             <strong>Entered by:</strong> ${
               payment.enteredBy
             } &nbsp;&nbsp; <strong>Printed by:</strong> ${
@@ -628,7 +525,7 @@ const PaymentCollection = () => {
           <head>
             <title>Payment Receipt - ${payment.receiptNo}</title>
             <style>
-              @page { size: A5 landscape; margin: 0; }
+              @page { size: A4; margin: 0; }
               body { margin: 0; padding: 0; }
             </style>
           </head>
