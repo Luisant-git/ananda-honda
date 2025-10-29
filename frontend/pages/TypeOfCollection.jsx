@@ -90,6 +90,7 @@ const TypeOfCollection = ({ user }) => {
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Type of Collection', accessor: 'typeOfCollect' },
     { header: 'Status', accessor: 'status' },
+    { header: 'Disable Vehicle Model', accessor: 'disableVehicleModel', render: (value) => value ? 'Yes' : 'No' },
   ];
 
   return (
