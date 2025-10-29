@@ -10,6 +10,7 @@ import VehicleModel from '../pages/VehicleModel';
 import PaymentCollection from '../pages/PaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
+import Dashboard from '../pages/Dashboard';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -35,7 +36,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ChangePassword />;
       case 'dashboard':
       default:
-        return <div className="p-6"><h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1><p className="text-brand-text-secondary mt-2">Welcome to your Ananda Motowings Private Limited Dashboard.</p></div>;
+        return <Dashboard />;
     }
   };
 

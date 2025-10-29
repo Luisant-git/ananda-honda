@@ -29,4 +29,9 @@ export class PaymentCollectionController {
   remove(@Param('id') id: string) {
     return this.paymentCollectionService.remove(+id);
   }
+
+  @Get('stats/dashboard')
+  getDashboardStats() {
+    return this.paymentCollectionService.getDashboardStats();
+  }
 }

@@ -99,4 +99,86 @@ export class PaymentCollectionService {
       where: { id }
     });
   }
+
+  async getDashboardStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+
+    // Last 7 days data
+    const last7Days: { date: string; amount: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      const dayData = await this.prisma.paymentCollection.aggregate({
+        where: {
+          date: {
+            gte: date,
+            lt: nextDay
+          }
+        },
+        _sum: { recAmt: true }
+      });
+      
+      last7Days.push({
+        date: date.toISOString().split('T')[0],
+        amount: dayData._sum.recAmt || 0
+      });
+    }
+
+    // Last 12 months data
+    const last12Months: { month: string; amount: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+      
+      const monthData = await this.prisma.paymentCollection.aggregate({
+        where: {
+          date: {
+            gte: monthStart,
+            lt: monthEnd
+          }
+        },
+        _sum: { recAmt: true }
+      });
+      
+      last12Months.push({
+        month: monthStart.toLocaleString('default', { month: 'short', year: 'numeric' }),
+        amount: monthData._sum.recAmt || 0
+      });
+    }
+
+    // Last 5 years data
+    const last5Years: { year: string; amount: number }[] = [];
+    for (let i = 4; i >= 0; i--) {
+      const yearStart = new Date(today.getFullYear() - i, 0, 1);
+      const yearEnd = new Date(today.getFullYear() - i + 1, 0, 1);
+      
+      const yearData = await this.prisma.paymentCollection.aggregate({
+        where: {
+          date: {
+            gte: yearStart,
+            lt: yearEnd
+          }
+        },
+        _sum: { recAmt: true }
+      });
+      
+      last5Years.push({
+        year: yearStart.getFullYear().toString(),
+        amount: yearData._sum.recAmt || 0
+      });
+    }
+
+    return {
+      dayWise: last7Days,
+      monthWise: last12Months,
+      yearWise: last5Years
+    };
+  }
 }
