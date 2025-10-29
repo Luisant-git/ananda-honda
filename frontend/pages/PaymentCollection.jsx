@@ -8,7 +8,7 @@ import { paymentModeApi } from "../api/paymentModeApi.js";
 import { typeOfPaymentApi } from "../api/typeOfPaymentApi.js";
 import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
-import hondaLogo from "../assets/honda-logo.png";
+import hondaLogo from "../assets/honda-logo.svg";
 
 const PaymentCollection = () => {
   const [customers, setCustomers] = useState([]);
@@ -401,16 +401,18 @@ const PaymentCollection = () => {
     const amountInWords =
       numberToWords(parseInt(payment.recAmt)) + " Rupees Only.";
 
-    // Convert image to base64 for reliable printing
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
     const img = new Image();
+    img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      canvas.width = 40;
-      canvas.height = 25;
-      ctx.drawImage(img, 0, 0, 40, 25);
-      const logoDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 120;
+      canvas.height = 90;
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, 120, 90);
+      const logoDataUrl = canvas.toDataURL("image/png");
 
       const printContent = `
       <div style="width: 210mm; height: 297mm; font-family: Arial, sans-serif; font-size: 14px; padding: 20px; box-sizing: border-box;">
