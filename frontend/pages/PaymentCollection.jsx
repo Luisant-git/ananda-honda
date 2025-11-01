@@ -821,6 +821,7 @@ const PaymentCollection = () => {
               }
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               required
+              disabled
             />
           </div>
 
