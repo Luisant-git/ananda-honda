@@ -13,7 +13,8 @@ import Reports from '../pages/Reports';
 import Dashboard from '../pages/Dashboard';
 
 const DashboardLayout = ({ user, onLogout }) => {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const isEnquiry = user?.role === 'ENQUIRY';
+  const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   const renderView = () => {
