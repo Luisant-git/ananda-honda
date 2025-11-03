@@ -37,13 +37,38 @@ const Dashboard = () => {
     ];
     
     return (
-      <div className="space-y-6">
-        <div className="bg-brand-surface p-6 rounded-lg shadow-sm border border-brand-border">
-          <h3 className="text-xl font-bold text-brand-text-primary">{title}</h3>
-          <p className="text-sm text-brand-text-secondary mt-1">{period}</p>
-          <div className="mt-3 text-3xl font-bold text-brand-accent">₹{total.toLocaleString()}</div>
+      <div className="space-y-4">
+        <div className="bg-brand-surface p-4 rounded-lg shadow-md border border-brand-border">
+          <h3 className="text-lg font-bold text-brand-text-primary">{title}</h3>
+          <p className="text-sm font-semibold text-brand-text-secondary mt-1">{period}</p>
+          <div className="mt-2 text-2xl font-extrabold text-brand-accent">₹{total.toLocaleString()}</div>
         </div>
-        <DataTable columns={columns} data={tableData} />
+        <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-brand-border">
+              <thead className="bg-brand-accent">
+                <tr>
+                  {columns.map((col, index) => (
+                    <th key={index} className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                      {col.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-brand-border">
+                {tableData.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="hover:bg-brand-hover transition-colors">
+                    {columns.map((col, colIndex) => (
+                      <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-brand-text-primary">
+                        {row[col.accessor]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   };
