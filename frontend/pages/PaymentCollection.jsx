@@ -599,12 +599,14 @@ const PaymentCollection = () => {
               />
               {showDropdown && (
                 <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                  <div
-                    onClick={() => handleCustomerSelect("new")}
-                    className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
-                  >
-                    + Add New Customer
-                  </div>
+                  {JSON.parse(localStorage.getItem('user'))?.role !== 'USER' && (
+                    <div
+                      onClick={() => handleCustomerSelect("new")}
+                      className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
+                    >
+                      + Add New Customer
+                    </div>
+                  )}
                   {filteredCustomers.map((customer) => (
                     <div
                       key={customer.id}
