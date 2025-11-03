@@ -119,6 +119,31 @@ const CustomerDetails = ({ user }) => {
     setIsModalOpen(true);
   };
 
+  const downloadXML = () => {
+    try {
+      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<customers>\n';
+      filteredCustomers.forEach(customer => {
+        xmlContent += '  <customer>\n';
+        columns.forEach(col => {
+          const value = customer[col.accessor] || '';
+          xmlContent += `    <${col.accessor}>${value}</${col.accessor}>\n`;
+        });
+        xmlContent += '  </customer>\n';
+      });
+      xmlContent += '</customers>';
+      const blob = new Blob([xmlContent], { type: 'application/xml' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `customers_${new Date().toISOString().split('T')[0]}.xml`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('XML file downloaded successfully!');
+    } catch (error) {
+      toast.error('Error downloading XML file');
+    }
+  };
+
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'CustId', accessor: 'custId' },
@@ -130,7 +155,14 @@ const CustomerDetails = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-text-primary">Customer Details</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-brand-text-primary">Customer Details</h1>
+        <button 
+          onClick={downloadXML}
+          className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg">
+          XML
+        </button>
+      </div>
       
       <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">

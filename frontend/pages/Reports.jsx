@@ -104,6 +104,31 @@ const Reports = () => {
     }
   };
 
+  const downloadXML = () => {
+    try {
+      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<reports>\n';
+      filteredData.forEach(row => {
+        xmlContent += '  <report>\n';
+        columns.forEach(col => {
+          const value = row[col.accessor] || '';
+          xmlContent += `    <${col.accessor}>${value}</${col.accessor}>\n`;
+        });
+        xmlContent += '  </report>\n';
+      });
+      xmlContent += '</reports>';
+      const blob = new Blob([xmlContent], { type: 'application/xml' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_${new Date().toISOString().split('T')[0]}.xml`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('XML file downloaded successfully!');
+    } catch (error) {
+      toast.error('Error downloading XML file');
+    }
+  };
+
   const columns = [
     { header: "SNo", accessor: "sNo" },
     {
@@ -176,6 +201,11 @@ const Reports = () => {
               onClick={downloadCSV}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
               CSV
+            </button>
+            <button 
+              onClick={downloadXML}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg">
+              XML
             </button>
           </div>
         </div>
