@@ -10,6 +10,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isEnquiry = currentUser?.role === 'ENQUIRY';
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -70,7 +71,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <ul className="space-y-2">
-            <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>
+            {!isEnquiry && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
             
             {isSuperAdmin && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
@@ -82,15 +83,25 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
               </NavGroup>
             )}
 
-            <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>
+            {isEnquiry && (
+              <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
+                <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
+              </NavGroup>
+            )}
 
-            <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
-                <li><NavLink view="reports" label="Reports" isSubmenu /></li>
-            </NavGroup>
+            {!isEnquiry && <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>}
 
-            <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
-               <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>
-            </NavGroup>
+            {!isEnquiry && (
+              <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
+                  <li><NavLink view="reports" label="Reports" isSubmenu /></li>
+              </NavGroup>
+            )}
+
+            {!isEnquiry && (
+              <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
+                 <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>
+              </NavGroup>
+            )}
           </ul>
         </nav>
       </aside>

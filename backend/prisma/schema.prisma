@@ -95,4 +95,5 @@ model User {
 enum Role {
   SUPER_ADMIN
   USER
+  ENQUIRY
 }
