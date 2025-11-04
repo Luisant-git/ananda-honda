@@ -131,13 +131,13 @@ const Reports = () => {
       
       filteredData.forEach(row => {
         xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
-        xmlContent += '<VOUCHER VCHTYPE="RECEIPT (VEHICLE)" ACTION="Create">\n';
+        xmlContent += `<VOUCHER VCHTYPE="RECEIPT ($${row.typeOfCollection})" ACTION="Create">\n`;
         xmlContent += `<DATE>${formatDate(row.date)}</DATE>\n`;
-        xmlContent += '<VOUCHERTYPENAME>RECEIPT (VEHICLE)</VOUCHERTYPENAME>\n';
+        xmlContent += `<VOUCHERTYPENAME>RECEIPT (${row.typeOfCollection})</VOUCHERTYPENAME>\n`;
         xmlContent += `<VOUCHERNUMBER>${row.receiptNo}</VOUCHERNUMBER>\n`;
-        xmlContent += `<REFERENCE>${row.refNo || row.receiptNo}</REFERENCE>\n`;
+        xmlContent += `<REFERENCE>${row.refNo || 'N/A'}</REFERENCE>\n`;
         xmlContent += `<EFFECTIVEDATE>${formatDate(row.date)}</EFFECTIVEDATE>\n`;
-        xmlContent += `<NARRATION>${row.remarks || row.receiptNo}</NARRATION>\n`;
+        xmlContent += `<NARRATION>${row.remarks || 'N/A'}</NARRATION>\n`;
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
         xmlContent += `<LEDGERNAME>${row.custId} ${row.name}</LEDGERNAME>\n`;
         // xmlContent += '<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n';
