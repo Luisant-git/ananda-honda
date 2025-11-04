@@ -161,7 +161,7 @@ const Reports = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tally_import_${new Date().toISOString().split('T')[0]}.xml`;
+      a.download = `tally_transaction_${new Date().toISOString().split('T')[0]}.xml`;
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success('Tally XML file downloaded successfully!');
