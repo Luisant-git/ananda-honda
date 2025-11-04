@@ -144,7 +144,7 @@ const Reports = () => {
         xmlContent += `<AMOUNT>${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
-        xmlContent += `<LEDGERNAME>${row.paymentMode}</LEDGERNAME>\n`;
+        xmlContent += `<LEDGERNAME>${row.typeOfPayment}</LEDGERNAME>\n`;
         // xmlContent += '<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n';
         xmlContent += `<AMOUNT>-${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';

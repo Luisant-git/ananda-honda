@@ -147,7 +147,7 @@ const CustomerDetails = ({ user }) => {
         xmlContent += '</ADDRESS.LIST>\n';
         xmlContent += `<ADDITIONALNAME>${customer.custId} ${customer.name}</ADDITIONALNAME>\n`;
         // xmlContent += '<ISINTERESTON>No</ISINTERESTON>\n';
-        xmlContent += `<PARENT>${customer.status || 'N/A'}</PARENT>\n`;
+        xmlContent += `<PARENT>Sundry Debtors</PARENT>\n`;
         // xmlContent += '<VATTINNUMBER/>\n';
         // xmlContent += '<PARTYGSTIN/>\n';
         // xmlContent += '<PINCODE/>\n';
