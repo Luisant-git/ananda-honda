@@ -106,24 +106,65 @@ const Reports = () => {
 
   const downloadXML = () => {
     try {
-      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<reports>\n';
+      const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}${month}${day}`;
+      };
+
+      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xmlContent += '<ENVELOPE>\n';
+      xmlContent += '<HEADER>\n';
+      xmlContent += '<TALLYREQUEST>Import Data</TALLYREQUEST>\n';
+      xmlContent += '</HEADER>\n';
+      xmlContent += '<BODY>\n';
+      xmlContent += '<IMPORTDATA>\n';
+      xmlContent += '<REQUESTDESC>\n';
+      xmlContent += '<REPORTNAME>All Masters</REPORTNAME>\n';
+      xmlContent += '<STATICVARIABLES>\n';
+      xmlContent += '<SVCURRENTCOMPANY>DEMO COMPANY</SVCURRENTCOMPANY>\n';
+      xmlContent += '</STATICVARIABLES>\n';
+      xmlContent += '</REQUESTDESC>\n';
+      xmlContent += '<REQUESTDATA>\n';
+      
       filteredData.forEach(row => {
-        xmlContent += '  <report>\n';
-        columns.forEach(col => {
-          const value = row[col.accessor] || '';
-          xmlContent += `    <${col.accessor}>${value}</${col.accessor}>\n`;
-        });
-        xmlContent += '  </report>\n';
+        xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
+        xmlContent += '<VOUCHER VCHTYPE="RECEIPT (VEHICLE)" ACTION="Create">\n';
+        xmlContent += `<DATE>${formatDate(row.date)}</DATE>\n`;
+        xmlContent += '<VOUCHERTYPENAME>RECEIPT (VEHICLE)</VOUCHERTYPENAME>\n';
+        xmlContent += `<VOUCHERNUMBER>${row.receiptNo}</VOUCHERNUMBER>\n`;
+        xmlContent += `<REFERENCE>${row.refNo || row.receiptNo}</REFERENCE>\n`;
+        xmlContent += `<EFFECTIVEDATE>${formatDate(row.date)}</EFFECTIVEDATE>\n`;
+        xmlContent += `<NARRATION>${row.remarks || row.receiptNo}</NARRATION>\n`;
+        xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
+        xmlContent += `<LEDGERNAME>${row.custId} ${row.name}</LEDGERNAME>\n`;
+        // xmlContent += '<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n';
+        xmlContent += `<AMOUNT>${row.recAmt}</AMOUNT>\n`;
+        xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
+        xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
+        xmlContent += `<LEDGERNAME>${row.paymentMode}</LEDGERNAME>\n`;
+        // xmlContent += '<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n';
+        xmlContent += `<AMOUNT>-${row.recAmt}</AMOUNT>\n`;
+        xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
+        xmlContent += '</VOUCHER>\n';
+        xmlContent += '</TALLYMESSAGE>\n';
       });
-      xmlContent += '</reports>';
+      
+      xmlContent += '</REQUESTDATA>\n';
+      xmlContent += '</IMPORTDATA>\n';
+      xmlContent += '</BODY>\n';
+      xmlContent += '</ENVELOPE>';
+      
       const blob = new Blob([xmlContent], { type: 'application/xml' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${new Date().toISOString().split('T')[0]}.xml`;
+      a.download = `tally_import_${new Date().toISOString().split('T')[0]}.xml`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('XML file downloaded successfully!');
+      toast.success('Tally XML file downloaded successfully!');
     } catch (error) {
       toast.error('Error downloading XML file');
     }

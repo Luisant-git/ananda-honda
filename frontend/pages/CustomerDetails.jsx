@@ -121,24 +121,53 @@ const CustomerDetails = ({ user }) => {
 
   const downloadXML = () => {
     try {
-      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<customers>\n';
+      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xmlContent += '<ENVELOPE>\n';
+      xmlContent += '<HEADER>\n';
+      xmlContent += '<TALLYREQUEST>Import Data</TALLYREQUEST>\n';
+      xmlContent += '</HEADER>\n';
+      xmlContent += '<BODY>\n';
+      xmlContent += '<IMPORTDATA>\n';
+      xmlContent += '<REQUESTDESC>\n';
+      xmlContent += '<REPORTNAME>All Masters</REPORTNAME>\n';
+      xmlContent += '<STATICVARIABLES>\n';
+      xmlContent += '<SVCURRENTCOMPANY>DEMO COMPANY</SVCURRENTCOMPANY>\n';
+      xmlContent += '</STATICVARIABLES>\n';
+      xmlContent += '</REQUESTDESC>\n';
+      xmlContent += '<REQUESTDATA>\n';
+      
       filteredCustomers.forEach(customer => {
-        xmlContent += '  <customer>\n';
-        columns.forEach(col => {
-          const value = customer[col.accessor] || '';
-          xmlContent += `    <${col.accessor}>${value}</${col.accessor}>\n`;
-        });
-        xmlContent += '  </customer>\n';
+        xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
+        xmlContent += `<LEDGER NAME="${customer.custId} ${customer.name}" RESERVEDNAME="">\n`;
+        xmlContent += '<NAME.LIST>\n';
+        xmlContent += `<NAME>${customer.custId} ${customer.name}</NAME>\n`;
+        xmlContent += '</NAME.LIST>\n';
+        xmlContent += '<ADDRESS.LIST>\n';
+        xmlContent += `<ADDRESS>${customer.address || 'N/A'}</ADDRESS>\n`;
+        xmlContent += '</ADDRESS.LIST>\n';
+        xmlContent += `<ADDITIONALNAME>${customer.custId} ${customer.name}</ADDITIONALNAME>\n`;
+        // xmlContent += '<ISINTERESTON>No</ISINTERESTON>\n';
+        xmlContent += `<PARENT>${customer.status || 'N/A'}</PARENT>\n`;
+        // xmlContent += '<VATTINNUMBER/>\n';
+        // xmlContent += '<PARTYGSTIN/>\n';
+        // xmlContent += '<PINCODE/>\n';
+        xmlContent += '</LEDGER>\n';
+        xmlContent += '</TALLYMESSAGE>\n';
       });
-      xmlContent += '</customers>';
+      
+      xmlContent += '</REQUESTDATA>\n';
+      xmlContent += '</IMPORTDATA>\n';
+      xmlContent += '</BODY>\n';
+      xmlContent += '</ENVELOPE>';
+      
       const blob = new Blob([xmlContent], { type: 'application/xml' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `customers_${new Date().toISOString().split('T')[0]}.xml`;
+      a.download = `tally_customers_${new Date().toISOString().split('T')[0]}.xml`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('XML file downloaded successfully!');
+      toast.success('Tally XML file downloaded successfully!');
     } catch (error) {
       toast.error('Error downloading XML file');
     }
