@@ -131,9 +131,9 @@ const Reports = () => {
       
       filteredData.forEach(row => {
         xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
-        xmlContent += `<VOUCHER VCHTYPE="RECEIPT ($${row.typeOfCollection})" ACTION="Create">\n`;
+        xmlContent += `<VOUCHER VCHTYPE="RECEIPT (VEHICLE)" ACTION="Create">\n`;
         xmlContent += `<DATE>${formatDate(row.date)}</DATE>\n`;
-        xmlContent += `<VOUCHERTYPENAME>RECEIPT (${row.typeOfCollection})</VOUCHERTYPENAME>\n`;
+        xmlContent += `<VOUCHERTYPENAME>RECEIPT (VEHICLE)</VOUCHERTYPENAME>\n`;
         xmlContent += `<VOUCHERNUMBER>${row.receiptNo}</VOUCHERNUMBER>\n`;
         xmlContent += `<REFERENCE>${row.refNo || 'N/A'}</REFERENCE>\n`;
         xmlContent += `<EFFECTIVEDATE>${formatDate(row.date)}</EFFECTIVEDATE>\n`;
