@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { EmailIcon, LockIcon } from '../components/icons/Icons';
 import { authApi } from '../api/authApi.js';
 
-const Login = ({ onLogin, onShowRegister }) => {
+const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -12,7 +12,6 @@ const Login = ({ onLogin, onShowRegister }) => {
     setIsLoading(true);
     try {
       const user = await authApi.login({ username: formData.username, password: formData.password });
-      localStorage.setItem('user', JSON.stringify(user));
       toast.success('Login successful!');
       onLogin(user);
     } catch (error) {
@@ -67,18 +66,7 @@ const Login = ({ onLogin, onShowRegister }) => {
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </div>
-            <div className="text-center space-y-2">
-              <a href="#" className="block text-sm text-brand-accent hover:underline">
-                I forgot my password
-              </a>
-              <button 
-                type="button"
-                onClick={onShowRegister}
-                className="block text-sm text-brand-accent hover:underline mx-auto"
-              >
-                Create new account
-              </button>
-            </div>
+
           </form>
         </div>
       </div>

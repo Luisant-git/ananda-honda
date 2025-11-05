@@ -11,6 +11,7 @@ import PaymentCollection from '../pages/PaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
 import Dashboard from '../pages/Dashboard';
+import UserManagement from '../pages/UserManagement';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
@@ -30,11 +31,13 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'vehicle_model':
         return <VehicleModel user={user} />;
       case 'payment_collection':
-        return <PaymentCollection />;
+        return <PaymentCollection user={user} />;
       case 'reports':
         return <Reports />;
       case 'change_password':
         return <ChangePassword />;
+      case 'user_management':
+        return <UserManagement />;
       case 'dashboard':
       default:
         return <Dashboard />;
@@ -48,6 +51,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         setCurrentView={setCurrentView}
         isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        user={user}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header user={user} onLogout={onLogout} toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />

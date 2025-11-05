@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { DashboardIcon, MasterIcon, PaymentIcon, ReportIcon, SettingsIcon, ChevronDownIcon, CloseIcon } from './icons/Icons';
 
-const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen }) => {
+const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, user }) => {
   const [openMenus, setOpenMenus] = useState({
     master: true,
     settings: false,
     reports: false,
   });
 
-  const currentUser = JSON.parse(localStorage.getItem('user'));
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-  const isEnquiry = currentUser?.role === 'ENQUIRY';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isEnquiry = user?.role === 'ENQUIRY';
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -100,6 +99,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen })
             {!isEnquiry && (
               <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
                  <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>
+                 {isSuperAdmin && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
               </NavGroup>
             )}
           </ul>

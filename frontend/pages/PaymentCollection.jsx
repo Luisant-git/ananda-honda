@@ -11,7 +11,7 @@ import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import hondaLogo from "../assets/honda-logo.svg";
 
-const PaymentCollection = () => {
+const PaymentCollection = ({ user }) => {
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
@@ -203,7 +203,7 @@ const PaymentCollection = () => {
         vehicleModelId: formData.vehicleModelId
           ? parseInt(formData.vehicleModelId)
           : undefined,
-        enteredBy: JSON.parse(localStorage.getItem("user"))?.id,
+        enteredBy: user?.id,
         refNo: formData.refNo,
         remarks: formData.remarks,
       };
@@ -385,7 +385,7 @@ const PaymentCollection = () => {
   };
 
   const handlePrint = (payment) => {
-    const currentUser = JSON.parse(localStorage.getItem("user"));
+    const currentUser = user;
     const printDate = new Date();
     const formattedDate = `${printDate
       .getDate()
@@ -599,7 +599,7 @@ const PaymentCollection = () => {
               />
               {showDropdown && (
                 <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                  {JSON.parse(localStorage.getItem('user'))?.role !== 'USER' && (
+                  {user?.role !== 'USER' && (
                     <div
                       onClick={() => handleCustomerSelect("new")}
                       className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"

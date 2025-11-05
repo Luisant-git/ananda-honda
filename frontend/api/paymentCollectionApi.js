@@ -4,7 +4,7 @@ const API_URL = `${config.API_BASE_URL}/payment-collections`;
 
 export const paymentCollectionApi = {
   getAll: async () => {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, { credentials: 'include' });
     return response.json();
   },
 
@@ -12,13 +12,14 @@ export const paymentCollectionApi = {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data)
     });
     return response.json();
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_URL}/${id}`);
+    const response = await fetch(`${API_URL}/${id}`, { credentials: 'include' });
     return response.json();
   },
 
@@ -26,6 +27,7 @@ export const paymentCollectionApi = {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data)
     });
     return response.json();
@@ -33,7 +35,8 @@ export const paymentCollectionApi = {
 
   delete: async (id) => {
     const response = await fetch(`${API_URL}/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'include'
     });
     return response.json();
   }

@@ -4,13 +4,13 @@ const API_URL = `${config.API_BASE_URL}/vehicle-models`;
 
 export const vehicleModelApi = {
   getAll: async () => {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch vehicle models');
     return response.json();
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_URL}/${id}`);
+    const response = await fetch(`${API_URL}/${id}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch vehicle model');
     return response.json();
   },
@@ -19,6 +19,7 @@ export const vehicleModelApi = {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error('Failed to create vehicle model');
@@ -29,6 +30,7 @@ export const vehicleModelApi = {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error('Failed to update vehicle model');
@@ -38,6 +40,7 @@ export const vehicleModelApi = {
   delete: async (id) => {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
+      credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to delete vehicle model');
     return response.json();

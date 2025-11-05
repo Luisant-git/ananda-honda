@@ -11,7 +11,7 @@ export class CustomerService {
     });
     
     const nextId = lastCustomer ? lastCustomer.id + 1 : 1;
-    const custId = `Cust${nextId.toString().padStart(3, '0')}`;
+    const custId = `CUST${nextId.toString().padStart(3, '0')}`;
 
     return this.prisma.customer.create({
       data: {

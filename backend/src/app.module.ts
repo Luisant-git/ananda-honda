@@ -8,9 +8,10 @@ import { TypeOfCollectionModule } from './type-of-collection/type-of-collection.
 import { PaymentCollectionModule } from './payment-collection/payment-collection.module';
 import { AuthModule } from './auth/auth.module';
 import { VehicleModelModule } from './vehicle-model/vehicle-model.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, AuthModule, VehicleModelModule],
+  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, AuthModule, VehicleModelModule, UserModule],
   controllers: [AppController],
   providers: [AppService],
 })
