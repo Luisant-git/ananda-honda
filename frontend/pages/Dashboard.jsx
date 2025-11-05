@@ -31,6 +31,22 @@ const Dashboard = () => {
     }
   };
 
+  const handleReset = async () => {
+    setFromDate(today);
+    setToDate(today);
+    setSearchTerm('');
+    setLoading(true);
+    try {
+      const data = await dashboardApi.getDashboardStats(today, today);
+      setChartData(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Error fetching dashboard data');
+      setLoading(false);
+    }
+  };
+
   const downloadXML = () => {
     try {
       const total = (chartData.modes || []).reduce((sum, m) => sum + m.amount, 0);
@@ -182,6 +198,12 @@ const Dashboard = () => {
               className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Load'}
+            </button>
+            <button
+              onClick={handleReset}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              Reset
             </button>
           </div>
         </div>
