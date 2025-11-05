@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { customerApi } from '../api/customerApi.js';
+import SearchableDropdown from '../components/SearchableDropdown.jsx';
 
 const CustomerDetails = ({ user }) => {
   const [customers, setCustomers] = useState([]);
@@ -46,8 +47,14 @@ const CustomerDetails = ({ user }) => {
         const fromDate = filters.fromDate ? new Date(filters.fromDate) : null;
         const toDate = filters.toDate ? new Date(filters.toDate) : null;
         
-        if (fromDate && customerDate < fromDate) return false;
-        if (toDate && customerDate > toDate) return false;
+        if (fromDate) {
+          fromDate.setHours(0, 0, 0, 0);
+          if (customerDate < fromDate) return false;
+        }
+        if (toDate) {
+          toDate.setHours(23, 59, 59, 999);
+          if (customerDate > toDate) return false;
+        }
         return true;
       });
     }
@@ -195,16 +202,12 @@ const CustomerDetails = ({ user }) => {
       
       <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          <div className="flex flex-col">
-            <label className="text-sm font-medium text-brand-text-secondary mb-1">Select Customer</label>
-            <select 
-              value={filters.selectedCustomer}
-              onChange={(e) => setFilters({...filters, selectedCustomer: e.target.value})}
-              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent">
-              <option value="">Select</option>
-              {customers.map(c => <option key={c.custId} value={c.custId}>{c.name}</option>)}
-            </select>
-          </div>
+          <SearchableDropdown
+            label="Select Customer"
+            value={filters.selectedCustomer}
+            onChange={(value) => setFilters({...filters, selectedCustomer: value})}
+            options={customers.map(c => ({ value: c.custId, label: `${c.name} - ${c.contactNo}` }))}
+          />
           <div className="flex flex-col">
             <label className="text-sm font-medium text-brand-text-secondary mb-1">From:</label>
             <input 
@@ -229,11 +232,13 @@ const CustomerDetails = ({ user }) => {
               onClick={handleLoadAll}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Load All</button>
           </div>
-          <button 
-            onClick={handleAddNew}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg md:col-start-auto lg:col-start-5">
-              Add Customer
-          </button>
+          {user?.role !== 'ACCOUNT' && (
+            <button 
+              onClick={handleAddNew}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg md:col-start-auto lg:col-start-5">
+                Add Customer
+            </button>
+          )}
         </div>
       </div>
       
@@ -245,6 +250,8 @@ const CustomerDetails = ({ user }) => {
             <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(customer)} className="text-red-600 hover:underline">Delete</button>
           </div>
+        ) : user?.role === 'ACCOUNT' ? (customer) => (
+          <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
         ) : null}
       />
 

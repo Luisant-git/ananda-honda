@@ -6,7 +6,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() registerDto: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' }, @Session() session: Record<string, any>) {
+  async register(@Body() registerDto: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' | 'ENQUIRY' | 'ACCOUNT' }, @Session() session: Record<string, any>) {
     try {
       const user = await this.authService.register(registerDto);
       session.user = user;

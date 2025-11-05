@@ -3,35 +3,43 @@ import toast from 'react-hot-toast';
 import { dashboardApi } from '../api/dashboardApi';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('day');
-  const [chartData, setChartData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const today = new Date().toISOString().split('T')[0];
+  const [chartData, setChartData] = useState({ modes: [] });
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
+    if (!fromDate || !toDate) {
+      toast.error('Please select both from and to dates');
+      return;
+    }
+    setLoading(true);
     try {
-      const data = await dashboardApi.getDashboardStats();
+      const data = await dashboardApi.getDashboardStats(fromDate, toDate);
       setChartData(data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast.error('Error fetching dashboard data');
       setLoading(false);
     }
   };
 
   const downloadXML = () => {
     try {
-      const total = (currentData.modes || []).reduce((sum, m) => sum + m.amount, 0);
+      const total = (chartData.modes || []).reduce((sum, m) => sum + m.amount, 0);
       let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<dashboard>\n';
-      xmlContent += `  <period>${currentData.title}</period>\n`;
-      xmlContent += `  <date>${currentData.period}</date>\n`;
+      xmlContent += `  <fromDate>${fromDate}</fromDate>\n`;
+      xmlContent += `  <toDate>${toDate}</toDate>\n`;
       xmlContent += `  <totalCollection>${total}</totalCollection>\n`;
       xmlContent += '  <paymentModes>\n';
-      (currentData.modes || []).forEach((mode, index) => {
+      (chartData.modes || []).forEach((mode, index) => {
         xmlContent += '    <paymentMode>\n';
         xmlContent += `      <sNo>${index + 1}</sNo>\n`;
         xmlContent += `      <mode>${mode.mode}</mode>\n`;
@@ -44,7 +52,7 @@ const Dashboard = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `dashboard_${activeTab}_${new Date().toISOString().split('T')[0]}.xml`;
+      a.download = `dashboard_${fromDate}_to_${toDate}.xml`;
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success('XML file downloaded successfully!');
@@ -83,7 +91,7 @@ const Dashboard = () => {
 
 
 
-  const renderTable = (title, period, modes) => {
+  const renderTable = (modes) => {
     const tableData = (modes || [])
       .filter(mode => mode.mode.toLowerCase().includes(searchTerm.toLowerCase()))
       .map((mode, index) => ({
@@ -97,8 +105,8 @@ const Dashboard = () => {
         <div className="bg-brand-accent p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-white">{title}</h3>
-              <p className="text-white text-sm mt-1 opacity-90">{period}</p>
+              <h3 className="text-lg font-bold text-white">Payment Collection Report</h3>
+              <p className="text-white text-sm mt-1 opacity-90">{fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'Select date range'}</p>
             </div>
             <div className="flex gap-2 items-center">
               <input
@@ -141,68 +149,46 @@ const Dashboard = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="bg-brand-surface border border-brand-border rounded-lg h-24 animate-pulse"></div>
-          ))}
-        </div>
-        <div className="bg-brand-surface border border-brand-border rounded-lg h-64 animate-pulse"></div>
-      </div>
-    );
-  }
 
-  const getCurrentData = () => {
-    if (activeTab === 'day') return { title: "Today's Collection", period: new Date(chartData.day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }), modes: chartData.day.modes };
-    if (activeTab === 'week') return { title: "This Week's Collection", period: chartData.week.period, modes: chartData.week.modes };
-    return { title: "This Month's Collection", period: chartData.month.period, modes: chartData.month.modes };
-  };
-
-  const currentData = getCurrentData();
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1>
-        <div className="flex gap-2 bg-brand-surface rounded-lg border border-brand-border p-1">
-          <button
-            onClick={() => setActiveTab('day')}
-            className={`px-4 py-2 rounded-md font-bold transition-all ${
-              activeTab === 'day'
-                ? 'bg-brand-accent text-white'
-                : 'text-brand-text-secondary hover:bg-brand-hover'
-            }`}
-          >
-            Day
-          </button>
-          <button
-            onClick={() => setActiveTab('week')}
-            className={`px-4 py-2 rounded-md font-bold transition-all ${
-              activeTab === 'week'
-                ? 'bg-brand-accent text-white'
-                : 'text-brand-text-secondary hover:bg-brand-hover'
-            }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => setActiveTab('month')}
-            className={`px-4 py-2 rounded-md font-bold transition-all ${
-              activeTab === 'month'
-                ? 'bg-brand-accent text-white'
-                : 'text-brand-text-secondary hover:bg-brand-hover'
-            }`}
-          >
-            Month
-          </button>
+      <h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1>
+      
+      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-brand-text-secondary mb-1">From:</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-brand-text-secondary mb-1">To:</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={fetchDashboardData}
+              disabled={loading}
+              className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              {loading ? 'Loading...' : 'Load'}
+            </button>
+          </div>
         </div>
       </div>
       
-      {renderSummaryCards(currentData.modes)}
-      {renderTable(currentData.title, currentData.period, currentData.modes)}
+      {renderSummaryCards(chartData.modes)}
+      {renderTable(chartData.modes)}
     </div>
   );
 };

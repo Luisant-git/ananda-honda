@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PaymentCollectionService } from './payment-collection.service';
 
 @Controller('payment-collections')
@@ -31,7 +31,7 @@ export class PaymentCollectionController {
   }
 
   @Get('stats/dashboard')
-  getDashboardStats() {
-    return this.paymentCollectionService.getDashboardStats();
+  getDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.paymentCollectionService.getDashboardStats(fromDate, toDate);
   }
 }

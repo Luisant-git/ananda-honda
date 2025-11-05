@@ -133,6 +133,7 @@ const UserManagement = () => {
               <option value="USER">User</option>
               <option value="SUPER_ADMIN">Super Admin</option>
               <option value="ENQUIRY">Enquiry</option>
+              <option value="ACCOUNT">Account</option>
             </select>
           </div>
           <div className="flex justify-end gap-4 pt-4">

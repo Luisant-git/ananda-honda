@@ -11,7 +11,7 @@ export class UserController {
   }
 
   @Post()
-  async create(@Body() createUserDto: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' | 'ENQUIRY' }) {
+  async create(@Body() createUserDto: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' | 'ENQUIRY' | 'ACCOUNT' }) {
     try {
       return await this.userService.create(createUserDto);
     } catch (error) {

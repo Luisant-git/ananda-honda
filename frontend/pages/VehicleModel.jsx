@@ -4,7 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { vehicleModelApi } from '../api/vehicleModelApi.js';
 
-const VehicleModel = () => {
+const VehicleModel = ({ user }) => {
   const [vehicleModels, setVehicleModels] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -104,12 +104,14 @@ const VehicleModel = () => {
       <DataTable 
         columns={columns} 
         data={vehicleModels} 
-        actionButtons={(model) => (
+        actionButtons={user?.role === 'SUPER_ADMIN' ? (model) => (
           <div className="flex gap-2">
             <button onClick={() => handleEdit(model)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(model)} className="text-red-600 hover:underline">Delete</button>
           </div>
-        )}
+        ) : user?.role === 'ACCOUNT' ? (model) => (
+          <button onClick={() => handleEdit(model)} className="text-blue-600 hover:underline">Edit</button>
+        ) : null}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Vehicle Model" : "Add Vehicle Model"}>

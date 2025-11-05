@@ -97,4 +97,5 @@ enum Role {
   SUPER_ADMIN
   USER
   ENQUIRY
+  ACCOUNT
 }

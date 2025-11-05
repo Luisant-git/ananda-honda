@@ -108,6 +108,8 @@ const PaymentMode = ({ user }) => {
             <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
             <button onClick={() => handleDelete(mode)} className="text-red-600 hover:underline">Delete</button>
           </div>
+        ) : user?.role === 'ACCOUNT' ? (mode) => (
+          <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
         ) : null}
       />
       

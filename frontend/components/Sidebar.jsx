@@ -10,6 +10,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isEnquiry = user?.role === 'ENQUIRY';
+  const isAccount = user?.role === 'ACCOUNT';
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -72,7 +73,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
           <ul className="space-y-2">
             {!isEnquiry && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
             
-            {isSuperAdmin && (
+            {(isSuperAdmin || isAccount) && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
                 <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
@@ -88,7 +89,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
               </NavGroup>
             )}
 
-            {!isEnquiry && <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>}
+            {!isEnquiry && !isAccount && <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>}
 
             {!isEnquiry && (
               <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>

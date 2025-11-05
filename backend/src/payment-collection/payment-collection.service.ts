@@ -100,62 +100,27 @@ export class PaymentCollectionService {
     });
   }
 
-  async getDashboardStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  async getDashboardStats(fromDate: string, toDate: string) {
+    const startDate = new Date(fromDate);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(toDate);
+    endDate.setHours(23, 59, 59, 999);
 
     const paymentModes = await this.prisma.paymentMode.findMany();
 
-    // Current day
-    const dayModes = await Promise.all(
+    const modes = await Promise.all(
       paymentModes.map(async (mode) => {
         const data = await this.prisma.paymentCollection.aggregate({
-          where: { date: { gte: today, lt: tomorrow }, paymentModeId: mode.id },
+          where: { 
+            date: { gte: startDate, lte: endDate }, 
+            paymentModeId: mode.id 
+          },
           _sum: { recAmt: true }
         });
         return { mode: mode.paymentMode, amount: data._sum.recAmt || 0 };
       })
     );
 
-    // Current week (Sunday to Saturday)
-    const dayOfWeek = today.getDay();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - dayOfWeek);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    const weekModes = await Promise.all(
-      paymentModes.map(async (mode) => {
-        const data = await this.prisma.paymentCollection.aggregate({
-          where: { date: { gte: weekStart, lte: weekEnd }, paymentModeId: mode.id },
-          _sum: { recAmt: true }
-        });
-        return { mode: mode.paymentMode, amount: data._sum.recAmt || 0 };
-      })
-    );
-
-    // Current month (1st to end of month)
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    monthEnd.setHours(23, 59, 59, 999);
-
-    const monthModes = await Promise.all(
-      paymentModes.map(async (mode) => {
-        const data = await this.prisma.paymentCollection.aggregate({
-          where: { date: { gte: monthStart, lte: monthEnd }, paymentModeId: mode.id },
-          _sum: { recAmt: true }
-        });
-        return { mode: mode.paymentMode, amount: data._sum.recAmt || 0 };
-      })
-    );
-
-    return {
-      day: { date: today.toISOString().split('T')[0], modes: dayModes },
-      week: { period: `${weekStart.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`, modes: weekModes },
-      month: { period: monthStart.toLocaleString('default', { month: 'long', year: 'numeric' }), modes: monthModes }
-    };
+    return { modes };
   }
 }
