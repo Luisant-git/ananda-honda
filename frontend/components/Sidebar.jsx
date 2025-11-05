@@ -11,6 +11,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isEnquiry = user?.role === 'ENQUIRY';
   const isAccount = user?.role === 'ACCOUNT';
+  const isDeveloper = user?.role === 'DEVELOPER';
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -73,7 +74,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
           <ul className="space-y-2">
             {!isEnquiry && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
             
-            {(isSuperAdmin || isAccount) && (
+            {(isSuperAdmin || isAccount || isDeveloper) && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
                 <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
@@ -100,7 +101,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
             {!isEnquiry && (
               <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
                  <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>
-                 {isSuperAdmin && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
+                 {isDeveloper && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
               </NavGroup>
             )}
           </ul>

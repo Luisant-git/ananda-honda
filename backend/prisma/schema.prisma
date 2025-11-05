@@ -98,4 +98,5 @@ enum Role {
   USER
   ENQUIRY
   ACCOUNT
+  DEVELOPER
 }
