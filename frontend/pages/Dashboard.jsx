@@ -61,10 +61,10 @@ const Dashboard = () => {
     }
   };
 
-  const renderSummaryCards = (modes) => {
+  const renderSummaryCards = (modes, totalCount) => {
     const total = (modes || []).reduce((sum, m) => sum + m.amount, 0);
     const count = (modes || []).filter(m => m.amount > 0).length;
-    const avg = count > 0 ? total / count : 0;
+    const avg = totalCount > 0 ? total / totalCount : 0;
     const highest = Math.max(...(modes || []).map(m => m.amount), 0);
 
     return (
@@ -74,8 +74,8 @@ const Dashboard = () => {
           <h3 className="text-2xl font-bold text-brand-accent">₹{total.toLocaleString()}</h3>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-sm font-medium text-brand-text-secondary mb-2">Payment Modes</p>
-          <h3 className="text-2xl font-bold text-brand-accent">{count}</h3>
+          <p className="text-sm font-medium text-brand-text-secondary mb-2">Payment Collection Count</p>
+          <h3 className="text-2xl font-bold text-brand-accent">{totalCount || 0}</h3>
         </div>
         <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
           <p className="text-sm font-medium text-brand-text-secondary mb-2">Average Amount</p>
@@ -187,7 +187,7 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {renderSummaryCards(chartData.modes)}
+      {renderSummaryCards(chartData.modes, chartData.totalCount)}
       {renderTable(chartData.modes)}
     </div>
   );

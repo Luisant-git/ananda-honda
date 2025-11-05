@@ -115,12 +115,17 @@ export class PaymentCollectionService {
             date: { gte: startDate, lte: endDate }, 
             paymentModeId: mode.id 
           },
-          _sum: { recAmt: true }
+          _sum: { recAmt: true },
+          _count: true
         });
-        return { mode: mode.paymentMode, amount: data._sum.recAmt || 0 };
+        return { mode: mode.paymentMode, amount: data._sum.recAmt || 0, count: data._count };
       })
     );
 
-    return { modes };
+    const totalCount = await this.prisma.paymentCollection.count({
+      where: { date: { gte: startDate, lte: endDate } }
+    });
+
+    return { modes, totalCount };
   }
 }
