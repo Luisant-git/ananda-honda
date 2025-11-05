@@ -4,6 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { customerApi } from '../api/customerApi.js';
 import SearchableDropdown from '../components/SearchableDropdown.jsx';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const CustomerDetails = ({ user }) => {
   const [customers, setCustomers] = useState([]);
@@ -15,10 +16,21 @@ const CustomerDetails = ({ user }) => {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [formData, setFormData] = useState({ name: '', contactNo: '', address: '', status: 'Walk in Customer' });
   const [filters, setFilters] = useState({ selectedCustomer: '', fromDate: '', toDate: '' });
+  const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
     fetchCustomers();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -232,7 +244,7 @@ const CustomerDetails = ({ user }) => {
               onClick={handleLoadAll}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Load All</button>
           </div>
-          {user?.role !== 'ACCOUNT' && (
+          {permissions?.master?.customer_details?.add && (
             <button 
               onClick={handleAddNew}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg md:col-start-auto lg:col-start-5">
@@ -245,14 +257,16 @@ const CustomerDetails = ({ user }) => {
       <DataTable 
         columns={columns} 
         data={filteredCustomers} 
-        actionButtons={user?.role === 'SUPER_ADMIN' ? (customer) => (
+        actionButtons={(customer) => (
           <div className="flex gap-2">
-            <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(customer)} className="text-red-600 hover:underline">Delete</button>
+            {permissions?.master?.customer_details?.edit && (
+              <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
+            )}
+            {permissions?.master?.customer_details?.delete && (
+              <button onClick={() => handleDelete(customer)} className="text-red-600 hover:underline">Delete</button>
+            )}
           </div>
-        ) : user?.role === 'ACCOUNT' ? (customer) => (
-          <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:underline">Edit</button>
-        ) : null}
+        )}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Customer" : "Customer Entry"}>

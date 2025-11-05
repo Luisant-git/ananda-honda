@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { vehicleModelApi } from '../api/vehicleModelApi.js';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const VehicleModel = ({ user }) => {
   const [vehicleModels, setVehicleModels] = useState([]);
@@ -12,10 +13,21 @@ const VehicleModel = ({ user }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [modelToDelete, setModelToDelete] = useState(null);
   const [formData, setFormData] = useState({ model: '', status: 'Enable' });
+  const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
     fetchVehicleModels();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   const fetchVehicleModels = async () => {
     try {
@@ -93,25 +105,29 @@ const VehicleModel = ({ user }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">Vehicle Models</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-        >
-          Add
-        </button>
+        {permissions?.master?.vehicle_model?.add && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            Add
+          </button>
+        )}
       </div>
 
       <DataTable 
         columns={columns} 
         data={vehicleModels} 
-        actionButtons={user?.role === 'SUPER_ADMIN' ? (model) => (
+        actionButtons={(model) => (
           <div className="flex gap-2">
-            <button onClick={() => handleEdit(model)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(model)} className="text-red-600 hover:underline">Delete</button>
+            {permissions?.master?.vehicle_model?.edit && (
+              <button onClick={() => handleEdit(model)} className="text-blue-600 hover:underline">Edit</button>
+            )}
+            {permissions?.master?.vehicle_model?.delete && (
+              <button onClick={() => handleDelete(model)} className="text-red-600 hover:underline">Delete</button>
+            )}
           </div>
-        ) : user?.role === 'ACCOUNT' ? (model) => (
-          <button onClick={() => handleEdit(model)} className="text-blue-600 hover:underline">Edit</button>
-        ) : null}
+        )}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Vehicle Model" : "Add Vehicle Model"}>

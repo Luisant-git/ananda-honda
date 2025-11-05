@@ -93,6 +93,14 @@ model User {
   paymentCollections PaymentCollection[]
 }
 
+model MenuPermission {
+  id        Int      @id @default(autoincrement())
+  role      Role     @unique
+  permissions Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   SUPER_ADMIN
   USER

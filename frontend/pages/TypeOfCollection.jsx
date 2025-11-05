@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { typeOfCollectionApi } from '../api/typeOfCollectionApi.js';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const TypeOfCollection = ({ user }) => {
   const [typeOfCollections, setTypeOfCollections] = useState([]);
@@ -12,10 +13,21 @@ const TypeOfCollection = ({ user }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [typeOfCollectionToDelete, setTypeOfCollectionToDelete] = useState(null);
   const [formData, setFormData] = useState({ typeOfCollect: '', status: 'Enable', disableVehicleModel: false });
+  const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
     fetchTypeOfCollections();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   const fetchTypeOfCollections = async () => {
     try {
@@ -97,23 +109,27 @@ const TypeOfCollection = ({ user }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">Type of Collection</h1>
-        <button 
-          onClick={handleAddNew}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
-            Add
-        </button>
+        {permissions?.master?.type_of_collection?.add && (
+          <button 
+            onClick={handleAddNew}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+              Add
+          </button>
+        )}
       </div>
       <DataTable 
         columns={columns} 
         data={typeOfCollections} 
-        actionButtons={user?.role === 'SUPER_ADMIN' ? (item) => (
+        actionButtons={(item) => (
           <div className="flex gap-2">
-            <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(item)} className="text-red-600 hover:underline">Delete</button>
+            {permissions?.master?.type_of_collection?.edit && (
+              <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
+            )}
+            {permissions?.master?.type_of_collection?.delete && (
+              <button onClick={() => handleDelete(item)} className="text-red-600 hover:underline">Delete</button>
+            )}
           </div>
-        ) : user?.role === 'ACCOUNT' ? (item) => (
-          <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Edit</button>
-        ) : null}
+        )}
       />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Type of Collection" : "Add Type of Collection"}>

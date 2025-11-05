@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { paymentModeApi } from '../api/paymentModeApi.js';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const PaymentMode = ({ user }) => {
   const [paymentModes, setPaymentModes] = useState([]);
@@ -12,10 +13,21 @@ const PaymentMode = ({ user }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [paymentModeToDelete, setPaymentModeToDelete] = useState(null);
   const [formData, setFormData] = useState({ paymentMode: '', status: 'Enable' });
+  const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
     fetchPaymentModes();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   const fetchPaymentModes = async () => {
     try {
@@ -93,24 +105,28 @@ const PaymentMode = ({ user }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">Payment Mode</h1>
-        <button 
-          onClick={handleAddNew}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-        >
-          Add
-        </button>
+        {permissions?.master?.payment_mode?.add && (
+          <button 
+            onClick={handleAddNew}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            Add
+          </button>
+        )}
       </div>
       <DataTable 
         columns={columns} 
         data={paymentModes} 
-        actionButtons={user?.role === 'SUPER_ADMIN' ? (mode) => (
+        actionButtons={(mode) => (
           <div className="flex gap-2">
-            <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(mode)} className="text-red-600 hover:underline">Delete</button>
+            {permissions?.master?.payment_mode?.edit && (
+              <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
+            )}
+            {permissions?.master?.payment_mode?.delete && (
+              <button onClick={() => handleDelete(mode)} className="text-red-600 hover:underline">Delete</button>
+            )}
           </div>
-        ) : user?.role === 'ACCOUNT' ? (mode) => (
-          <button onClick={() => handleEdit(mode)} className="text-blue-600 hover:underline">Edit</button>
-        ) : null}
+        )}
       />
       
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Payment Mode" : "Add Payment Mode"}>

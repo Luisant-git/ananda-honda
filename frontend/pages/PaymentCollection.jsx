@@ -9,9 +9,11 @@ import { paymentModeApi } from "../api/paymentModeApi.js";
 import { typeOfPaymentApi } from "../api/typeOfPaymentApi.js";
 import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
+import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
 
 const PaymentCollection = ({ user }) => {
+  const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
@@ -53,7 +55,17 @@ const PaymentCollection = ({ user }) => {
     fetchTypeOfCollections();
     fetchVehicleModels();
     fetchPayments();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -599,7 +611,7 @@ const PaymentCollection = ({ user }) => {
               />
               {showDropdown && (
                 <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                  {user?.role !== 'USER' && (
+                  {permissions?.payment_collection?.add_customer && (
                     <div
                       onClick={() => handleCustomerSelect("new")}
                       className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"

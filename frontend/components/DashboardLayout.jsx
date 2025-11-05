@@ -12,6 +12,7 @@ import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
 import Dashboard from '../pages/Dashboard';
 import UserManagement from '../pages/UserManagement';
+import MenuPermission from '../pages/MenuPermission';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
@@ -38,6 +39,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ChangePassword />;
       case 'user_management':
         return <UserManagement />;
+      case 'menu_permission':
+        return <MenuPermission />;
       case 'dashboard':
       default:
         return <Dashboard />;

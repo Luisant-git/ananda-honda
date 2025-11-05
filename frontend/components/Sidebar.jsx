@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardIcon, MasterIcon, PaymentIcon, ReportIcon, SettingsIcon, ChevronDownIcon, CloseIcon } from './icons/Icons';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, user }) => {
   const [openMenus, setOpenMenus] = useState({
@@ -7,11 +8,19 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
     settings: false,
     reports: false,
   });
+  const [permissions, setPermissions] = useState(null);
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isEnquiry = user?.role === 'ENQUIRY';
-  const isAccount = user?.role === 'ACCOUNT';
-  const isDeveloper = user?.role === 'DEVELOPER';
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const perms = await menuPermissionApi.get();
+        setPermissions(perms);
+      } catch (error) {
+        console.error('Failed to fetch permissions:', error);
+      }
+    };
+    fetchPermissions();
+  }, [user]);
 
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
@@ -72,36 +81,31 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, u
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <ul className="space-y-2">
-            {!isEnquiry && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
+            {permissions?.dashboard && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
             
-            {(isSuperAdmin || isAccount || isDeveloper) && (
+            {permissions?.master && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
-                <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
-                <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>
-                <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>
-                <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>
-                <li><NavLink view="vehicle_model" label="Vehicle Model" isSubmenu /></li>
+                {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
+                {permissions.master.payment_mode && <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>}
+                {permissions.master.type_of_payment && <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>}
+                {permissions.master.type_of_collection && <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>}
+                {permissions.master.vehicle_model && <li><NavLink view="vehicle_model" label="Vehicle Model" isSubmenu /></li>}
               </NavGroup>
             )}
 
-            {isEnquiry && (
-              <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
-                <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>
-              </NavGroup>
-            )}
+            {permissions?.payment_collection && <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>}
 
-            {!isEnquiry && !isAccount && <li><NavLink view="payment_collection" label="Payment Collection" icon={<PaymentIcon />} /></li>}
-
-            {!isEnquiry && (
+            {permissions?.reports && (
               <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
                   <li><NavLink view="reports" label="Reports" isSubmenu /></li>
               </NavGroup>
             )}
 
-            {!isEnquiry && (
+            {permissions?.settings && (
               <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
-                 <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>
-                 {isDeveloper && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
+                 {permissions.settings.change_password && <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>}
+                 {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
+                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
               </NavGroup>
             )}
           </ul>
