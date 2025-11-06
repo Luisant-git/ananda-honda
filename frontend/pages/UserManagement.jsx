@@ -75,9 +75,9 @@ const UserManagement = () => {
         <h1 className="text-2xl font-bold text-brand-text-primary">User Management</h1>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg"
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Add User
+          Add
         </button>
       </div>
 

@@ -197,19 +197,19 @@ const Reports = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-text-primary">Reports</h1>
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Reports</h1>
       
-      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-end">
-          <div className="flex gap-4 items-end">
+      <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">From Date</label>
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
               />
             </div>
             <div>
@@ -218,44 +218,48 @@ const Reports = () => {
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
               />
             </div>
-            <button 
-              onClick={handleFilter}
-              className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-6 rounded-lg">
-              Filter
-            </button>
-            <button 
-              onClick={handleReset}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">
-              Reset
-            </button>
+            <div className="flex gap-2 items-end">
+              <button 
+                onClick={handleFilter}
+                className="flex-1 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm">
+                Filter
+              </button>
+              <button 
+                onClick={handleReset}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                Reset
+              </button>
+            </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-2">
             <button 
               onClick={downloadExcel}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">
+              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 sm:px-6 rounded-lg text-sm">
               Excel
             </button>
             <button 
               onClick={downloadCSV}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 sm:px-6 rounded-lg text-sm">
               CSV
             </button>
             <button 
               onClick={downloadXML}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg">
+              className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 sm:px-6 rounded-lg text-sm">
               XML
             </button>
           </div>
         </div>
       </div>
       
-      <DataTable 
-        columns={columns} 
-        data={filteredData} 
-      />
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <DataTable 
+          columns={columns} 
+          data={filteredData} 
+        />
+      </div>
     </div>
   );
 };

@@ -583,14 +583,14 @@ const PaymentCollection = ({ user }) => {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-text-primary">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
         Payment Collection
       </h1>
 
-      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
+      <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
         <div className="flex flex-col sm:flex-row items-end gap-4">
-          <div className="flex-grow">
+          <div className="flex-grow w-full">
             <label className="text-sm font-medium text-brand-text-secondary mb-1 block">
               Select Customer
             </label>

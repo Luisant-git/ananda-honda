@@ -118,48 +118,63 @@ const Dashboard = () => {
     
     return (
       <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
-        <div className="bg-brand-accent p-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-brand-accent p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold text-white">Payment Collection Report</h3>
-              <p className="text-white text-sm mt-1 opacity-90">{fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'Select date range'}</p>
+              <h3 className="text-base sm:text-lg font-bold text-white">Payment Collection Report</h3>
+              <p className="text-white text-xs sm:text-sm mt-1 opacity-90">{fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'Select date range'}</p>
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center w-full sm:w-auto">
               <input
                 type="text"
-                placeholder="Search payment mode..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white border border-white rounded-lg px-4 py-2 text-sm text-brand-text-primary focus:ring-2 focus:ring-white focus:outline-none"
+                className="bg-white border border-white rounded-lg px-3 py-2 text-xs sm:text-sm text-brand-text-primary focus:ring-2 focus:ring-white focus:outline-none flex-1 sm:flex-none"
               />
               <button
                 onClick={downloadXML}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 sm:px-6 rounded-lg text-xs sm:text-sm whitespace-nowrap"
               >
                 XML
               </button>
             </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        
+        {/* Desktop/Tablet Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-brand-border">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-bold text-brand-text-secondary uppercase tracking-wider">S.No</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-brand-text-secondary uppercase tracking-wider">Payment Mode</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-brand-text-secondary uppercase tracking-wider">Amount</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-bold text-brand-text-secondary uppercase tracking-wider">S.No</th>
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-bold text-brand-text-secondary uppercase tracking-wider">Payment Mode</th>
+                <th className="px-3 md:px-6 py-3 text-right text-xs font-bold text-brand-text-secondary uppercase tracking-wider">Amount</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-brand-border">
               {tableData.map((row, rowIndex) => (
                 <tr key={rowIndex} className="hover:bg-brand-hover transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-text-primary">{row.sNo}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-brand-text-primary">{row.paymentMode}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right text-brand-text-primary">₹{row.amount.toLocaleString()}</td>
+                  <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-brand-text-primary">{row.sNo}</td>
+                  <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-semibold text-brand-text-primary">{row.paymentMode}</td>
+                  <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-bold text-right text-brand-text-primary">₹{row.amount.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="sm:hidden divide-y divide-brand-border">
+          {tableData.map((row, rowIndex) => (
+            <div key={rowIndex} className="bg-white p-4 hover:bg-brand-hover transition-colors">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs text-brand-text-secondary">#{row.sNo}</span>
+                <span className="text-sm font-bold text-brand-text-primary">₹{row.amount.toLocaleString()}</span>
+              </div>
+              <div className="text-sm font-semibold text-brand-text-primary">{row.paymentMode}</div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -168,8 +183,8 @@ const Dashboard = () => {
 
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-text-primary">Dashboard</h1>
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Dashboard</h1>
       
       <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
