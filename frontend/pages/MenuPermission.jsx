@@ -29,7 +29,7 @@ const MenuPermission = () => {
     setEditData(existing?.permissions || {
       dashboard: false,
       master: false,
-      payment_collection: { view: false, add_customer: false },
+      payment_collection: { view: false, add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false },
       reports: false,
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
@@ -216,7 +216,7 @@ const MenuPermission = () => {
 
               <div>
                 <label className="flex items-center space-x-2 mb-2">
-                  <input type="checkbox" checked={!!editData.payment_collection} onChange={() => setEditData(prev => ({ ...prev, payment_collection: prev.payment_collection ? false : { view: false, add_customer: false } }))} className="rounded" />
+                  <input type="checkbox" checked={!!editData.payment_collection} onChange={() => setEditData(prev => ({ ...prev, payment_collection: prev.payment_collection ? false : { view: false, add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false } }))} className="rounded" />
                   <span className="font-medium">Payment Collection</span>
                 </label>
                 {editData.payment_collection && typeof editData.payment_collection === 'object' && (
@@ -224,6 +224,26 @@ const MenuPermission = () => {
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.payment_collection.view} onChange={() => togglePermission('payment_collection.view')} className="rounded" />
                       <span className="text-sm sm:text-base">View</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.payment_collection.add} onChange={() => togglePermission('payment_collection.add')} className="rounded" />
+                      <span className="text-sm sm:text-base">Add Payment</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.payment_collection.edit} onChange={() => togglePermission('payment_collection.edit')} className="rounded" />
+                      <span className="text-sm sm:text-base">Edit Payment</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.payment_collection.delete} onChange={() => togglePermission('payment_collection.delete')} className="rounded" />
+                      <span className="text-sm sm:text-base">Delete Payment</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.payment_collection.restore} onChange={() => togglePermission('payment_collection.restore')} className="rounded" />
+                      <span className="text-sm sm:text-base">Restore Payment</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.payment_collection.view_deleted} onChange={() => togglePermission('payment_collection.view_deleted')} className="rounded" />
+                      <span className="text-sm sm:text-base">View Deleted</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.payment_collection.add_customer} onChange={() => togglePermission('payment_collection.add_customer')} className="rounded" />

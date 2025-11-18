@@ -30,6 +30,8 @@ const PaymentCollection = ({ user }) => {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deletedPayments, setDeletedPayments] = useState([]);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     recAmt: "",
@@ -56,6 +58,7 @@ const PaymentCollection = ({ user }) => {
     fetchVehicleModels();
     fetchPayments();
     fetchPermissions();
+    fetchDeletedPayments();
   }, []);
 
   const fetchPermissions = async () => {
@@ -155,6 +158,40 @@ const PaymentCollection = ({ user }) => {
     }
   };
 
+  const fetchDeletedPayments = async () => {
+    try {
+      const data = await paymentCollectionApi.getDeleted();
+      const formattedData = data.map((payment, index) => ({
+        sNo: index + 1,
+        id: payment.id,
+        date: payment.date,
+        receiptNo: payment.receiptNo,
+        custId: payment.customer.custId,
+        name: payment.customer.name,
+        contactNo: payment.customer.contactNo,
+        address: payment.customer.address,
+        recAmt: payment.recAmt,
+        paymentMode: payment.paymentMode.paymentMode,
+        typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
+        typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
+        vehicleModel: payment.vehicleModel?.model || "N/A",
+        enteredBy: payment.user?.username || "N/A",
+        deletedBy: payment.deletedByUser?.username || "N/A",
+        deletedAt: new Date(payment.deletedAt).toLocaleDateString(),
+        refNo: payment.refNo || "N/A",
+        remarks: payment.remarks || "N/A",
+        customerId: payment.customerId,
+        paymentModeId: payment.paymentModeId,
+        typeOfPaymentId: payment.typeOfPaymentId,
+        typeOfCollectionId: payment.typeOfCollectionId,
+        vehicleModelId: payment.vehicleModelId,
+      }));
+      setDeletedPayments(formattedData);
+    } catch (error) {
+      console.error("Error fetching deleted payments:", error);
+    }
+  };
+
   const handleLoadCustomer = () => {
     if (selectedCustomerId === "new") {
       setIsNewCustomer(true);
@@ -249,6 +286,7 @@ const PaymentCollection = ({ user }) => {
         status: "Walk in Customer",
       });
       fetchPayments();
+      if (showDeleted) fetchDeletedPayments();
     } catch (error) {
       toast.error("Error saving payment");
       console.error("Error saving payment:", error);
@@ -274,21 +312,29 @@ const PaymentCollection = ({ user }) => {
     setIsPaymentModalOpen(true);
   };
 
-  const handleDelete = (payment) => {
-    setPaymentToDelete(payment);
-    setIsDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
+  const handleDelete = async () => {
     try {
-      await paymentCollectionApi.delete(paymentToDelete.id);
+      await paymentCollectionApi.delete(paymentToDelete.id, user?.id);
       toast.success("Payment deleted successfully!");
       setIsDeleteModalOpen(false);
       setPaymentToDelete(null);
       fetchPayments();
+      fetchDeletedPayments();
     } catch (error) {
       toast.error("Error deleting payment");
       console.error("Error deleting payment:", error);
+    }
+  };
+
+  const handleRestore = async (payment) => {
+    try {
+      await paymentCollectionApi.restore(payment.id);
+      toast.success("Payment restored successfully!");
+      fetchPayments();
+      fetchDeletedPayments();
+    } catch (error) {
+      toast.error("Error restoring payment");
+      console.error("Error restoring payment:", error);
     }
   };
 
@@ -556,7 +602,27 @@ const PaymentCollection = ({ user }) => {
     img.src = hondaLogo;
   };
 
-  const columns = [
+  const columns = showDeleted ? [
+    { header: "SNo", accessor: "sNo" },
+    {
+      header: "Date",
+      accessor: "date",
+      render: (value) => {
+        const date = new Date(value);
+        const day = date.getDate().toString().padStart(2, "0");
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      },
+    },
+    { header: "ReceiptNo", accessor: "receiptNo" },
+    { header: "CustId", accessor: "custId" },
+    { header: "Name", accessor: "name" },
+    { header: "Amount", accessor: "recAmt" },
+    { header: "PaymentMode", accessor: "paymentMode" },
+    { header: "Deleted By", accessor: "deletedBy" },
+    { header: "Deleted At", accessor: "deletedAt" },
+  ] : [
     { header: "SNo", accessor: "sNo" },
     {
       header: "Date",
@@ -582,239 +648,297 @@ const PaymentCollection = ({ user }) => {
     { header: "Remarks", accessor: "remarks" },
   ];
 
+  const renderActions = (payment) => {
+    if (showDeleted) {
+      return permissions?.payment_collection?.restore ? (
+        <button
+          onClick={() => handleRestore(payment)}
+          className="text-green-600 hover:underline"
+        >
+          Restore
+        </button>
+      ) : null;
+    }
+    return (
+      <div className="flex gap-2">
+        {permissions?.payment_collection?.edit && (
+          <button
+            onClick={() => handleEdit(payment)}
+            className="text-blue-600 hover:underline"
+          >
+            Edit
+          </button>
+        )}
+        {permissions?.payment_collection?.delete && (
+          <button
+            onClick={() => {
+              setPaymentToDelete(payment);
+              setIsDeleteModalOpen(true);
+            }}
+            className="text-red-600 hover:underline"
+          >
+            Delete
+          </button>
+        )}
+        <button
+          onClick={() => handlePrint(payment)}
+          className="text-green-600 hover:underline"
+        >
+          Print
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
-        Payment Collection
-      </h1>
-
-      <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
-        <div className="flex flex-col sm:flex-row items-end gap-4">
-          <div className="flex-grow w-full">
-            <label className="text-sm font-medium text-brand-text-secondary mb-1 block">
-              Select Customer
-            </label>
-            <div className="relative customer-dropdown">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowDropdown(true);
-                  setSelectedCustomerId("");
-                  setLoadedCustomer(null);
-                  setFilteredPayments(payments);
-                }}
-                onFocus={() => setShowDropdown(true)}
-                placeholder="Search by name or contact number"
-                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              />
-              {showDropdown && (
-                <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                  {permissions?.payment_collection?.add_customer && (
-                    <div
-                      onClick={() => handleCustomerSelect("new")}
-                      className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
-                    >
-                      + Add New Customer
-                    </div>
-                  )}
-                  {filteredCustomers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      onClick={() => handleCustomerSelect(customer)}
-                      className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
-                    >
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-brand-text-secondary">
-                        {customer.contactNo}
-                      </div>
-                    </div>
-                  ))}
-                  {filteredCustomers.length === 0 &&
-                    searchTerm &&
-                    searchTerm !== "+ Add New Customer" && (
-                      <div className="p-2 text-brand-text-secondary text-center">
-                        No customers found
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {(loadedCustomer || isNewCustomer) && (
-          <div className="border-t border-brand-border pt-4">
-            {isNewCustomer ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustomerData.name}
-                      onChange={(e) =>
-                        setNewCustomerData({
-                          ...newCustomerData,
-                          name: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Mobile Number *
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustomerData.contactNo}
-                      onChange={(e) => {
-                        const numericValue = e.target.value.replace(/\D/g, "");
-                        if (numericValue.length > 10) {
-                          toast.error("Mobile number cannot exceed 10 digits");
-                          return;
-                        }
-                        setNewCustomerData({
-                          ...newCustomerData,
-                          contactNo: numericValue,
-                        });
-                      }}
-                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                      placeholder="Enter 10 digit mobile number"
-                      maxLength="10"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Address *
-                    </label>
-                    <textarea
-                      value={newCustomerData.address}
-                      onChange={(e) =>
-                        setNewCustomerData({
-                          ...newCustomerData,
-                          address: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                      rows={2}
-                      required
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Status
-                    </label>
-                    <select
-                      value={newCustomerData.status}
-                      onChange={(e) =>
-                        setNewCustomerData({
-                          ...newCustomerData,
-                          status: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                    >
-                      <option>Walk in Customer</option>
-                      <option>Online Enquiry</option>
-                    </select>
-                  </div>
-                  <div className="pt-2 flex justify-start">
-                    <button
-                      onClick={() => setIsPaymentModalOpen(true)}
-                      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
-                      disabled={
-                        !newCustomerData.name ||
-                        !newCustomerData.contactNo ||
-                        !newCustomerData.address
-                      }
-                    >
-                      Pay
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      CustId
-                    </label>
-                    <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                      {loadedCustomer.custId}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Name
-                    </label>
-                    <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                      {loadedCustomer.name}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Mobile Number
-                    </label>
-                    <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                      {loadedCustomer.contactNo}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Address
-                    </label>
-                    <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                      {loadedCustomer.address}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm text-brand-text-secondary">
-                      Status
-                    </label>
-                    <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                      {loadedCustomer.status}
-                    </div>
-                  </div>
-                  <div className="pt-2 flex justify-start">
-                    <button
-                      onClick={() => setIsPaymentModalOpen(true)}
-                      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
-                    >
-                      Pay
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
+          Payment Collection
+        </h1>
+{permissions?.payment_collection?.view_deleted && (
+          <button
+            onClick={() => {
+              setShowDeleted(!showDeleted);
+              if (!showDeleted) fetchDeletedPayments();
+            }}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              showDeleted
+                ? "bg-gray-500 text-white hover:bg-gray-600"
+                : "bg-orange-500 text-white hover:bg-orange-600"
+            }`}
+          >
+            {showDeleted ? "Show Active" : "Show Deleted"}
+          </button>
         )}
       </div>
 
+
+
+      {!showDeleted && (
+        <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
+          <div className="flex flex-col sm:flex-row items-end gap-4">
+            <div className="flex-grow w-full">
+              <label className="text-sm font-medium text-brand-text-secondary mb-1 block">
+                Select Customer
+              </label>
+              <div className="relative customer-dropdown">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowDropdown(true);
+                    setSelectedCustomerId("");
+                    setLoadedCustomer(null);
+                    setFilteredPayments(payments);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder="Search by name or contact number"
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                />
+                {showDropdown && (
+                  <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
+                    {permissions?.payment_collection?.add_customer && (
+                      <div
+                        onClick={() => handleCustomerSelect("new")}
+                        className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
+                      >
+                        + Add New Customer
+                      </div>
+                    )}
+                    {filteredCustomers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        onClick={() => handleCustomerSelect(customer)}
+                        className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
+                      >
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-brand-text-secondary">
+                          {customer.contactNo}
+                        </div>
+                      </div>
+                    ))}
+                    {filteredCustomers.length === 0 &&
+                      searchTerm &&
+                      searchTerm !== "+ Add New Customer" && (
+                        <div className="p-2 text-brand-text-secondary text-center">
+                          No customers found
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {(loadedCustomer || isNewCustomer) && (
+            <div className="border-t border-brand-border pt-4">
+              {isNewCustomer ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCustomerData.name}
+                        onChange={(e) =>
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            name: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Mobile Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCustomerData.contactNo}
+                        onChange={(e) => {
+                          const numericValue = e.target.value.replace(/\D/g, "");
+                          if (numericValue.length > 10) {
+                            toast.error("Mobile number cannot exceed 10 digits");
+                            return;
+                          }
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            contactNo: numericValue,
+                          });
+                        }}
+                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                        placeholder="Enter 10 digit mobile number"
+                        maxLength="10"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Address *
+                      </label>
+                      <textarea
+                        value={newCustomerData.address}
+                        onChange={(e) =>
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            address: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                        rows={2}
+                        required
+                      ></textarea>
+                    </div>
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Status
+                      </label>
+                      <select
+                        value={newCustomerData.status}
+                        onChange={(e) =>
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            status: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                      >
+                        <option>Walk in Customer</option>
+                        <option>Online Enquiry</option>
+                      </select>
+                    </div>
+                    <div className="pt-2 flex justify-start">
+                      {permissions?.payment_collection?.add && (
+                        <button
+                          onClick={() => setIsPaymentModalOpen(true)}
+                          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
+                          disabled={
+                            !newCustomerData.name ||
+                            !newCustomerData.contactNo ||
+                            !newCustomerData.address
+                          }
+                        >
+                          Pay
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        CustId
+                      </label>
+                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                        {loadedCustomer.custId}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Name
+                      </label>
+                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                        {loadedCustomer.name}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Mobile Number
+                      </label>
+                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                        {loadedCustomer.contactNo}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Address
+                      </label>
+                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                        {loadedCustomer.address}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm text-brand-text-secondary">
+                        Status
+                      </label>
+                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                        {loadedCustomer.status}
+                      </div>
+                    </div>
+                    <div className="pt-2 flex justify-start">
+                      {permissions?.payment_collection?.add && (
+                        <button
+                          onClick={() => setIsPaymentModalOpen(true)}
+                          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
+                        >
+                          Pay
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <DataTable
         columns={columns}
-        data={filteredPayments}
-        actionButtons={(payment) => (
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePrint(payment)}
-              className="text-green-600 hover:underline"
-            >
-              Print
-            </button>
-          </div>
-        )}
+        data={showDeleted ? deletedPayments : filteredPayments}
+        actionButtons={renderActions}
       />
 
       <Modal
@@ -951,7 +1075,7 @@ const PaymentCollection = ({ user }) => {
               Cancel
             </button>
             <button
-              onClick={confirmDelete}
+              onClick={handleDelete}
               className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
             >
               Delete

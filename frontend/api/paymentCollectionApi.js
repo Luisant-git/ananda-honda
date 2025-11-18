@@ -33,11 +33,26 @@ export const paymentCollectionApi = {
     return response.json();
   },
 
-  delete: async (id) => {
+  delete: async (id, deletedBy) => {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ deletedBy })
+    });
+    return response.json();
+  },
+
+  restore: async (id) => {
+    const response = await fetch(`${API_URL}/${id}/restore`, {
+      method: 'PATCH',
       credentials: 'include'
     });
+    return response.json();
+  },
+
+  getDeleted: async () => {
+    const response = await fetch(`${API_URL}/deleted/all`, { credentials: 'include' });
     return response.json();
   }
 };

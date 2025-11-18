@@ -72,6 +72,8 @@ model PaymentCollection {
   vehicleModelId  Int?
   enteredBy       Int?
   remarks         String?
+  deletedAt       DateTime?
+  deletedBy       Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   customer        Customer @relation(fields: [customerId], references: [id])
@@ -80,6 +82,7 @@ model PaymentCollection {
   typeOfCollection TypeOfCollection? @relation(fields: [typeOfCollectionId], references: [id])
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])
+  deletedByUser   User? @relation("DeletedPayments", fields: [deletedBy], references: [id])
 }
 
 model User {
@@ -91,6 +94,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   paymentCollections PaymentCollection[]
+  deletedPayments PaymentCollection[] @relation("DeletedPayments")
 }
 
 model MenuPermission {

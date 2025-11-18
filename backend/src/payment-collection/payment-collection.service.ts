@@ -36,6 +36,7 @@ export class PaymentCollectionService {
 
   async findAll() {
     return this.prisma.paymentCollection.findMany({
+      where: { deletedAt: null },
       include: {
         customer: true,
         paymentMode: true,
@@ -94,9 +95,47 @@ export class PaymentCollectionService {
     });
   }
 
-  async remove(id: number) {
-    return this.prisma.paymentCollection.delete({
-      where: { id }
+  async remove(id: number, deletedBy?: number) {
+    return this.prisma.paymentCollection.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: deletedBy || null
+      }
+    });
+  }
+
+  async restore(id: number) {
+    return this.prisma.paymentCollection.update({
+      where: { id },
+      data: {
+        deletedAt: null,
+        deletedBy: null
+      },
+      include: {
+        customer: true,
+        paymentMode: true,
+        typeOfPayment: true,
+        typeOfCollection: true,
+        vehicleModel: true,
+        user: true
+      }
+    });
+  }
+
+  async findDeleted() {
+    return this.prisma.paymentCollection.findMany({
+      where: { deletedAt: { not: null } },
+      include: {
+        customer: true,
+        paymentMode: true,
+        typeOfPayment: true,
+        typeOfCollection: true,
+        vehicleModel: true,
+        user: true,
+        deletedByUser: true
+      },
+      orderBy: { deletedAt: 'desc' }
     });
   }
 
