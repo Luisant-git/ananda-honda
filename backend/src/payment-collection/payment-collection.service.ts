@@ -152,7 +152,8 @@ export class PaymentCollectionService {
         const data = await this.prisma.paymentCollection.aggregate({
           where: { 
             date: { gte: startDate, lte: endDate }, 
-            paymentModeId: mode.id 
+            paymentModeId: mode.id,
+            deletedAt: null
           },
           _sum: { recAmt: true },
           _count: true
@@ -162,7 +163,10 @@ export class PaymentCollectionService {
     );
 
     const totalCount = await this.prisma.paymentCollection.count({
-      where: { date: { gte: startDate, lte: endDate } }
+      where: { 
+        date: { gte: startDate, lte: endDate },
+        deletedAt: null
+      }
     });
 
     return { modes, totalCount };
