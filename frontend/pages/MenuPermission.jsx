@@ -33,7 +33,7 @@ const MenuPermission = () => {
         sales: { add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false },
         service: { add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false }
       },
-      reports: { payment_collection_report: false, enquiry_report: false },
+      reports: { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false },
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
   };
@@ -252,14 +252,18 @@ const MenuPermission = () => {
 
               <div>
                 <label className="flex items-center space-x-2 mb-2">
-                  <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, enquiry_report: false } }))} className="rounded" />
+                  <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false } }))} className="rounded" />
                   <span className="font-medium">Reports</span>
                 </label>
                 {editData.reports && typeof editData.reports === 'object' && (
                   <div className="ml-4 sm:ml-6 space-y-1">
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.reports.payment_collection_report} onChange={() => togglePermission('reports.payment_collection_report')} className="rounded" />
-                      <span className="text-sm">Payment Collection Report</span>
+                      <span className="text-sm">Sales Payment Collection Report</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.reports.service_payment_collection_report} onChange={() => togglePermission('reports.service_payment_collection_report')} className="rounded" />
+                      <span className="text-sm">Service Payment Collection Report</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.reports.enquiry_report} onChange={() => togglePermission('reports.enquiry_report')} className="rounded" />

@@ -119,9 +119,10 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
               </NavGroup>
             )}
 
-            {(permissions?.reports?.payment_collection_report || permissions?.reports?.enquiry_report) && (
+            {(permissions?.reports?.payment_collection_report || permissions?.reports?.service_payment_collection_report || permissions?.reports?.enquiry_report) && (
               <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
-                  {permissions?.reports?.payment_collection_report && <li><NavLink view="reports" label="Payment Collection" isSubmenu /></li>}
+                  {permissions?.reports?.payment_collection_report && <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>}
+                  {permissions?.reports?.service_payment_collection_report && <li><NavLink view="service_reports" label="Service Report" isSubmenu /></li>}
                   {permissions?.reports?.enquiry_report && <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>}
               </NavGroup>
             )}

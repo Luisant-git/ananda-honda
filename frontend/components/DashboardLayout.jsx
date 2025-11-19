@@ -11,6 +11,7 @@ import PaymentCollection from '../pages/PaymentCollection';
 import ServicePaymentCollection from '../pages/ServicePaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
+import ServiceReports from '../pages/ServiceReports';
 import Dashboard from '../pages/Dashboard';
 import UserManagement from '../pages/UserManagement';
 import MenuPermission from '../pages/MenuPermission';
@@ -47,6 +48,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':
         return <Reports />;
+      case 'service_reports':
+        return <ServiceReports />;
       case 'change_password':
         return <ChangePassword />;
       case 'user_management':

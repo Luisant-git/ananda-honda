@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
-import { paymentCollectionApi } from '../api/paymentCollectionApi.js';
+import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
 
-const Reports = () => {
+const ServiceReports = () => {
   const [reportData, setReportData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
@@ -15,7 +15,7 @@ const Reports = () => {
 
   const fetchReportData = async () => {
     try {
-      const data = await paymentCollectionApi.getAll();
+      const data = await servicePaymentCollectionApi.getAll();
       const formattedData = data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
@@ -33,6 +33,7 @@ const Reports = () => {
         enteredBy: payment.user?.username || 'N/A',
         refNo: payment.refNo || 'N/A',
         remarks: payment.remarks || 'N/A',
+        jobCardNumber: payment.jobCardNumber || 'N/A',
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -77,7 +78,7 @@ const Reports = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales_report_${new Date().toISOString().split('T')[0]}.xls`;
+      a.download = `service_report_${new Date().toISOString().split('T')[0]}.xls`;
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success('Excel file downloaded successfully!');
@@ -95,7 +96,7 @@ const Reports = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `service_report_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success('CSV file downloaded successfully!');
@@ -131,21 +132,19 @@ const Reports = () => {
       
       filteredData.forEach(row => {
         xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
-        xmlContent += `<VOUCHER VCHTYPE="RECEIPT (VEHICLE)" ACTION="Create">\n`;
+        xmlContent += `<VOUCHER VCHTYPE="RECEIPT (SERVICE)" ACTION="Create">\n`;
         xmlContent += `<DATE>${formatDate(row.date)}</DATE>\n`;
-        xmlContent += `<VOUCHERTYPENAME>RECEIPT (VEHICLE)</VOUCHERTYPENAME>\n`;
+        xmlContent += `<VOUCHERTYPENAME>RECEIPT (SERVICE)</VOUCHERTYPENAME>\n`;
         xmlContent += `<VOUCHERNUMBER>${row.receiptNo}</VOUCHERNUMBER>\n`;
-        xmlContent += `<REFERENCE>${row.remarks || 'N/A'} ${row.refNo || 'N/A'}</REFERENCE>\n`;
+        xmlContent += `<REFERENCE>${row.remarks || 'N/A'} ${row.refNo || 'N/A'} JC:${row.jobCardNumber}</REFERENCE>\n`;
         xmlContent += `<EFFECTIVEDATE>${formatDate(row.date)}</EFFECTIVEDATE>\n`;
-        xmlContent += `<NARRATION>${row.remarks || 'N/A'} ${row.refNo || 'N/A'}</NARRATION>\n`;
+        xmlContent += `<NARRATION>${row.remarks || 'N/A'} ${row.refNo || 'N/A'} JC:${row.jobCardNumber}</NARRATION>\n`;
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
         xmlContent += `<LEDGERNAME>${row.custId} ${row.name}</LEDGERNAME>\n`;
-        // xmlContent += '<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n';
         xmlContent += `<AMOUNT>${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
         xmlContent += `<LEDGERNAME>${row.typeOfPayment}</LEDGERNAME>\n`;
-        // xmlContent += '<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n';
         xmlContent += `<AMOUNT>-${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
         xmlContent += '</VOUCHER>\n';
@@ -161,7 +160,7 @@ const Reports = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tally_sales_transaction_${new Date().toISOString().split('T')[0]}.xml`;
+      a.download = `tally_service_transaction_${new Date().toISOString().split('T')[0]}.xml`;
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success('Tally XML file downloaded successfully!');
@@ -192,13 +191,14 @@ const Reports = () => {
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
+    { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
   ];
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Sales Payment Collection Report</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection Report</h1>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="flex flex-col gap-4">
@@ -264,4 +264,4 @@ const Reports = () => {
   );
 };
 
-export default Reports;
+export default ServiceReports;
