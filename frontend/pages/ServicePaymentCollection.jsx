@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";
-import { paymentCollectionApi } from "../api/paymentCollectionApi.js";
+import { servicePaymentCollectionApi } from "../api/servicePaymentCollectionApi.js";
 import { customerApi } from "../api/customerApi.js";
 import { paymentModeApi } from "../api/paymentModeApi.js";
 import { typeOfPaymentApi } from "../api/typeOfPaymentApi.js";
@@ -12,7 +12,7 @@ import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
 
-const PaymentCollection = ({ user }) => {
+const ServicePaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
@@ -41,6 +41,7 @@ const PaymentCollection = ({ user }) => {
     vehicleModelId: "",
     refNo: "",
     remarks: "",
+    jobCardNumber: "",
   });
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
@@ -127,7 +128,7 @@ const PaymentCollection = ({ user }) => {
 
   const fetchPayments = async () => {
     try {
-      const data = await paymentCollectionApi.getAll();
+      const data = await servicePaymentCollectionApi.getAll();
       const formattedData = data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
@@ -145,6 +146,7 @@ const PaymentCollection = ({ user }) => {
         enteredBy: payment.user?.username || "N/A",
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
+        jobCardNumber: payment.jobCardNumber || "N/A",
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -160,7 +162,7 @@ const PaymentCollection = ({ user }) => {
 
   const fetchDeletedPayments = async () => {
     try {
-      const data = await paymentCollectionApi.getDeleted();
+      const data = await servicePaymentCollectionApi.getDeleted();
       const formattedData = data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
@@ -180,6 +182,7 @@ const PaymentCollection = ({ user }) => {
         deletedAt: new Date(payment.deletedAt).toLocaleDateString('en-GB'),
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
+        jobCardNumber: payment.jobCardNumber || "N/A",
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -255,14 +258,15 @@ const PaymentCollection = ({ user }) => {
         enteredBy: user?.id,
         refNo: formData.refNo,
         remarks: formData.remarks,
+        jobCardNumber: formData.jobCardNumber,
       };
 
       if (isEditMode) {
-        await paymentCollectionApi.update(editingPayment.id, submitData);
-        toast.success("Sales payment updated successfully!");
+        await servicePaymentCollectionApi.update(editingPayment.id, submitData);
+        toast.success("Service payment updated successfully!");
       } else {
-        await paymentCollectionApi.create(submitData);
-        toast.success("Sales payment created successfully!");
+        await servicePaymentCollectionApi.create(submitData);
+        toast.success("Service payment created successfully!");
       }
 
       setIsPaymentModalOpen(false);
@@ -278,6 +282,7 @@ const PaymentCollection = ({ user }) => {
         vehicleModelId: "",
         refNo: "",
         remarks: "",
+        jobCardNumber: "",
       });
       setNewCustomerData({
         name: "",
@@ -288,8 +293,8 @@ const PaymentCollection = ({ user }) => {
       fetchPayments();
       if (showDeleted) fetchDeletedPayments();
     } catch (error) {
-      toast.error("Error saving sales payment");
-      console.error("Error saving sales payment:", error);
+      toast.error("Error saving service payment");
+      console.error("Error saving service payment:", error);
     }
   };
 
@@ -308,33 +313,34 @@ const PaymentCollection = ({ user }) => {
       vehicleModelId: payment.vehicleModelId?.toString() || "",
       refNo: payment.refNo || "",
       remarks: payment.remarks,
+      jobCardNumber: payment.jobCardNumber || "",
     });
     setIsPaymentModalOpen(true);
   };
 
   const handleDelete = async () => {
     try {
-      await paymentCollectionApi.delete(paymentToDelete.id, user?.id);
-      toast.success("Sales payment deleted successfully!");
+      await servicePaymentCollectionApi.delete(paymentToDelete.id, user?.id);
+      toast.success("Service payment deleted successfully!");
       setIsDeleteModalOpen(false);
       setPaymentToDelete(null);
       fetchPayments();
       fetchDeletedPayments();
     } catch (error) {
-      toast.error("Error deleting sales payment");
-      console.error("Error deleting sales payment:", error);
+      toast.error("Error deleting service payment");
+      console.error("Error deleting service payment:", error);
     }
   };
 
   const handleRestore = async (payment) => {
     try {
-      await paymentCollectionApi.restore(payment.id);
-      toast.success("Sales payment restored successfully!");
+      await servicePaymentCollectionApi.restore(payment.id);
+      toast.success("Service payment restored successfully!");
       fetchPayments();
       fetchDeletedPayments();
     } catch (error) {
-      toast.error("Error restoring sales payment");
-      console.error("Error restoring sales payment:", error);
+      toast.error("Error restoring service payment");
+      console.error("Error restoring service payment:", error);
     }
   };
 
@@ -487,7 +493,7 @@ const PaymentCollection = ({ user }) => {
           </div>
 
           <div style="text-align: center; color: #000; background: white; padding: 15px; margin-bottom: 30px; font-size: 24px; border: 3px solid #000;">
-            <strong>RECEIPT</strong>
+            <strong>SERVICE RECEIPT</strong>
           </div>
           
          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; font-size: 16px;">
@@ -519,6 +525,11 @@ const PaymentCollection = ({ user }) => {
   }</div>
   <div style="padding: 2px 5px 2px 5px;"><strong>Vehicle Model:</strong> ${
     payment.vehicleModel || "N/A"
+  }</div>
+  
+  <!-- Row 5: Job Card Number -->
+  <div style="padding: 2px 5px 2px 5px;"><strong>Job Card Number:</strong> ${
+    payment.jobCardNumber || "N/A"
   }</div>
 </div>
           
@@ -584,7 +595,7 @@ const PaymentCollection = ({ user }) => {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Sales Payment Receipt - ${payment.receiptNo}</title>
+            <title>Service Payment Receipt - ${payment.receiptNo}</title>
             <style>
               @page { size: A4; margin: 0; }
               body { margin: 0; padding: 0; }
@@ -620,6 +631,7 @@ const PaymentCollection = ({ user }) => {
     { header: "Name", accessor: "name" },
     { header: "Amount", accessor: "recAmt" },
     { header: "PaymentMode", accessor: "paymentMode" },
+    { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "Deleted By", accessor: "deletedBy" },
     { header: "Deleted At", accessor: "deletedAt" },
   ] : [
@@ -644,13 +656,14 @@ const PaymentCollection = ({ user }) => {
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
+    { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
   ];
 
   const renderActions = (payment) => {
     if (showDeleted) {
-      return permissions?.payment_collection?.sales?.restore ? (
+      return permissions?.payment_collection?.service?.restore ? (
         <button
           onClick={() => handleRestore(payment)}
           className="text-green-600 hover:underline"
@@ -661,7 +674,7 @@ const PaymentCollection = ({ user }) => {
     }
     return (
       <div className="flex gap-2">
-        {permissions?.payment_collection?.sales?.edit && (
+        {permissions?.payment_collection?.service?.edit && (
           <button
             onClick={() => handleEdit(payment)}
             className="text-blue-600 hover:underline"
@@ -669,7 +682,7 @@ const PaymentCollection = ({ user }) => {
             Edit
           </button>
         )}
-        {permissions?.payment_collection?.sales?.delete && (
+        {permissions?.payment_collection?.service?.delete && (
           <button
             onClick={() => {
               setPaymentToDelete(payment);
@@ -694,9 +707,9 @@ const PaymentCollection = ({ user }) => {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
-          Sales Payment Collection
+          Service Payment Collection
         </h1>
-{permissions?.payment_collection?.sales?.view_deleted && (
+{permissions?.payment_collection?.service?.view_deleted && (
           <button
             onClick={() => {
               setShowDeleted(!showDeleted);
@@ -705,7 +718,7 @@ const PaymentCollection = ({ user }) => {
             className={`px-4 py-2 rounded-lg font-medium ${
               showDeleted
                 ? "bg-gray-500 text-white hover:bg-gray-600"
-                : "bg-orange-600 text-white hover:bg-orange-700" 
+                : "bg-orange-600 text-white hover:bg-orange-700"
             }`}
           >
             {showDeleted ? "Show Active" : "Show Trash"}
@@ -739,7 +752,7 @@ const PaymentCollection = ({ user }) => {
                 />
                 {showDropdown && (
                   <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                    {permissions?.payment_collection?.sales?.add_customer && (
+                    {permissions?.payment_collection?.service?.add_customer && (
                       <div
                         onClick={() => handleCustomerSelect("new")}
                         className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
@@ -856,7 +869,7 @@ const PaymentCollection = ({ user }) => {
                       </select>
                     </div>
                     <div className="pt-2 flex justify-start">
-                      {permissions?.payment_collection?.sales?.add && (
+                      {permissions?.payment_collection?.service?.add && (
                         <button
                           onClick={() => setIsPaymentModalOpen(true)}
                           className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
@@ -918,7 +931,7 @@ const PaymentCollection = ({ user }) => {
                       </div>
                     </div>
                     <div className="pt-2 flex justify-start">
-                      {permissions?.payment_collection?.sales?.add && (
+                      {permissions?.payment_collection?.service?.add && (
                         <button
                           onClick={() => setIsPaymentModalOpen(true)}
                           className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
@@ -944,7 +957,7 @@ const PaymentCollection = ({ user }) => {
       <Modal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        title={isEditMode ? "Edit Sales Payment" : "Sales Payment Entry"}
+        title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
@@ -1015,6 +1028,20 @@ const PaymentCollection = ({ user }) => {
           })()}
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Job Card Number
+            </label>
+            <input
+              type="text"
+              value={formData.jobCardNumber}
+              onChange={(e) =>
+                setFormData({ ...formData, jobCardNumber: e.target.value })
+              }
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              placeholder="Enter job card number"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
               Reference Number
             </label>
             <input
@@ -1064,7 +1091,7 @@ const PaymentCollection = ({ user }) => {
       >
         <div className="space-y-4">
           <p className="text-brand-text-primary">
-            Are you sure you want to delete sales payment{" "}
+            Are you sure you want to delete service payment{" "}
             <strong>{paymentToDelete?.receiptNo}</strong>?
           </p>
           <div className="flex justify-end gap-4">
@@ -1087,4 +1114,4 @@ const PaymentCollection = ({ user }) => {
   );
 };
 
-export default PaymentCollection;
+export default ServicePaymentCollection;

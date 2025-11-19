@@ -8,21 +8,29 @@ import TypeOfPayment from '../pages/TypeOfPayment';
 import TypeOfCollection from '../pages/TypeOfCollection';
 import VehicleModel from '../pages/VehicleModel';
 import PaymentCollection from '../pages/PaymentCollection';
+import ServicePaymentCollection from '../pages/ServicePaymentCollection';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
 import Dashboard from '../pages/Dashboard';
 import UserManagement from '../pages/UserManagement';
 import MenuPermission from '../pages/MenuPermission';
+import EnquiryManagement from '../pages/EnquiryManagement';
+import VehicleEnquiryForm from '../pages/VehicleEnquiryForm';
+
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
   const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
 
   const renderView = () => {
     switch (currentView) {
       case 'customer_details':
         return <CustomerDetails user={user} />;
+      case 'vehicle_enquiry_form':
+        return <VehicleEnquiryForm setCurrentView={setCurrentView} />;
       case 'payment_mode':
         return <PaymentMode user={user} />;
       case 'type_of_payment':
@@ -33,6 +41,10 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <VehicleModel user={user} />;
       case 'payment_collection':
         return <PaymentCollection user={user} />;
+      case 'service_payment_collection':
+        return <ServicePaymentCollection user={user} />;
+      case 'enquiry_management':
+        return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':
         return <Reports />;
       case 'change_password':
@@ -54,6 +66,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         setCurrentView={setCurrentView}
         isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        isSidebarCollapsed={isSidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
         user={user}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
