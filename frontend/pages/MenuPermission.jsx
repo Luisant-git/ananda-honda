@@ -201,14 +201,18 @@ const MenuPermission = () => {
                               <input type="checkbox" checked={editData.master[module].add} onChange={() => toggleMasterAction(module, 'add')} className="rounded" />
                               <span className="text-sm">Add</span>
                             </label>
-                            <label className="flex items-center space-x-2">
-                              <input type="checkbox" checked={editData.master[module].edit} onChange={() => toggleMasterAction(module, 'edit')} className="rounded" />
-                              <span className="text-sm">Edit</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input type="checkbox" checked={editData.master[module].delete} onChange={() => toggleMasterAction(module, 'delete')} className="rounded" />
-                              <span className="text-sm">Delete</span>
-                            </label>
+                            {module !== 'create_enquiry' && (
+                              <>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].edit} onChange={() => toggleMasterAction(module, 'edit')} className="rounded" />
+                                  <span className="text-sm">Edit</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].delete} onChange={() => toggleMasterAction(module, 'delete')} className="rounded" />
+                                  <span className="text-sm">Delete</span>
+                                </label>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

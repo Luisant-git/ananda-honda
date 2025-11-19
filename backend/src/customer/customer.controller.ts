@@ -15,6 +15,11 @@ export class CustomerController {
     return this.customerService.findAll();
   }
 
+  @Get('mobile/:mobile')
+  findByMobile(@Param('mobile') mobile: string) {
+    return this.customerService.findByMobile(mobile);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customerService.findOne(+id);

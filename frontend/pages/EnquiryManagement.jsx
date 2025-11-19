@@ -43,16 +43,7 @@ const EnquiryManagement = ({ setCurrentView }) => {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this enquiry?")) {
-      try {
-        await enquiryApi.delete(id);
-        fetchData();
-      } catch (error) {
-        console.error("Error deleting enquiry:", error);
-      }
-    }
-  };
+
 
   const columns = [
     { header: "ID", accessor: "id" },
@@ -115,16 +106,6 @@ const EnquiryManagement = ({ setCurrentView }) => {
       <DataTable
         data={filteredEnquiries}
         columns={columns}
-        actionButtons={(enquiry) => (
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDelete(enquiry.id)}
-              className="text-red-600 hover:underline"
-            >
-              Delete
-            </button>
-          </div>
-        )}
       />
     </div>
   );

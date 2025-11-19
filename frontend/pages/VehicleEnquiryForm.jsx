@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { enquiryApi } from "../api/enquiryApi.js";
+import { customerApi } from "../api/customerApi.js";
 import toast from "react-hot-toast";
 
 const VehicleEnquiryForm = ({ setCurrentView }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [existingCustomer, setExistingCustomer] = useState(null);
   const [formData, setFormData] = useState({
     customerName: "",
     enquiryType: "",
@@ -31,22 +33,42 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
 
   const handleEnquiryTypeChange = (type) => {
     setFormData({ ...formData, enquiryType: type, vehicleModel: "", executiveName: "" });
-    if (type === 'BIG_WING') {
-      setCurrentStep(2);
-    } else {
-      setCurrentStep(3);
-    }
+    setCurrentStep(0);
   };
 
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleMobileSubmit = async () => {
     if (!/^\d{10}$/.test(formData.mobileNumber)) {
       toast.error("Mobile number must be exactly 10 digits");
       return;
     }
+    
+    try {
+      const customer = await customerApi.getByMobile(formData.mobileNumber);
+      if (customer) {
+        setExistingCustomer(customer);
+        setFormData({ ...formData, customerName: customer.name });
+        toast.success(`Welcome back, ${customer.name}!`);
+      } else {
+        setExistingCustomer(null);
+      }
+      
+      if (formData.enquiryType === 'BIG_WING') {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep(3);
+      }
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      if (formData.enquiryType === 'BIG_WING') {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep(3);
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
     try {
       await enquiryApi.create(formData);
@@ -92,23 +114,10 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
       );
     }
 
-    if (currentStep === 2 && formData.enquiryType === 'BIG_WING') {
+    if (currentStep === 0) {
       return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <h3 className="text-lg font-semibold">Big Wing Enquiry Details</h3>
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Customer Name</label>
-            <p className="text-sm text-gray-600 mb-2">Sure, May I know your name, please?</p>
-            <input
-              type="text"
-              value={formData.customerName}
-              onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter customer name"
-            />
-          </div>
-
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Contact Information</h3>
           <div>
             <label className="block text-sm font-medium mb-1">Mobile Number *</label>
             <p className="text-sm text-gray-600 mb-2">Thank you, Sir/Madam. Could I have your mobile number?</p>
@@ -125,6 +134,50 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
               maxLength="10"
               placeholder="Enter 10 digit mobile number"
               required
+            />
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={handleMobileSubmit}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (currentStep === 2 && formData.enquiryType === 'BIG_WING') {
+      return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <h3 className="text-lg font-semibold">Big Wing Enquiry Details</h3>
+          
+          {existingCustomer && (
+            <div className="bg-green-50 p-3 rounded border border-green-200">
+              <p className="text-green-700 text-sm">Welcome back! We found your details:</p>
+              <p className="font-medium">{existingCustomer.name} - {formData.mobileNumber}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Customer Name {!existingCustomer && '*'}</label>
+            <p className="text-sm text-gray-600 mb-2">{existingCustomer ? 'Confirm your name:' : 'Sure, May I know your name, please?'}</p>
+            <input
+              type="text"
+              value={formData.customerName}
+              onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter customer name"
+              required={!existingCustomer}
             />
           </div>
 
@@ -180,7 +233,7 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
           <div className="flex justify-end space-x-2">
             <button
               type="button"
-              onClick={() => setCurrentStep(1)}
+              onClick={() => setCurrentStep(0)}
               className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
             >
               Back
@@ -201,34 +254,23 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <h3 className="text-lg font-semibold">Accessories, Insurance, HSRP</h3>
           
+          {existingCustomer && (
+            <div className="bg-green-50 p-3 rounded border border-green-200">
+              <p className="text-green-700 text-sm">Welcome back! We found your details:</p>
+              <p className="font-medium">{existingCustomer.name} - {formData.mobileNumber}</p>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium mb-1">Customer Name</label>
-            <p className="text-sm text-gray-600 mb-2">Sure, May I know your name, please?</p>
+            <label className="block text-sm font-medium mb-1">Customer Name {!existingCustomer && '*'}</label>
+            <p className="text-sm text-gray-600 mb-2">{existingCustomer ? 'Confirm your name:' : 'Sure, May I know your name, please?'}</p>
             <input
               type="text"
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
               className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
               placeholder="Enter customer name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Mobile Number *</label>
-            <p className="text-sm text-gray-600 mb-2">Thank you, Sir/Madam. Could I have your mobile number?</p>
-            <input
-              type="tel"
-              value={formData.mobileNumber}
-              onChange={(e) => {
-                const numericValue = e.target.value.replace(/\D/g, "");
-                if (numericValue.length <= 10) {
-                  setFormData({ ...formData, mobileNumber: numericValue });
-                }
-              }}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-              maxLength="10"
-              placeholder="Enter 10 digit mobile number"
-              required
+              required={!existingCustomer}
             />
           </div>
 
@@ -280,7 +322,7 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
           <div className="flex justify-end space-x-2">
             <button
               type="button"
-              onClick={() => setCurrentStep(1)}
+              onClick={() => setCurrentStep(0)}
               className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
             >
               Back

@@ -23,6 +23,14 @@ export const customerApi = {
     return response.json();
   },
 
+  getByMobile: async (mobile) => {
+    const response = await fetch(`${API_URL}/mobile/${mobile}`, { credentials: 'include' });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  },
+
   update: async (id, data) => {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',

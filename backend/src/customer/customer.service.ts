@@ -33,6 +33,12 @@ export class CustomerService {
     });
   }
 
+  async findByMobile(mobile: string) {
+    return this.prisma.customer.findFirst({
+      where: { contactNo: mobile }
+    });
+  }
+
   async update(id: number, data: { name?: string; contactNo?: string; address?: string; status?: string }) {
     return this.prisma.customer.update({
       where: { id },
