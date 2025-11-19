@@ -96,18 +96,29 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
           <div>
             <label className="block text-sm font-medium mb-2">Enquiry Type *</label>
             <div className="grid grid-cols-2 gap-2">
-              {enquiryTypes.map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => handleEnquiryTypeChange(type)}
-                  className={`p-3 border rounded hover:bg-blue-50 text-sm font-medium ${
-                    formData.enquiryType === type ? 'bg-blue-100 border-blue-500' : ''
-                  }`}
-                >
-                  {type.replace("_", " ")}
-                </button>
-              ))}
+              {enquiryTypes.map((type, index) => {
+                const colors = [
+                  { bg: 'bg-blue-600', border: 'border-blue-600', hover: 'hover:bg-blue-50' },
+                  { bg: 'bg-green-600', border: 'border-green-600', hover: 'hover:bg-green-50' },
+                  { bg: 'bg-purple-600', border: 'border-purple-600', hover: 'hover:bg-purple-50' },
+                  { bg: 'bg-orange-600', border: 'border-orange-600', hover: 'hover:bg-orange-50' }
+                ];
+                const color = colors[index];
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => handleEnquiryTypeChange(type)}
+                    className={`p-3 border rounded text-sm font-medium transition-colors ${
+                      formData.enquiryType === type 
+                        ? `${color.bg} text-white ${color.border}` 
+                        : `${color.bg.replace('600', '100')} ${color.border} text-gray-700 ${color.hover}`
+                    }`}
+                  >
+                    {type.replace("_", " ")}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
