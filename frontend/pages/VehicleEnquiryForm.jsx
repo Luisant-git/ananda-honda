@@ -287,6 +287,7 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
 
           <div>
             <label className="block text-sm font-medium mb-1">Vehicle Model</label>
+            <p className="text-sm text-gray-600 mb-2">May I know the model you're interested in?</p>
             <select
               value={formData.vehicleModel}
               onChange={(e) => setFormData({ ...formData, vehicleModel: e.target.value })}
@@ -301,6 +302,7 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
 
           <div>
             <label className="block text-sm font-medium mb-1">Lead Source</label>
+            <p className="text-sm text-gray-600 mb-2">May I know how you came to know about Ananda Honda?</p>
             <div className="grid grid-cols-2 gap-2">
               {leadSources.map(source => (
                 <label key={source} className="flex items-center">
@@ -318,6 +320,7 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
 
           <div>
             <label className="block text-sm font-medium mb-1">Executive</label>
+            <p className="text-sm text-gray-600 mb-2">I am assigning our sales executive who will assist you.</p>
             <select
               value={formData.executiveName}
               onChange={(e) => setFormData({ ...formData, executiveName: e.target.value })}
