@@ -1,0 +1,43 @@
+import config from '../config.js';
+
+const API_URL = `${config.API_BASE_URL}/service-type-of-payments`;
+
+export const serviceTypeOfPaymentApi = {
+  getAll: async () => {
+    const response = await fetch(API_URL, { credentials: 'include' });
+    return response.json();
+  },
+
+  create: async (data) => {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  getById: async (id) => {
+    const response = await fetch(`${API_URL}/${id}`, { credentials: 'include' });
+    return response.json();
+  },
+
+  update: async (id, data) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  delete: async (id) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    return response.json();
+  }
+};

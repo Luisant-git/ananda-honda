@@ -29,7 +29,6 @@ model PaymentMode {
   updatedAt   DateTime @updatedAt
   typeOfPayments TypeOfPayment[]
   paymentCollections PaymentCollection[]
-  servicePaymentCollections ServicePaymentCollection[]
 }
 
 model TypeOfPayment {
@@ -40,7 +39,6 @@ model TypeOfPayment {
   updatedAt     DateTime    @updatedAt
   paymentMode   PaymentMode @relation(fields: [paymentModeId], references: [id])
   paymentCollections PaymentCollection[]
-  servicePaymentCollections ServicePaymentCollection[]
 }
 
 model TypeOfCollection {
@@ -90,6 +88,26 @@ model PaymentCollection {
   deletedByUser   User? @relation("DeletedPayments", fields: [deletedBy], references: [id])
 }
 
+model ServicePaymentMode {
+  id          Int      @id @default(autoincrement())
+  paymentMode String
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  serviceTypeOfPayments ServiceTypeOfPayment[]
+  servicePaymentCollections ServicePaymentCollection[]
+}
+
+model ServiceTypeOfPayment {
+  id            Int         @id @default(autoincrement())
+  paymentModeId Int
+  typeOfMode    String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  paymentMode   ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
+  servicePaymentCollections ServicePaymentCollection[]
+}
+
 model ServicePaymentCollection {
   id              Int      @id @default(autoincrement())
   date            DateTime
@@ -109,8 +127,8 @@ model ServicePaymentCollection {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   customer        Customer @relation(fields: [customerId], references: [id])
-  paymentMode     PaymentMode @relation(fields: [paymentModeId], references: [id])
-  typeOfPayment   TypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
+  paymentMode     ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
+  typeOfPayment   ServiceTypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
   typeOfCollection TypeOfCollection? @relation(fields: [typeOfCollectionId], references: [id])
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])

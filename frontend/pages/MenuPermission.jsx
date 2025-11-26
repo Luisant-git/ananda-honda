@@ -189,7 +189,7 @@ const MenuPermission = () => {
                 </label>
                 {editData.master && typeof editData.master === 'object' && (
                   <div className="ml-4 sm:ml-6 space-y-3">
-                    {['customer_details', 'payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'create_enquiry'].map(module => (
+                    {['customer_details', 'payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment', 'create_enquiry'].map(module => (
                       <div key={module}>
                         <label className="flex items-center space-x-2 mb-1">
                           <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : { add: false, edit: false, delete: false } } }))} className="rounded" />

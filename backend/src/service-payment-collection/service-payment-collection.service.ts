@@ -146,7 +146,7 @@ export class ServicePaymentCollectionService {
     const endDate = new Date(toDate);
     endDate.setHours(23, 59, 59, 999);
 
-    const paymentModes = await this.prisma.paymentMode.findMany();
+    const paymentModes = await this.prisma.servicePaymentMode.findMany();
 
     const modes = await Promise.all(
       paymentModes.map(async (mode) => {

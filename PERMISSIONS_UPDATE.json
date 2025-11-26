@@ -1,0 +1,74 @@
+{
+  "description": "Add these permissions to your menu permission configuration for the new service payment masters",
+  "permissions_to_add": {
+    "master": {
+      "service_payment_mode": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "service_type_of_payment": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      }
+    }
+  },
+  "example_full_master_permissions": {
+    "master": {
+      "customer_details": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "payment_mode": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "type_of_payment": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "type_of_collection": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "vehicle_model": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "service_payment_mode": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "service_type_of_payment": {
+        "view": true,
+        "add": true,
+        "edit": true,
+        "delete": true
+      },
+      "create_enquiry": true
+    }
+  },
+  "instructions": [
+    "1. Login as SUPER_ADMIN or user with menu_permission access",
+    "2. Navigate to Settings > Menu Permission",
+    "3. Select the role you want to update (e.g., SUPER_ADMIN, ACCOUNT, etc.)",
+    "4. Add the service_payment_mode and service_type_of_payment permissions under master section",
+    "5. Save the changes",
+    "6. Logout and login again to see the new menu items"
+  ]
+}

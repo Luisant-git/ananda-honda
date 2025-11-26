@@ -9,6 +9,8 @@ import TypeOfCollection from '../pages/TypeOfCollection';
 import VehicleModel from '../pages/VehicleModel';
 import PaymentCollection from '../pages/PaymentCollection';
 import ServicePaymentCollection from '../pages/ServicePaymentCollection';
+import ServicePaymentMode from '../pages/ServicePaymentMode';
+import ServiceTypeOfPayment from '../pages/ServiceTypeOfPayment';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
 import ServiceReports from '../pages/ServiceReports';
@@ -44,6 +46,10 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <PaymentCollection user={user} />;
       case 'service_payment_collection':
         return <ServicePaymentCollection user={user} />;
+      case 'service_payment_mode':
+        return <ServicePaymentMode user={user} />;
+      case 'service_type_of_payment':
+        return <ServiceTypeOfPayment user={user} />;
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':

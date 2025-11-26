@@ -5,8 +5,8 @@ import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";
 import { servicePaymentCollectionApi } from "../api/servicePaymentCollectionApi.js";
 import { customerApi } from "../api/customerApi.js";
-import { paymentModeApi } from "../api/paymentModeApi.js";
-import { typeOfPaymentApi } from "../api/typeOfPaymentApi.js";
+import { servicePaymentModeApi } from "../api/servicePaymentModeApi.js";
+import { serviceTypeOfPaymentApi } from "../api/serviceTypeOfPaymentApi.js";
 import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
@@ -16,6 +16,8 @@ const ServicePaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
+  console.log('service payment modes', paymentModes);
+  
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [typeOfCollections, setTypeOfCollections] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
@@ -92,7 +94,7 @@ const ServicePaymentCollection = ({ user }) => {
 
   const fetchPaymentModes = async () => {
     try {
-      const data = await paymentModeApi.getAll();
+      const data = await servicePaymentModeApi.getAll();
       setPaymentModes(data.filter((mode) => mode.status === "Enable"));
     } catch (error) {
       console.error("Error fetching payment modes:", error);
@@ -101,7 +103,7 @@ const ServicePaymentCollection = ({ user }) => {
 
   const fetchTypeOfPayments = async () => {
     try {
-      const data = await typeOfPaymentApi.getAll();
+      const data = await serviceTypeOfPaymentApi.getAll();
       setTypeOfPayments(data);
     } catch (error) {
       console.error("Error fetching type of payments:", error);
