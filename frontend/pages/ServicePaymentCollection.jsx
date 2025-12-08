@@ -36,7 +36,10 @@ const ServicePaymentCollection = ({ user }) => {
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
+    totalAmt: "",
     recAmt: "",
+    paymentType: "full payment",
+    vehicleNumber: "",
     paymentModeId: "",
     typeOfPaymentId: "",
     typeOfCollectionId: "",
@@ -52,6 +55,7 @@ const ServicePaymentCollection = ({ user }) => {
     address: "",
     status: "Walk in Customer",
   });
+  const [pendingPayments, setPendingPayments] = useState([]);
 
   useEffect(() => {
     fetchCustomers();
@@ -140,7 +144,11 @@ const ServicePaymentCollection = ({ user }) => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        totalAmt: payment.totalAmt || "N/A",
         recAmt: payment.recAmt,
+        paymentType: payment.paymentType,
+        paymentStatus: payment.paymentStatus,
+        vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
@@ -149,6 +157,7 @@ const ServicePaymentCollection = ({ user }) => {
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
         jobCardNumber: payment.jobCardNumber || "N/A",
+        paymentSessions: payment.paymentSessions || [],
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -174,7 +183,11 @@ const ServicePaymentCollection = ({ user }) => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        totalAmt: payment.totalAmt || "N/A",
         recAmt: payment.recAmt,
+        paymentType: payment.paymentType,
+        paymentStatus: payment.paymentStatus,
+        vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
@@ -185,6 +198,7 @@ const ServicePaymentCollection = ({ user }) => {
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
         jobCardNumber: payment.jobCardNumber || "N/A",
+        paymentSessions: payment.paymentSessions || [],
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -233,6 +247,12 @@ const ServicePaymentCollection = ({ user }) => {
       return;
     }
 
+    // Validate vehicle number for part payment
+    if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
+      toast.error("Vehicle number is mandatory for part payment");
+      return;
+    }
+
     try {
       let customerId = loadedCustomer?.id;
 
@@ -246,7 +266,10 @@ const ServicePaymentCollection = ({ user }) => {
       const submitData = {
         date: formData.date,
         customerId: customerId,
+        totalAmt: formData.paymentType === "full payment" && formData.totalAmt ? parseFloat(formData.totalAmt) : undefined,
         recAmt: parseFloat(formData.recAmt),
+        paymentType: formData.paymentType,
+        vehicleNumber: formData.vehicleNumber || undefined,
         paymentModeId: parseInt(formData.paymentModeId),
         typeOfPaymentId: formData.typeOfPaymentId
           ? parseInt(formData.typeOfPaymentId)
@@ -275,9 +298,13 @@ const ServicePaymentCollection = ({ user }) => {
       setIsEditMode(false);
       setEditingPayment(null);
       setIsNewCustomer(false);
+      setPendingPayments([]);
       setFormData({
         date: new Date().toISOString().split("T")[0],
+        totalAmt: "",
         recAmt: "",
+        paymentType: "full payment",
+        vehicleNumber: "",
         paymentModeId: "",
         typeOfPaymentId: "",
         typeOfCollectionId: "",
@@ -300,6 +327,25 @@ const ServicePaymentCollection = ({ user }) => {
     }
   };
 
+  const fetchPendingPayments = (customerId) => {
+    if (!customerId) {
+      setPendingPayments([]);
+      return;
+    }
+    const pending = payments.filter(
+      (p) => p.customerId === customerId && 
+             p.paymentStatus === "pending" &&
+             p.paymentType === "part payment"
+    );
+    setPendingPayments(pending);
+  };
+
+  useEffect(() => {
+    if (isPaymentModalOpen && !isEditMode && loadedCustomer && formData.paymentType === "full payment") {
+      fetchPendingPayments(loadedCustomer.id);
+    }
+  }, [isPaymentModalOpen, formData.paymentType, loadedCustomer]);
+
   const handleEdit = (payment) => {
     setIsEditMode(true);
     setEditingPayment(payment);
@@ -308,7 +354,10 @@ const ServicePaymentCollection = ({ user }) => {
     setSelectedCustomerId(customer.id.toString());
     setFormData({
       date: new Date(payment.date).toISOString().split("T")[0],
+      totalAmt: payment.totalAmt?.toString() || "",
       recAmt: payment.recAmt.toString(),
+      paymentType: payment.paymentType,
+      vehicleNumber: payment.vehicleNumber || "",
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || "",
       typeOfCollectionId: payment.typeOfCollectionId?.toString() || "",
@@ -653,7 +702,11 @@ const ServicePaymentCollection = ({ user }) => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
-    { header: "Amount", accessor: "recAmt" },
+    { header: "Payment Type", accessor: "paymentType" },
+    { header: "Status", accessor: "paymentStatus" },
+    { header: "Vehicle No", accessor: "vehicleNumber" },
+    { header: "Total Amt", accessor: "totalAmt" },
+    { header: "Received Amt", accessor: "recAmt" },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
@@ -958,7 +1011,10 @@ const ServicePaymentCollection = ({ user }) => {
 
       <Modal
         isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setPendingPayments([]);
+        }}
         title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -980,6 +1036,61 @@ const ServicePaymentCollection = ({ user }) => {
 
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Payment Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.paymentType}
+              onChange={(e) => {
+                setFormData({ ...formData, paymentType: e.target.value });
+                if (e.target.value === "full payment" && loadedCustomer) {
+                  fetchPendingPayments(loadedCustomer.id);
+                } else {
+                  setPendingPayments([]);
+                }
+              }}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              required
+            >
+              <option value="full payment">Full Payment</option>
+              <option value="part payment">Part Payment</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="text"
+              value={formData.vehicleNumber}
+              onChange={(e) => {
+                const vehicleNum = e.target.value.toUpperCase();
+                setFormData({ ...formData, vehicleNumber: vehicleNum });
+              }}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              placeholder="Enter vehicle number"
+              required={formData.paymentType === "part payment"}
+            />
+          </div>
+
+          {formData.paymentType === "full payment" && (
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Total Amount
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.totalAmt}
+                onChange={(e) => setFormData({ ...formData, totalAmt: e.target.value })}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                placeholder="Enter total amount"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
               Received Amount <span className="text-red-500">*</span>
             </label>
             <input
@@ -993,6 +1104,26 @@ const ServicePaymentCollection = ({ user }) => {
               required
             />
           </div>
+
+          {formData.paymentType === "full payment" && pendingPayments.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <label className="block text-sm font-medium text-blue-900 mb-2">
+                Pending Part Payments for this Customer
+              </label>
+              <div className="space-y-2">
+                {pendingPayments.map((payment) => (
+                  <div key={payment.id} className="flex justify-between text-sm">
+                    <span className="text-blue-800">{payment.receiptNo} - {new Date(payment.date).toLocaleDateString('en-GB')} - {payment.vehicleNumber}</span>
+                    <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
+                  </div>
+                ))}
+                <div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold">
+                  <span className="text-blue-900">Total Pending:</span>
+                  <span className="text-blue-900">₹{pendingPayments.reduce((sum, p) => sum + p.recAmt, 0)}</span>
+                </div>
+              </div>
+            </div>
+          )}
           <SearchableDropdown
             label="Payment Mode"
             value={formData.paymentModeId}

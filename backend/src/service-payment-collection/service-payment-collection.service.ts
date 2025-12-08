@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ServicePaymentCollectionService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
       orderBy: { id: 'desc' }
     });
@@ -13,16 +13,54 @@ export class ServicePaymentCollectionService {
     const nextId = lastPayment ? lastPayment.id + 1 : 1;
     const receiptNo = `SRV${nextId.toString().padStart(4, '0')}`;
 
+    let paymentSessions: any[] = [];
+    let finalStatus = data.paymentStatus || 'completed';
+
+    if (data.paymentType === 'full payment' && data.vehicleNumber) {
+      const partPayments = await this.prisma.servicePaymentCollection.findMany({
+        where: {
+          customerId: data.customerId,
+          vehicleNumber: data.vehicleNumber,
+          paymentType: 'part payment',
+          paymentStatus: 'pending',
+          deletedAt: null
+        }
+      });
+
+      if (partPayments.length > 0) {
+        paymentSessions = partPayments.map(p => ({
+          receiptNo: p.receiptNo,
+          date: p.date,
+          amount: p.recAmt
+        }));
+
+        await this.prisma.servicePaymentCollection.updateMany({
+          where: {
+            id: { in: partPayments.map(p => p.id) }
+          },
+          data: { paymentStatus: 'completed' }
+        });
+      }
+    }
+
+    if (data.paymentType === 'part payment') {
+      finalStatus = 'pending';
+    }
+
     return this.prisma.servicePaymentCollection.create({
       data: {
         ...data,
         date: new Date(data.date),
         receiptNo,
+        paymentStatus: finalStatus,
+        totalAmt: data.totalAmt || null,
+        vehicleNumber: data.vehicleNumber || null,
         typeOfPaymentId: data.typeOfPaymentId || null,
         typeOfCollectionId: data.typeOfCollectionId || null,
         vehicleModelId: data.vehicleModelId || null,
         enteredBy: data.enteredBy || null,
-        jobCardNumber: data.jobCardNumber || null
+        jobCardNumber: data.jobCardNumber || null,
+        paymentSessions
       },
       include: {
         customer: true,
@@ -64,7 +102,7 @@ export class ServicePaymentCollectionService {
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);

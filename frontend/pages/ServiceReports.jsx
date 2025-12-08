@@ -8,6 +8,7 @@ const ServiceReports = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('');
 
   useEffect(() => {
     fetchReportData();
@@ -26,6 +27,9 @@ const ServiceReports = () => {
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
         recAmt: payment.recAmt,
+        paymentType: payment.paymentType,
+        paymentStatus: payment.paymentStatus,
+        vehicleNumber: payment.vehicleNumber || 'N/A',
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
@@ -48,17 +52,20 @@ const ServiceReports = () => {
   };
 
   const handleFilter = () => {
-    if (!fromDate || !toDate) {
-      setFilteredData(reportData);
-      return;
+    let filtered = reportData;
+    
+    if (fromDate && toDate) {
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.date);
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        return itemDate >= from && itemDate <= to;
+      });
     }
     
-    const filtered = reportData.filter(item => {
-      const itemDate = new Date(item.date);
-      const from = new Date(fromDate);
-      const to = new Date(toDate);
-      return itemDate >= from && itemDate <= to;
-    });
+    if (paymentTypeFilter) {
+      filtered = filtered.filter(item => item.paymentType === paymentTypeFilter);
+    }
     
     setFilteredData(filtered);
   };
@@ -66,6 +73,7 @@ const ServiceReports = () => {
   const handleReset = () => {
     setFromDate('');
     setToDate('');
+    setPaymentTypeFilter('');
     setFilteredData(reportData);
   };
 
@@ -186,6 +194,9 @@ const ServiceReports = () => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
+    { header: "Payment Type", accessor: "paymentType" },
+    { header: "Status", accessor: "paymentStatus" },
+    { header: "Vehicle No", accessor: "vehicleNumber" },
     { header: "Amount", accessor: "recAmt" },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
@@ -202,7 +213,7 @@ const ServiceReports = () => {
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">From Date</label>
               <input
@@ -220,6 +231,18 @@ const ServiceReports = () => {
                 onChange={(e) => setToDate(e.target.value)}
                 className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type</label>
+              <select
+                value={paymentTypeFilter}
+                onChange={(e) => setPaymentTypeFilter(e.target.value)}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
+              >
+                <option value="">All</option>
+                <option value="full payment">Full Payment</option>
+                <option value="part payment">Part Payment</option>
+              </select>
             </div>
             <div className="flex gap-2 items-end">
               <button 

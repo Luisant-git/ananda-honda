@@ -6,7 +6,7 @@ export class ServicePaymentCollectionController {
   constructor(private readonly servicePaymentCollectionService: ServicePaymentCollectionService) {}
 
   @Post()
-  create(@Body() createServicePaymentCollectionDto: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  create(@Body() createServicePaymentCollectionDto: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     return this.servicePaymentCollectionService.create(createServicePaymentCollectionDto);
   }
 
@@ -21,7 +21,7 @@ export class ServicePaymentCollectionController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateServicePaymentCollectionDto: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  update(@Param('id') id: string, @Body() updateServicePaymentCollectionDto: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     return this.servicePaymentCollectionService.update(+id, updateServicePaymentCollectionDto);
   }
 

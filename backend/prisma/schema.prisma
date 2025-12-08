@@ -114,7 +114,11 @@ model ServicePaymentCollection {
   receiptNo       String   @unique
   refNo           String?
   customerId      Int
+  totalAmt        Float?
   recAmt          Float
+  paymentType     String   @default("full payment")
+  paymentStatus   String   @default("completed")
+  vehicleNumber   String?
   paymentModeId   Int
   typeOfPaymentId Int?
   typeOfCollectionId Int?
@@ -122,6 +126,7 @@ model ServicePaymentCollection {
   enteredBy       Int?
   remarks         String?
   jobCardNumber   String?
+  paymentSessions Json     @default("[]")
   deletedAt       DateTime?
   deletedBy       Int?
   createdAt       DateTime @default(now())
