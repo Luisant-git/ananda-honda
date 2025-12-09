@@ -1137,7 +1137,7 @@ const ServicePaymentCollection = ({ user }) => {
             </div>
           )}
 
-          {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && (
+          {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                 Total Paid Amount <span className="text-red-500">*</span>
