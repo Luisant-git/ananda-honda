@@ -14,14 +14,12 @@ export class ServicePaymentCollectionService {
     const receiptNo = `SRV${nextId.toString().padStart(4, '0')}`;
 
     let paymentSessions: any[] = [];
-    let finalStatus = data.paymentStatus || 'completed';
 
-    if (data.paymentType === 'full payment' && data.vehicleNumber) {
+    // If status is completed, mark all previous pending payments as completed
+    if (data.paymentStatus === 'completed') {
       const partPayments = await this.prisma.servicePaymentCollection.findMany({
         where: {
           customerId: data.customerId,
-          vehicleNumber: data.vehicleNumber,
-          paymentType: 'part payment',
           paymentStatus: 'pending',
           deletedAt: null
         }
@@ -43,16 +41,12 @@ export class ServicePaymentCollectionService {
       }
     }
 
-    if (data.paymentType === 'part payment') {
-      finalStatus = 'pending';
-    }
-
     return this.prisma.servicePaymentCollection.create({
       data: {
         ...data,
         date: new Date(data.date),
         receiptNo,
-        paymentStatus: finalStatus,
+        paymentStatus: data.paymentStatus || 'completed',
         totalAmt: data.totalAmt || null,
         vehicleNumber: data.vehicleNumber || null,
         typeOfPaymentId: data.typeOfPaymentId || null,
