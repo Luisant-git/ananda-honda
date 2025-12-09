@@ -39,7 +39,7 @@ const ServicePaymentCollection = ({ user }) => {
     totalAmt: "",
     recAmt: "",
     paymentType: "full payment",
-    paymentStatus: "completed",
+    paymentStatus: "pending",
     vehicleNumber: "",
     paymentModeId: "",
     typeOfPaymentId: "",
@@ -264,10 +264,14 @@ const ServicePaymentCollection = ({ user }) => {
         await fetchCustomers(); // Refresh customer list
       }
 
+      const totalAmt = formData.paymentStatus === 'completed' 
+        ? pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
+        : undefined;
+
       const submitData = {
         date: formData.date,
         customerId: customerId,
-        totalAmt: formData.totalAmt ? parseFloat(formData.totalAmt) : undefined,
+        totalAmt: totalAmt,
         recAmt: parseFloat(formData.recAmt),
         paymentType: formData.paymentType,
         paymentStatus: formData.paymentStatus,
@@ -306,7 +310,7 @@ const ServicePaymentCollection = ({ user }) => {
         totalAmt: "",
         recAmt: "",
         paymentType: "full payment",
-        paymentStatus: "completed",
+        paymentStatus: "pending",
         vehicleNumber: "",
         paymentModeId: "",
         typeOfPaymentId: "",
@@ -1045,7 +1049,12 @@ const ServicePaymentCollection = ({ user }) => {
             <select
               value={formData.paymentType}
               onChange={(e) => {
-                setFormData({ ...formData, paymentType: e.target.value });
+                const newPaymentType = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  paymentType: newPaymentType,
+                  paymentStatus: newPaymentType === "full payment" ? "completed" : formData.paymentStatus
+                });
                 if (loadedCustomer) {
                   fetchPendingPayments(loadedCustomer.id);
                 }
@@ -1058,20 +1067,22 @@ const ServicePaymentCollection = ({ user }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Payment Status <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.paymentStatus}
-              onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              required
-            >
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+          {formData.paymentType === "part payment" && pendingPayments.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Payment Status <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.paymentStatus}
+                onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                required
+              >
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -1092,7 +1103,7 @@ const ServicePaymentCollection = ({ user }) => {
 
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Received Amount <span className="text-red-500">*</span>
+             Amount <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -1106,7 +1117,7 @@ const ServicePaymentCollection = ({ user }) => {
             />
           </div>
 
-          {pendingPayments.length > 0 && (
+          {formData.paymentType === "part payment" && pendingPayments.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <label className="block text-sm font-medium text-blue-900 mb-2">
                 Previous Received Part Payments for this cutomer
@@ -1126,7 +1137,7 @@ const ServicePaymentCollection = ({ user }) => {
             </div>
           )}
 
-          {formData.paymentStatus === "completed" && (
+          {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && (
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                 Total Paid Amount <span className="text-red-500">*</span>
@@ -1134,11 +1145,10 @@ const ServicePaymentCollection = ({ user }) => {
               <input
                 type="number"
                 step="0.01"
-                value={formData.totalAmt}
-                onChange={(e) => setFormData({ ...formData, totalAmt: e.target.value })}
-                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                placeholder="Enter total paid amount (including previous payments)"
-                required
+                value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)}
+                className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed"
+                placeholder="Auto-calculated total amount"
+                readOnly
               />
             </div>
           )}
