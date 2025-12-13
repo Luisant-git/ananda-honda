@@ -106,6 +106,16 @@ const Reports = () => {
 
   const downloadXML = () => {
     try {
+      const escapeXml = (str) => {
+        if (!str) return 'N/A';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      };
+
       const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         const year = date.getFullYear();
@@ -134,18 +144,16 @@ const Reports = () => {
         xmlContent += `<VOUCHER VCHTYPE="RECEIPT (VEHICLE)" ACTION="Create">\n`;
         xmlContent += `<DATE>${formatDate(row.date)}</DATE>\n`;
         xmlContent += `<VOUCHERTYPENAME>RECEIPT (VEHICLE)</VOUCHERTYPENAME>\n`;
-        xmlContent += `<VOUCHERNUMBER>${row.receiptNo}</VOUCHERNUMBER>\n`;
-        xmlContent += `<REFERENCE>${row.remarks || 'N/A'} ${row.refNo || 'N/A'}</REFERENCE>\n`;
+        xmlContent += `<VOUCHERNUMBER>${escapeXml(row.receiptNo)}</VOUCHERNUMBER>\n`;
+        xmlContent += `<REFERENCE>${escapeXml(row.remarks)} ${escapeXml(row.refNo)}</REFERENCE>\n`;
         xmlContent += `<EFFECTIVEDATE>${formatDate(row.date)}</EFFECTIVEDATE>\n`;
-        xmlContent += `<NARRATION>${row.remarks || 'N/A'} ${row.refNo || 'N/A'}</NARRATION>\n`;
+        xmlContent += `<NARRATION>${escapeXml(row.remarks)} ${escapeXml(row.refNo)}</NARRATION>\n`;
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
-        xmlContent += `<LEDGERNAME>${row.custId} ${row.name}</LEDGERNAME>\n`;
-        // xmlContent += '<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n';
+        xmlContent += `<LEDGERNAME>${escapeXml(row.custId)} ${escapeXml(row.name)}</LEDGERNAME>\n`;
         xmlContent += `<AMOUNT>${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
         xmlContent += '<ALLLEDGERENTRIES.LIST>\n';
-        xmlContent += `<LEDGERNAME>${row.typeOfPayment}</LEDGERNAME>\n`;
-        // xmlContent += '<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n';
+        xmlContent += `<LEDGERNAME>${escapeXml(row.typeOfPayment)}</LEDGERNAME>\n`;
         xmlContent += `<AMOUNT>-${row.recAmt}</AMOUNT>\n`;
         xmlContent += '</ALLLEDGERENTRIES.LIST>\n';
         xmlContent += '</VOUCHER>\n';
