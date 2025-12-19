@@ -7,11 +7,15 @@ export class ServicePaymentCollectionService {
 
   async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
-      orderBy: { id: 'desc' }
+      orderBy: { receiptNo: 'desc' }
     });
     
-    const nextId = lastPayment ? lastPayment.id + 1 : 1;
-    const receiptNo = `SRV${nextId.toString().padStart(4, '0')}`;
+    let nextNumber = 1;
+    if (lastPayment && lastPayment.receiptNo) {
+      const lastNumber = parseInt(lastPayment.receiptNo.replace('SRV', ''));
+      nextNumber = lastNumber + 1;
+    }
+    const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
 
     let paymentSessions: any[] = [];
 

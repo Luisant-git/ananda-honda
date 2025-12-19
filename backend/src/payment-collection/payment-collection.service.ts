@@ -7,11 +7,15 @@ export class PaymentCollectionService {
 
   async create(data: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
-      orderBy: { id: 'desc' }
+      orderBy: { receiptNo: 'desc' }
     });
     
-    const nextId = lastPayment ? lastPayment.id + 1 : 1;
-    const receiptNo = `RV${nextId.toString().padStart(4, '0')}`;
+    let nextNumber = 1;
+    if (lastPayment && lastPayment.receiptNo) {
+      const lastNumber = parseInt(lastPayment.receiptNo.replace('RV', ''));
+      nextNumber = lastNumber + 1;
+    }
+    const receiptNo = `RV${nextNumber.toString().padStart(4, '0')}`;
 
     return this.prisma.paymentCollection.create({
       data: {
