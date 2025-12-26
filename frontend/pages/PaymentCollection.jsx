@@ -32,6 +32,11 @@ const PaymentCollection = ({ user }) => {
   const [paymentToDelete, setPaymentToDelete] = useState(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEntries, setTotalEntries] = useState(0);
+  const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     recAmt: "",
@@ -125,10 +130,10 @@ const PaymentCollection = ({ user }) => {
     }
   };
 
-  const fetchPayments = async () => {
+  const fetchPayments = async (page = currentPage) => {
     try {
-      const data = await paymentCollectionApi.getAll();
-      const formattedData = data.map((payment, index) => ({
+      const response = await paymentCollectionApi.getAll(page, itemsPerPage);
+      const formattedData = response.data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
         date: payment.date,
@@ -153,6 +158,9 @@ const PaymentCollection = ({ user }) => {
       }));
       setPayments(formattedData);
       setFilteredPayments(formattedData);
+      setTotalPages(response.totalPages);
+      setCurrentPage(response.page);
+      setTotalEntries(response.total);
     } catch (error) {
       console.error("Error fetching payments:", error);
     }
@@ -222,12 +230,12 @@ const PaymentCollection = ({ user }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate mobile number for new customer
     if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
       toast.error("Mobile number must be exactly 10 digits");
       return;
     }
 
+    setIsSubmitting(true);
     try {
       let customerId = loadedCustomer?.id;
 
@@ -285,11 +293,14 @@ const PaymentCollection = ({ user }) => {
         address: "",
         status: "Walk in Customer",
       });
-      fetchPayments();
+      fetchPayments(1);
+      setCurrentPage(1);
       if (showDeleted) fetchDeletedPayments();
     } catch (error) {
       toast.error("Error saving sales payment");
       console.error("Error saving sales payment:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -318,7 +329,8 @@ const PaymentCollection = ({ user }) => {
       toast.success("Sales payment deleted successfully!");
       setIsDeleteModalOpen(false);
       setPaymentToDelete(null);
-      fetchPayments();
+      fetchPayments(1);
+      setCurrentPage(1);
       fetchDeletedPayments();
     } catch (error) {
       toast.error("Error deleting sales payment");
@@ -330,7 +342,8 @@ const PaymentCollection = ({ user }) => {
     try {
       await paymentCollectionApi.restore(payment.id);
       toast.success("Sales payment restored successfully!");
-      fetchPayments();
+      fetchPayments(1);
+      setCurrentPage(1);
       fetchDeletedPayments();
     } catch (error) {
       toast.error("Error restoring sales payment");
@@ -939,6 +952,16 @@ const PaymentCollection = ({ user }) => {
         columns={columns}
         data={showDeleted ? deletedPayments : filteredPayments}
         actionButtons={renderActions}
+        pagination={!showDeleted ? {
+          page: currentPage,
+          limit: itemsPerPage,
+          total: totalEntries,
+          totalPages: totalPages,
+          onPageChange: (page) => {
+            setCurrentPage(page);
+            fetchPayments(page);
+          }
+        } : undefined}
       />
 
       <Modal
@@ -1049,9 +1072,20 @@ const PaymentCollection = ({ user }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {isEditMode ? "Update" : "Submit"}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {isEditMode ? "Updating..." : "Submitting..."}
+                </>
+              ) : (
+                isEditMode ? "Update" : "Submit"
+              )}
             </button>
           </div>
         </form>
