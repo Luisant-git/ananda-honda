@@ -73,7 +73,16 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
     try {
       await enquiryApi.create(formData);
       toast.success("Enquiry created successfully!");
-      setCurrentView("enquiry_management");
+      setFormData({
+        customerName: "",
+        enquiryType: "",
+        vehicleModel: "",
+        executiveName: "",
+        leadSources: [],
+        mobileNumber: ""
+      });
+      setExistingCustomer(null);
+      setCurrentStep(1);
     } catch (error) {
       toast.error("Failed to create enquiry");
       console.error("Error creating enquiry:", error);
