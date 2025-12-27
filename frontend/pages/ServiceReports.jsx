@@ -16,8 +16,8 @@ const ServiceReports = () => {
 
   const fetchReportData = async () => {
     try {
-      const data = await servicePaymentCollectionApi.getAll();
-      const formattedData = data.map((payment, index) => ({
+      const response = await servicePaymentCollectionApi.getAll(1, 999999);
+      const formattedData = response.data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
         date: payment.date,

@@ -71,19 +71,26 @@ export class ServicePaymentCollectionService {
     });
   }
 
-  async findAll() {
-    return this.prisma.servicePaymentCollection.findMany({
-      where: { deletedAt: null },
-      include: {
-        customer: true,
-        paymentMode: true,
-        typeOfPayment: true,
-        typeOfCollection: true,
-        vehicleModel: true,
-        user: true
-      },
-      orderBy: { id: 'desc' }
-    });
+  async findAll(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.servicePaymentCollection.findMany({
+        where: { deletedAt: null },
+        include: {
+          customer: true,
+          paymentMode: true,
+          typeOfPayment: true,
+          typeOfCollection: true,
+          vehicleModel: true,
+          user: true
+        },
+        orderBy: { id: 'desc' },
+        skip,
+        take: limit
+      }),
+      this.prisma.servicePaymentCollection.count({ where: { deletedAt: null } })
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: number) {

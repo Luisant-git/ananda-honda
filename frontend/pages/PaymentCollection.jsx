@@ -133,8 +133,9 @@ const PaymentCollection = ({ user }) => {
   const fetchPayments = async (page = currentPage) => {
     try {
       const response = await paymentCollectionApi.getAll(page, itemsPerPage);
+      const startIndex = (page - 1) * itemsPerPage;
       const formattedData = response.data.map((payment, index) => ({
-        sNo: index + 1,
+        sNo: startIndex + index + 1,
         id: payment.id,
         date: payment.date,
         receiptNo: payment.receiptNo,

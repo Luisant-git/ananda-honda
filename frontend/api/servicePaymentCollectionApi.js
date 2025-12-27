@@ -3,8 +3,8 @@ import config from '../config.js';
 const API_URL = `${config.API_BASE_URL}/service-payment-collections`;
 
 export const servicePaymentCollectionApi = {
-  getAll: async () => {
-    const response = await fetch(API_URL, { credentials: 'include' });
+  getAll: async (page = 1, limit = 10) => {
+    const response = await fetch(`${API_URL}?page=${page}&limit=${limit}`, { credentials: 'include' });
     return response.json();
   },
 
