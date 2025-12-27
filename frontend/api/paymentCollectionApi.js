@@ -51,6 +51,20 @@ export const paymentCollectionApi = {
     return response.json();
   },
 
+  cancel: async (id, cancelledBy) => {
+    const response = await fetch(`${API_URL}/${id}/cancel`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cancelledBy })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to cancel payment');
+    }
+    return response.json();
+  },
+
   getDeleted: async () => {
     const response = await fetch(`${API_URL}/deleted/all`, { credentials: 'include' });
     return response.json();

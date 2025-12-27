@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SortAscIcon, SortDescIcon } from './icons/Icons';
 
-const DataTable = ({ columns, data, actionButtons, pagination }) => {
+const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,7 +107,7 @@ const DataTable = ({ columns, data, actionButtons, pagination }) => {
           </thead>
           <tbody>
             {currentData.map((item, rowIndex) => (
-              <tr key={rowIndex} className="bg-white border-b border-brand-border hover:bg-brand-hover">
+              <tr key={rowIndex} className={`bg-white border-b border-brand-border hover:bg-brand-hover ${rowClassName ? rowClassName(item) : ''}`}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
                     {col.render ? col.render(item[col.accessor]) : String(item[col.accessor])}

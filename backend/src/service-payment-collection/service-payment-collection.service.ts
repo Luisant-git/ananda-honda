@@ -82,7 +82,8 @@ export class ServicePaymentCollectionService {
           typeOfPayment: true,
           typeOfCollection: true,
           vehicleModel: true,
-          user: true
+          user: true,
+          cancelledByUser: true
         },
         orderBy: { id: 'desc' },
         skip,
@@ -102,7 +103,8 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         typeOfCollection: true,
         vehicleModel: true,
-        user: true
+        user: true,
+        cancelledByUser: true
       }
     });
   }
@@ -163,6 +165,26 @@ export class ServicePaymentCollectionService {
         typeOfCollection: true,
         vehicleModel: true,
         user: true
+      }
+    });
+  }
+
+  async cancel(id: number, cancelledBy?: number) {
+    return this.prisma.servicePaymentCollection.update({
+      where: { id },
+      data: {
+        recAmt: 0,
+        cancelledAt: new Date(),
+        cancelledBy: cancelledBy || null
+      },
+      include: {
+        customer: true,
+        paymentMode: true,
+        typeOfPayment: true,
+        typeOfCollection: true,
+        vehicleModel: true,
+        user: true,
+        cancelledByUser: true
       }
     });
   }

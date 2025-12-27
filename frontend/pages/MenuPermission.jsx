@@ -30,8 +30,8 @@ const MenuPermission = () => {
       dashboard: false,
       master: false,
       payment_collection: {
-        sales: { add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false },
-        service: { add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false }
+        sales: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false },
+        service: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false }
       },
       reports: { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false },
       settings: { change_password: false, user_management: false, menu_permission: false }
@@ -231,12 +231,12 @@ const MenuPermission = () => {
                     {['sales', 'service'].map(type => (
                       <div key={type}>
                         <label className="flex items-center space-x-2 mb-1">
-                          <input type="checkbox" checked={!!editData.payment_collection[type]} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, [type]: prev.payment_collection[type] ? false : { add: false, edit: false, delete: false, restore: false, view_deleted: false, add_customer: false } } }))} className="rounded" />
+                          <input type="checkbox" checked={!!editData.payment_collection[type]} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, [type]: prev.payment_collection[type] ? false : { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false } } }))} className="rounded" />
                           <span className="font-medium text-sm sm:text-base">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
                         </label>
                         {editData.payment_collection[type] && typeof editData.payment_collection[type] === 'object' && (
                           <div className="ml-4 sm:ml-6 space-y-1">
-                            {['add', 'edit', 'delete', 'restore', 'view_deleted', 'add_customer'].map(action => (
+                            {['add', 'edit', 'delete', 'cancel', 'restore', 'view_deleted', 'add_customer'].map(action => (
                               <label key={action} className="flex items-center space-x-2">
                                 <input type="checkbox" checked={editData.payment_collection[type][action]} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, [type]: { ...prev.payment_collection[type], [action]: !prev.payment_collection[type][action] } } }))} className="rounded" />
                                 <span className="text-sm">{action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>

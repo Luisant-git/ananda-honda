@@ -77,6 +77,8 @@ model PaymentCollection {
   remarks         String?
   deletedAt       DateTime?
   deletedBy       Int?
+  cancelledAt     DateTime?
+  cancelledBy     Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   customer        Customer @relation(fields: [customerId], references: [id])
@@ -86,6 +88,7 @@ model PaymentCollection {
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])
   deletedByUser   User? @relation("DeletedPayments", fields: [deletedBy], references: [id])
+  cancelledByUser User? @relation("CancelledPayments", fields: [cancelledBy], references: [id])
 }
 
 model ServicePaymentMode {
@@ -129,6 +132,8 @@ model ServicePaymentCollection {
   paymentSessions Json     @default("[]")
   deletedAt       DateTime?
   deletedBy       Int?
+  cancelledAt     DateTime?
+  cancelledBy     Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   customer        Customer @relation(fields: [customerId], references: [id])
@@ -138,6 +143,7 @@ model ServicePaymentCollection {
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])
   deletedByUser   User? @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
+  cancelledByUser User? @relation("CancelledServicePayments", fields: [cancelledBy], references: [id])
 }
 
 model User {
@@ -150,8 +156,10 @@ model User {
   updatedAt DateTime @updatedAt
   paymentCollections PaymentCollection[]
   deletedPayments PaymentCollection[] @relation("DeletedPayments")
+  cancelledPayments PaymentCollection[] @relation("CancelledPayments")
   servicePaymentCollections ServicePaymentCollection[]
   deletedServicePayments ServicePaymentCollection[] @relation("DeletedServicePayments")
+  cancelledServicePayments ServicePaymentCollection[] @relation("CancelledServicePayments")
 }
 
 model MenuPermission {

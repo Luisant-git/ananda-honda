@@ -10,6 +10,16 @@ export class PaymentCollectionController {
     return this.paymentCollectionService.create(createPaymentCollectionDto);
   }
 
+  @Get('deleted/all')
+  findDeleted() {
+    return this.paymentCollectionService.findDeleted();
+  }
+
+  @Get('stats/dashboard')
+  getDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.paymentCollectionService.getDashboardStats(fromDate, toDate);
+  }
+
   @Get()
   findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.paymentCollectionService.findAll(page ? +page : 1, limit ? +limit : 10);
@@ -20,6 +30,16 @@ export class PaymentCollectionController {
     return this.paymentCollectionService.findOne(+id);
   }
 
+  @Patch(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.paymentCollectionService.restore(+id);
+  }
+
+  @Patch(':id/cancel')
+  cancel(@Param('id') id: string, @Body() body: { cancelledBy?: number }) {
+    return this.paymentCollectionService.cancel(+id, body.cancelledBy);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePaymentCollectionDto: { date?: string; customerId?: number; recAmt?: number; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
     return this.paymentCollectionService.update(+id, updatePaymentCollectionDto);
@@ -28,20 +48,5 @@ export class PaymentCollectionController {
   @Delete(':id')
   remove(@Param('id') id: string, @Body() body: { deletedBy?: number }) {
     return this.paymentCollectionService.remove(+id, body.deletedBy);
-  }
-
-  @Patch(':id/restore')
-  restore(@Param('id') id: string) {
-    return this.paymentCollectionService.restore(+id);
-  }
-
-  @Get('deleted/all')
-  findDeleted() {
-    return this.paymentCollectionService.findDeleted();
-  }
-
-  @Get('stats/dashboard')
-  getDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
-    return this.paymentCollectionService.getDashboardStats(fromDate, toDate);
   }
 }

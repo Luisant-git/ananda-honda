@@ -32,6 +32,8 @@ const ServicePaymentCollection = ({ user }) => {
   const [editingPayment, setEditingPayment] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [paymentToCancel, setPaymentToCancel] = useState(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,6 +172,8 @@ const ServicePaymentCollection = ({ user }) => {
         typeOfPaymentId: payment.typeOfPaymentId,
         typeOfCollectionId: payment.typeOfCollectionId,
         vehicleModelId: payment.vehicleModelId,
+        cancelledAt: payment.cancelledAt,
+        cancelledBy: payment.cancelledByUser?.username || null,
       }));
       setPayments(formattedData);
       setFilteredPayments(formattedData);
@@ -413,6 +417,23 @@ const ServicePaymentCollection = ({ user }) => {
     } catch (error) {
       toast.error("Error restoring service payment");
       console.error("Error restoring service payment:", error);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!paymentToCancel?.id) {
+      toast.error("Invalid payment selected");
+      return;
+    }
+    try {
+      await servicePaymentCollectionApi.cancel(paymentToCancel.id, user?.id);
+      toast.success("Service payment cancelled successfully!");
+      setIsCancelModalOpen(false);
+      setPaymentToCancel(null);
+      fetchPayments(currentPage);
+    } catch (error) {
+      toast.error("Error cancelling service payment");
+      console.error("Error cancelling service payment:", error);
     }
   };
 
@@ -748,6 +769,9 @@ const ServicePaymentCollection = ({ user }) => {
         </button>
       ) : null;
     }
+    if (payment.cancelledAt) {
+      return <span className="text-red-600 font-semibold">CANCELLED</span>;
+    }
     return (
       <div className="flex gap-2">
         {permissions?.payment_collection?.service?.edit && (
@@ -767,6 +791,17 @@ const ServicePaymentCollection = ({ user }) => {
             className="text-red-600 hover:underline"
           >
             Delete
+          </button>
+        )}
+        {permissions?.payment_collection?.service?.cancel && (
+          <button
+            onClick={() => {
+              setPaymentToCancel(payment);
+              setIsCancelModalOpen(true);
+            }}
+            className="text-orange-600 hover:underline"
+          >
+            Cancel
           </button>
         )}
         <button
@@ -1028,6 +1063,7 @@ const ServicePaymentCollection = ({ user }) => {
         columns={columns}
         data={showDeleted ? deletedPayments : filteredPayments}
         actionButtons={renderActions}
+        rowClassName={(row) => row.cancelledAt ? '!bg-red-100' : ''}
         pagination={!showDeleted ? {
           page: currentPage,
           limit: itemsPerPage,
@@ -1304,6 +1340,33 @@ const ServicePaymentCollection = ({ user }) => {
               className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
             >
               Delete
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        title="Confirm Cancel Payment"
+      >
+        <div className="space-y-4">
+          <p className="text-brand-text-primary">
+            Are you sure you want to cancel service payment{" "}
+            <strong>{paymentToCancel?.receiptNo}</strong>? The amount will be set to ₹0.
+          </p>
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setIsCancelModalOpen(false)}
+              className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
+            >
+              No
+            </button>
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold"
+            >
+              Yes, Cancel Payment
             </button>
           </div>
         </div>
