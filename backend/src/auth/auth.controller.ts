@@ -24,6 +24,9 @@ export class AuthController {
       console.log('User logged in:', user);
       return user;
     } catch (error) {
+      if (error.code === 'P2037' || error.message?.includes('connection')) {
+        throw new HttpException('Server is experiencing heavy traffic. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
       throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
     }
   }
@@ -39,12 +42,19 @@ export class AuthController {
     if (!session.user) {
       throw new HttpException('Not authenticated', HttpStatus.UNAUTHORIZED);
     }
-    const user = await this.authService.validateUser(session.user.id);
-    if (!user || !user.isActive) {
-      session.destroy();
-      throw new HttpException('Your account has been deactivated. Please contact super admin', HttpStatus.UNAUTHORIZED);
+    try {
+      const user = await this.authService.validateUser(session.user.id);
+      if (!user || !user.isActive) {
+        session.destroy();
+        throw new HttpException('Your account has been deactivated. Please contact super admin', HttpStatus.UNAUTHORIZED);
+      }
+      return session.user;
+    } catch (error) {
+      if (error.code === 'P2037' || error.message?.includes('connection')) {
+        throw new HttpException('Server is experiencing heavy traffic. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      throw error;
     }
-    return session.user;
   }
 
   @Post('change-password')
