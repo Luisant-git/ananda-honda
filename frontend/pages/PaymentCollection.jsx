@@ -135,6 +135,12 @@ const PaymentCollection = ({ user }) => {
   const fetchPayments = async (page = currentPage) => {
     try {
       const response = await paymentCollectionApi.getAll(page, itemsPerPage);
+      if (!response || !Array.isArray(response.data)) {
+        console.error('Invalid response format:', response);
+        setPayments([]);
+        setFilteredPayments([]);
+        return;
+      }
       const startIndex = (page - 1) * itemsPerPage;
       const formattedData = response.data.map((payment, index) => ({
         sNo: startIndex + index + 1,
@@ -168,6 +174,8 @@ const PaymentCollection = ({ user }) => {
       setTotalEntries(response.total);
     } catch (error) {
       console.error("Error fetching payments:", error);
+      setPayments([]);
+      setFilteredPayments([]);
     }
   };
 
