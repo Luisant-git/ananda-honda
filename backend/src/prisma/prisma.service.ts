@@ -6,15 +6,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor() {
     super({
       datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
+        db: { url: process.env.DATABASE_URL },
       },
     });
   }
 
   async onModuleInit() {
     await this.$connect();
+
+    // Optional: handle PM2 shutdown signals
+    process.on('SIGINT', async () => {
+      await this.$disconnect();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+      await this.$disconnect();
+      process.exit(0);
+    });
   }
 
   async onModuleDestroy() {
