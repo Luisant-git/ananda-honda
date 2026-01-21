@@ -3,23 +3,20 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private static instance: PrismaService;
+
   constructor() {
-    super({
-      datasources: {
-        db: { url: process.env.DATABASE_URL },
-      },
-    });
+    if (PrismaService.instance) return PrismaService.instance;
+    super({ datasources: { db: { url: process.env.DATABASE_URL } } });
+    PrismaService.instance = this;
   }
 
   async onModuleInit() {
     await this.$connect();
-
-    // Optional: handle PM2 shutdown signals
     process.on('SIGINT', async () => {
       await this.$disconnect();
       process.exit(0);
     });
-
     process.on('SIGTERM', async () => {
       await this.$disconnect();
       process.exit(0);
