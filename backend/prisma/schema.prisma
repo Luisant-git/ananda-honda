@@ -172,6 +172,7 @@ model MenuPermission {
 
 enum Role {
   SUPER_ADMIN
+  ADMIN
   USER
   ENQUIRY
   ACCOUNT
