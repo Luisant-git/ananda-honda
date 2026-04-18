@@ -371,7 +371,7 @@ const ServicePaymentCollection = ({ user }) => {
   };
 
   useEffect(() => {
-    if (isPaymentModalOpen && !isEditMode && loadedCustomer && formData.paymentType === "full payment") {
+    if (isPaymentModalOpen && !isEditMode && loadedCustomer) {
       fetchPendingPayments(loadedCustomer.id);
     }
   }, [isPaymentModalOpen, formData.paymentType, loadedCustomer]);
@@ -1120,7 +1120,7 @@ const ServicePaymentCollection = ({ user }) => {
                 setFormData({ 
                   ...formData, 
                   paymentType: newPaymentType,
-                  paymentStatus: newPaymentType === "full payment" ? "completed" : formData.paymentStatus
+                  paymentStatus: newPaymentType === "full payment" ? "completed" : "pending"
                 });
                 if (loadedCustomer) {
                   fetchPendingPayments(loadedCustomer.id);
@@ -1134,7 +1134,7 @@ const ServicePaymentCollection = ({ user }) => {
             </select>
           </div>
 
-          {formData.paymentType === "part payment" && pendingPayments.length > 0 && (
+          {formData.paymentType === "part payment" && (
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                 Payment Status <span className="text-red-500">*</span>
