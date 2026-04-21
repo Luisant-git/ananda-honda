@@ -176,6 +176,7 @@ enum Role {
   USER
   ENQUIRY
   ACCOUNT
+  FINANCE
   DEVELOPER
 }
 
