@@ -136,6 +136,7 @@ const UserManagement = () => {
               <option value="ENQUIRY">Enquiry</option>
               <option value="ACCOUNT">Account</option>
               <option value="FINANCE">Finance</option>
+              <option value="SALE">Sale</option>
             </select>
           </div>
           <div className="flex justify-end gap-4 pt-4">

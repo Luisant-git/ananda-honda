@@ -177,6 +177,7 @@ enum Role {
   ENQUIRY
   ACCOUNT
   FINANCE
+  SALE
   DEVELOPER
 }
 
