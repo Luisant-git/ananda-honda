@@ -205,36 +205,70 @@ export class ServicePaymentCollectionService {
     });
   }
 
-  async getDashboardStats(fromDate: string, toDate: string) {
-    const startDate = new Date(fromDate);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+ async getDashboardStats(fromDate: string, toDate: string) {
+  const startDate = new Date(fromDate);
+  startDate.setHours(0, 0, 0, 0);
 
-    const paymentModes = await this.prisma.servicePaymentMode.findMany();
+  const endDate = new Date(toDate);
+  endDate.setHours(23, 59, 59, 999);
 
-    const modes = await Promise.all(
-      paymentModes.map(async (mode) => {
-        const data = await this.prisma.servicePaymentCollection.aggregate({
-          where: { 
-            date: { gte: startDate, lte: endDate }, 
-            paymentModeId: mode.id,
-            deletedAt: null
-          },
-          _sum: { recAmt: true },
-          _count: true
-        });
-        return { mode: mode.paymentMode, amount: data._sum.recAmt || 0, count: data._count };
-      })
-    );
+  const paymentModes = await this.prisma.servicePaymentMode.findMany({
+    include: { serviceTypeOfPayments: true }
+  });
 
-    const totalCount = await this.prisma.servicePaymentCollection.count({
-      where: { 
-        date: { gte: startDate, lte: endDate },
-        deletedAt: null
-      }
-    });
+  const modes = await Promise.all(
+    paymentModes.map(async (mode) => {
 
-    return { modes, totalCount };
-  }
+    
+      const data = await this.prisma.servicePaymentCollection.aggregate({
+        where: {
+          date: { gte: startDate, lte: endDate },
+          paymentModeId: mode.id,
+          deletedAt: null
+        },
+        _sum: { recAmt: true },
+        _count: true
+      });
+
+    
+      const types = await Promise.all(
+        mode.serviceTypeOfPayments.map(async (type) => {
+          const typeData = await this.prisma.servicePaymentCollection.aggregate({
+            where: {
+              date: { gte: startDate, lte: endDate },
+              paymentModeId: mode.id,
+              typeOfPaymentId: type.id,
+              deletedAt: null
+            },
+            _sum: { recAmt: true },
+            _count: true
+          });
+
+          return {
+            type: type.typeOfMode,
+            amount: typeData._sum.recAmt || 0,
+            count: typeData._count
+          };
+        })
+      );
+
+      return {
+        mode: mode.paymentMode,
+        amount: data._sum.recAmt || 0,
+        count: data._count,
+        types
+      };
+    })
+  );
+
+
+  const totalCount = await this.prisma.servicePaymentCollection.count({
+    where: {
+      date: { gte: startDate, lte: endDate },
+      deletedAt: null
+    }
+  });
+
+  return { modes, totalCount };
+}
 }
