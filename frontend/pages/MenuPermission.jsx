@@ -8,7 +8,7 @@ const MenuPermission = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const roles = ['SUPER_ADMIN', 'ADMIN', 'USER', 'ENQUIRY', 'ACCOUNT', 'FINANCE', 'SALE', 'SERVICE', 'DEVELOPER'];
+  const roles = ['SUPER_ADMIN', 'ADMIN', 'USER', 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'DEVELOPER'];
 
   useEffect(() => {
     fetchPermissions();

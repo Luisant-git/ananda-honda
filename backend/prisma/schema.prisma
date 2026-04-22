@@ -176,8 +176,6 @@ enum Role {
   USER
   ENQUIRY
   ACCOUNT
-  FINANCE
-  SALE
   SERVICE
   DEVELOPER
 }
