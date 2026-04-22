@@ -178,6 +178,7 @@ enum Role {
   ACCOUNT
   FINANCE
   SALE
+  SERVICE
   DEVELOPER
 }
 
