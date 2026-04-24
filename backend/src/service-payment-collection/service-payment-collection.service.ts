@@ -1,9 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { PdfService } from '../pdf/pdf.service';
 
 @Injectable()
 export class ServicePaymentCollectionService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ServicePaymentCollectionService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private whatsappService: WhatsappService,
+    private pdfService: PdfService,
+  ) {}
 
   async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
@@ -45,7 +53,7 @@ export class ServicePaymentCollectionService {
       }
     }
 
-    return this.prisma.servicePaymentCollection.create({
+    const savedPayment = await this.prisma.servicePaymentCollection.create({
       data: {
         ...data,
         date: new Date(data.date),
@@ -69,6 +77,45 @@ export class ServicePaymentCollectionService {
         user: true
       }
     });
+
+    try {
+      if (savedPayment.customer && savedPayment.customer.contactNo) {
+        // Run asynchronously so it doesn't block the API response
+        this.sendWhatsappReceipt(savedPayment).catch((err) => {
+          this.logger.error('Failed to send WhatsApp receipt asynchronously', err);
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error triggering WhatsApp receipt', error);
+    }
+
+    return savedPayment;
+  }
+
+  private async sendWhatsappReceipt(payment: any) {
+    try {
+      const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
+      const filename = `Service_Receipt_${payment.receiptNo}.pdf`;
+      const mediaId = await this.whatsappService.uploadMedia(pdfBuffer, filename);
+      
+      const customerName = payment.customer.name;
+      const amount = `₹${payment.recAmt}`;
+      const contactNo = payment.customer.contactNo;
+      const purpose = payment.typeOfCollection?.typeOfCollect || 'Service Payment';
+
+      await this.whatsappService.sendPaymentReceiptTemplate(
+        contactNo,
+        customerName,
+        payment.receiptNo,
+        amount,
+        purpose,
+        mediaId,
+        filename
+      );
+      this.logger.log(`WhatsApp service receipt sent successfully to ${contactNo}`);
+    } catch (error) {
+      this.logger.error('Failed to send WhatsApp service receipt process', error);
+    }
   }
 
   async findAll(page: number = 1, limit: number = 10) {
