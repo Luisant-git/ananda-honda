@@ -14,7 +14,8 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const perms = await menuPermissionApi.get();
+        const res = await menuPermissionApi.get();
+        const perms = res?.permissions || res;
         setPermissions(perms);
       } catch (error) {
         console.error('Failed to fetch permissions:', error);
@@ -26,6 +27,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
   const toggleMenu = (menu) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
   };
+
+  const hasDashboardAccess =
+    !!(permissions?.dashboard?.sales || permissions?.dashboard?.service);
 
   const NavLink = ({ view, label, icon, isSubmenu = false }) => {
     const isActive = currentView === view;
@@ -49,10 +53,10 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
       </a>
     );
   };
-  
+
   const NavGroup = ({ menuKey, label, icon, children }) => {
     const isOpen = openMenus[menuKey];
-    
+
     if (isSidebarCollapsed) {
       return (
         <li>
@@ -62,7 +66,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
         </li>
       );
     }
-    
+if (!permissions) return null;
     return (
       <li>
         <button
@@ -86,21 +90,25 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
     <>
       <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)}></div>
       <aside className={`bg-brand-surface text-brand-text-primary ${isSidebarCollapsed ? 'w-16' : 'w-64'} fixed top-0 left-0 h-full z-40 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:relative md:translate-x-0 md:flex-shrink-0 flex flex-col border-r border-brand-border`}>
-         <div className="flex items-center justify-between p-4 border-b border-brand-border">
-            {!isSidebarCollapsed && <h1 className="text-xl font-bold">Ananda Motowings Private Limited</h1>}
-            <div className="flex items-center gap-2">
-              <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:block p-1 text-brand-text-secondary hover:text-brand-text-primary">
-                <MenuIcon />
-              </button>
-              <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-brand-text-secondary hover:text-brand-text-primary">
-                <CloseIcon />
-              </button>
-            </div>
+        <div className="flex items-center justify-between p-4 border-b border-brand-border">
+          {!isSidebarCollapsed && <h1 className="text-xl font-bold">Ananda Motowings Private Limited</h1>}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:block p-1 text-brand-text-secondary hover:text-brand-text-primary">
+              <MenuIcon />
+            </button>
+            <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-brand-text-secondary hover:text-brand-text-primary">
+              <CloseIcon />
+            </button>
+          </div>
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <ul className="space-y-2">
-            {permissions?.dashboard && <li><NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} /></li>}
-            
+            {hasDashboardAccess && (
+              <li>
+                <NavLink view="dashboard" label="Dashboard" icon={<DashboardIcon />} />
+              </li>
+            )}
+
             {permissions?.master && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
@@ -123,17 +131,17 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
 
             {(permissions?.reports?.payment_collection_report || permissions?.reports?.service_payment_collection_report || permissions?.reports?.enquiry_report) && (
               <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
-                  {permissions?.reports?.payment_collection_report && <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>}
-                  {permissions?.reports?.service_payment_collection_report && <li><NavLink view="service_reports" label="Service Report" isSubmenu /></li>}
-                  {permissions?.reports?.enquiry_report && <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>}
+                {permissions?.reports?.payment_collection_report && <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>}
+                {permissions?.reports?.service_payment_collection_report && <li><NavLink view="service_reports" label="Service Report" isSubmenu /></li>}
+                {permissions?.reports?.enquiry_report && <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>}
               </NavGroup>
             )}
 
             {permissions?.settings && (
               <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>
-                 {permissions.settings.change_password && <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>}
-                 {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
-                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
+                {permissions.settings.change_password && <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>}
+                {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
+                {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
               </NavGroup>
             )}
           </ul>

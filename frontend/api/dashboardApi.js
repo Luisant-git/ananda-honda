@@ -7,5 +7,15 @@ export const dashboardApi = {
     const response = await fetch(`${API_BASE_URL}/payment-collections/stats/dashboard?fromDate=${fromDate}&toDate=${toDate}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch dashboard stats');
     return response.json();
+  },
+
+   
+   getServicesDashboardStats: async (fromDate, toDate) => {
+    const response = await fetch(
+      `${API_BASE_URL}/service-payment-collections/stats/dashboard?fromDate=${fromDate}&toDate=${toDate}`, { credentials: 'include'});
+    if (!response.ok) {
+      throw new Error('Failed to fetch services dashboard stats');
+    }
+    return response.json();
   }
 };
