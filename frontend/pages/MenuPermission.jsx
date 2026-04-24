@@ -27,7 +27,7 @@ const MenuPermission = () => {
     const existing = permissions.find(p => p.role === role);
     setSelectedRole(role);
     setEditData(existing?.permissions || {
-      dashboard: false,
+      dashboard: { sales: false, service: false },
       master: false,
       payment_collection: {
         sales: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false },
@@ -69,7 +69,7 @@ const MenuPermission = () => {
   const toggleMasterSubmenu = (submenu) => {
     setEditData(prev => ({
       ...prev,
-      master: typeof prev.master === 'object' 
+      master: typeof prev.master === 'object'
         ? { ...prev.master, [submenu]: !prev.master[submenu] }
         : { [submenu]: true }
     }));
@@ -87,6 +87,15 @@ const MenuPermission = () => {
     }));
   };
 
+  const hasDashboardAccess = (perm) =>
+    perm?.permissions?.dashboard?.sales === true ||
+    perm?.permissions?.dashboard?.service === true;
+
+  const showDashboardColumn = permissions.some(
+    (p) =>
+      p?.permissions?.dashboard?.sales === true ||
+      p?.permissions?.dashboard?.service === true
+  );
   return (
     <div className="p-3 sm:p-4 md:p-6">
       <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -99,7 +108,11 @@ const MenuPermission = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-              <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dashboard</th>
+              {showDashboardColumn && (
+                <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Dashboard
+                </th>
+              )}
               <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Master</th>
               <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
               <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reports</th>
@@ -112,7 +125,11 @@ const MenuPermission = () => {
               return (
                 <tr key={role}>
                   <td className="px-3 md:px-6 py-4 whitespace-nowrap font-medium text-sm">{role}</td>
-                  <td className="px-3 md:px-6 py-4 text-sm">{perm?.permissions?.dashboard ? '✓' : '✗'}</td>
+                  {showDashboardColumn && (
+                    <td className="px-3 md:px-6 py-4 text-sm">
+                      {hasDashboardAccess(perm) ? '✓' : '✗'}
+                    </td>
+                  )}
                   <td className="px-3 md:px-6 py-4 text-sm">{perm?.permissions?.master ? '✓' : '✗'}</td>
                   <td className="px-3 md:px-6 py-4 text-sm">{perm?.permissions?.payment_collection ? '✓' : '✗'}</td>
                   <td className="px-3 md:px-6 py-4 text-sm">{perm?.permissions?.reports ? '✓' : '✗'}</td>
@@ -141,10 +158,12 @@ const MenuPermission = () => {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Dashboard:</span>
-                  <span>{perm?.permissions?.dashboard ? '✓' : '✗'}</span>
-                </div>
+                {showDashboardColumn && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Dashboard:</span>
+                    <span>{hasDashboardAccess(perm) ? '✓' : '✗'}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Master:</span>
                   <span>{perm?.permissions?.master ? '✓' : '✗'}</span>
@@ -175,11 +194,40 @@ const MenuPermission = () => {
               </svg>
             </button>
             <h2 className="text-lg sm:text-xl font-bold mb-4 pr-8">Edit Permissions - {selectedRole}</h2>
-            
+
             <div className="space-y-4">
               <label className="flex items-center space-x-2">
-                <input type="checkbox" checked={editData.dashboard} onChange={() => togglePermission('dashboard')} className="rounded" />
-                <span>Dashboard</span>
+                <div>
+                  <div className="font-medium mb-2">Dashboard</div>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editData.dashboard?.sales || false}
+                      onChange={() =>
+                        setEditData(prev => ({
+                          ...prev,
+                          dashboard: { ...prev.dashboard, sales: !prev.dashboard?.sales }
+                        }))
+                      }
+                    />
+                    <span>Sales Dashboard</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 mt-2">
+                    <input
+                      type="checkbox"
+                      checked={editData.dashboard?.service || false}
+                      onChange={() =>
+                        setEditData(prev => ({
+                          ...prev,
+                          dashboard: { ...prev.dashboard, service: !prev.dashboard?.service }
+                        }))
+                      }
+                    />
+                    <span>Service Dashboard</span>
+                  </label>
+                </div>
               </label>
 
               <div>

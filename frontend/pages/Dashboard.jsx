@@ -1,21 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { dashboardApi } from '../api/dashboardApi';
-
+import { menuPermissionApi } from '../api/menuPermissionApi';
 const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
-  const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'services'
   const [chartData, setChartData] = useState({ modes: [] });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [expandedMode, setExpandedMode] = useState(null); // store the mode name or index
+  const [permissions, setPermissions] = useState(null);
+const [activeTab, setActiveTab] = useState(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [activeTab]);
+useEffect(() => {
+  if (!activeTab) return;
+  fetchDashboardData();
+}, [activeTab]);
 
+useEffect(() => {
+  const fetchPerms = async () => {
+    const res = await menuPermissionApi.get();
+    const perms = res.permissions || res;
+    setPermissions(perms);
+
+if (perms?.dashboard?.sales === true) setActiveTab('sales');
+else if (perms?.dashboard?.service === true) setActiveTab('services');
+else setActiveTab(null);
+  };
+
+  fetchPerms();
+}, []);
   const fetchDashboardData = async () => {
     if (!fromDate || !toDate) {
       toast.error('Please select both from and to dates');
@@ -297,36 +312,34 @@ const Dashboard = () => {
       </div>
     );
   };
+const hasDashboardAccess =
+  !!(permissions?.dashboard?.sales || permissions?.dashboard?.service);
 
+if (!permissions) return null; // or: return <div>Loading...</div>
+
+if (!hasDashboardAccess) return null; // hides whole dashboard page
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Dashboard</h1>
       
       {/* Tabs */}
-      <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
-        <div className="flex border-b border-brand-border">
-          <button
-            onClick={() => handleTabChange('sales')}
-            className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
-              activeTab === 'sales'
-                ? 'bg-brand-accent text-white border-b-2 border-brand-accent'
-                : 'bg-gray-50 text-brand-text-secondary hover:bg-gray-100'
-            }`}
-          >
-            Sales Dashboard
-          </button>
-          <button
-            onClick={() => handleTabChange('services')}
-            className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
-              activeTab === 'services'
-                ? 'bg-brand-accent text-white border-b-2 border-brand-accent'
-                : 'bg-gray-50 text-brand-text-secondary hover:bg-gray-100'
-            }`}
-          >
-            Services Dashboard
-          </button>
-        </div>
-      </div>
+{(permissions?.dashboard?.sales && permissions?.dashboard?.service) && (
+  <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
+    <div className="flex border-b border-brand-border">
+      {permissions?.dashboard?.sales && (
+        <button onClick={() => handleTabChange('sales')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'sales' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+          Sales Dashboard
+        </button>
+      )}
+
+      {permissions?.dashboard?.service && (
+        <button onClick={() => handleTabChange('services')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'services' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+          Services Dashboard
+        </button>
+      )}
+    </div>
+  </div>
+)}
 
       {/* Date Filter Section */}
       <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
