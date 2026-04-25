@@ -1,15 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as htmlPdf from 'html-pdf-node';
+import { Injectable } from '@nestjs/common';
+import * as PDFDocument from 'pdfkit';
 
 @Injectable()
 export class PdfService {
-  private readonly logger = new Logger(PdfService.name);
 
+  // ---------------- NUMBER TO WORDS ----------------
   private numberToWords(num: number): string {
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const ones = ['', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 
     if (num === 0) return 'Zero';
     if (num < 20) return ones[num];
@@ -20,170 +18,97 @@ export class PdfService {
     return this.numberToWords(Math.floor(num / 10000000)) + ' Crore' + (num % 10000000 ? ' ' + this.numberToWords(num % 10000000) : '');
   }
 
-  private getLogoDataUrl(): string {
-    try {
-      const logoPath = path.join(process.cwd(), '../frontend/assets/honda-logo.svg');
-      const logoBuffer = fs.readFileSync(logoPath);
-      return 'data:image/svg+xml;base64,' + logoBuffer.toString('base64');
-    } catch (e) {
-      this.logger.warn('Failed to load Honda logo');
-      return '';
-    }
-  }
-
+  // ---------------- MAIN RECEIPT ----------------
   async generateSalesReceipt(payment: any, systemUser: any): Promise<Buffer> {
-    const printDate = new Date();
-    const formattedDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
-
-    const amountInWords = this.numberToWords(parseInt(payment.recAmt)) + ' Rupees Only.';
-    const logoDataUrl = this.getLogoDataUrl();
-
-    const customer = payment.customer || {};
-    const paymentModeObj = payment.paymentMode || {};
-    const typeOfPaymentObj = payment.typeOfPayment || {};
-    const typeOfCollectionObj = payment.typeOfCollection || {};
-    const vehicleModelObj = payment.vehicleModel || {};
-    const enteredByUser = payment.user || {};
-
-    const htmlContent = this.buildReceiptHtml(
-      'RECEIPT',
-      payment,
-      customer,
-      paymentModeObj,
-      typeOfPaymentObj,
-      typeOfCollectionObj,
-      vehicleModelObj,
-      enteredByUser,
-      amountInWords,
-      logoDataUrl,
-      formattedDate
-    );
-
-    return this.generatePdfFromHtml(htmlContent);
+    return this.createPdf(payment, systemUser, 'RECEIPT');
   }
 
   async generateServiceReceipt(payment: any, systemUser: any): Promise<Buffer> {
-    const printDate = new Date();
-    const formattedDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
-
-    const amountInWords = this.numberToWords(parseInt(payment.recAmt)) + ' Rupees Only.';
-    const logoDataUrl = this.getLogoDataUrl();
-
-    const customer = payment.customer || {};
-    const paymentModeObj = payment.paymentMode || {};
-    const typeOfPaymentObj = payment.typeOfPayment || {};
-    const typeOfCollectionObj = payment.typeOfCollection || {};
-    const vehicleModelObj = payment.vehicleModel || {};
-    const enteredByUser = payment.user || {};
-
-    const htmlContent = this.buildReceiptHtml(
-      'SERVICE RECEIPT',
-      payment,
-      customer,
-      paymentModeObj,
-      typeOfPaymentObj,
-      typeOfCollectionObj,
-      vehicleModelObj,
-      enteredByUser,
-      amountInWords,
-      logoDataUrl,
-      formattedDate,
-      payment.jobCardNumber
-    );
-
-    return this.generatePdfFromHtml(htmlContent);
+    return this.createPdf(payment, systemUser, 'SERVICE RECEIPT', payment.jobCardNumber);
   }
 
-  private buildReceiptHtml(
-    title: string,
+  // ---------------- CORE PDF BUILDER ----------------
+  private async createPdf(
     payment: any,
-    customer: any,
-    paymentModeObj: any,
-    typeOfPaymentObj: any,
-    typeOfCollectionObj: any,
-    vehicleModelObj: any,
-    enteredByUser: any,
-    amountInWords: string,
-    logoDataUrl: string,
-    formattedDate: string,
+    systemUser: any,
+    title: string,
     jobCardNumber?: string
-  ): string {
-    return `
-    <html>
-      <head>
-        <style>
-          @page { size: A4; margin: 0; }
-          body { margin: 0; padding: 0; font-family: Arial; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div style="width:210mm; min-height:297mm; padding:20px; box-sizing:border-box;">
-          <div style="border:1px solid #000; padding:20px; height:100%;">
+  ): Promise<Buffer> {
 
-            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:20px;">
-              <div>
-                <h3>ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-                <p>
-                  Bengaluru, Karnataka<br>
-                  Contact: +919071755550<br>
-                  GSTIN: 29ABBCA7185M1Z2
-                </p>
-              </div>
-              ${logoDataUrl ? `<img src="${logoDataUrl}" style="width:120px;height:90px;" />` : ''}
-            </div>
+    return new Promise((resolve) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const buffers: Buffer[] = [];
 
-            <h2 style="text-align:center; border:2px solid #000; padding:10px;">${title}</h2>
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-            <table style="width:100%; margin-top:20px;">
-              <tr>
-                <td><b>Customer:</b> ${customer.name || 'N/A'}</td>
-                <td><b>Receipt No:</b> ${payment.receiptNo}</td>
-              </tr>
-              <tr>
-                <td><b>Mobile:</b> ${customer.contactNo || 'N/A'}</td>
-                <td><b>Date:</b> ${formattedDate}</td>
-              </tr>
-              <tr>
-                <td><b>Vehicle:</b> ${vehicleModelObj.model || 'N/A'}</td>
-                <td><b>Collection:</b> ${typeOfCollectionObj.typeOfCollect || 'N/A'}</td>
-              </tr>
-              ${jobCardNumber ? `<tr><td><b>Job Card:</b> ${jobCardNumber}</td></tr>` : ''}
-            </table>
+      const customer = payment.customer || {};
+      const paymentMode = payment.paymentMode || {};
+      const collection = payment.typeOfCollection || {};
+      const vehicle = payment.vehicleModel || {};
+      const user = payment.user || {};
 
-            <h3>Amount: ₹${payment.recAmt}</h3>
-            <p>${amountInWords}</p>
+      const amount = payment.recAmt || 0;
+      const amountInWords = this.numberToWords(Number(amount)) + ' Rupees Only';
 
-            <p><b>Mode:</b> ${paymentModeObj.paymentMode || 'N/A'}</p>
+      const date = new Date(payment.date || Date.now());
+      const formattedDate = date.toLocaleDateString('en-GB');
 
-            <div style="margin-top:40px; text-align:right;">
-              Authorized Signatory
-            </div>
+      // ---------------- HEADER ----------------
+      doc.fontSize(16).text('ANANDA MOTOWINGS PRIVATE LIMITED', { align: 'center' });
+      doc.moveDown(0.5);
 
-            <div style="font-size:10px; text-align:center; margin-top:20px;">
-              Entered by: ${enteredByUser.username || 'System'} | Printed on: ${formattedDate}
-            </div>
+      doc.fontSize(10).text(
+        'Bengaluru, Karnataka | +91 90717 55550 | GSTIN: 29ABBCA7185M1Z2',
+        { align: 'center' }
+      );
 
-          </div>
-        </div>
-      </body>
-    </html>`;
-  }
+      doc.moveDown(2);
 
-  private async generatePdfFromHtml(htmlContent: string): Promise<Buffer> {
-    const file = { content: htmlContent };
+      doc.fontSize(14).text(title, { align: 'center', underline: true });
 
-    const options = {
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0px',
-        bottom: '0px',
-        left: '0px',
-        right: '0px',
-      },
-    };
+      doc.moveDown(2);
 
-    const pdfBuffer = await htmlPdf.generatePdf(file, options);
-    return Buffer.from(pdfBuffer);
+      // ---------------- CUSTOMER INFO ----------------
+      doc.fontSize(11);
+      doc.text(`Customer: ${customer.name || 'N/A'}`);
+      doc.text(`Mobile: ${customer.contactNo || 'N/A'}`);
+      doc.text(`Receipt No: ${payment.receiptNo || 'N/A'}`);
+      doc.text(`Date: ${formattedDate}`);
+      doc.text(`Vehicle: ${vehicle.model || 'N/A'}`);
+      doc.text(`Collection: ${collection.typeOfCollect || 'N/A'}`);
+
+      if (jobCardNumber) {
+        doc.text(`Job Card: ${jobCardNumber}`);
+      }
+
+      doc.moveDown(2);
+
+      // ---------------- AMOUNT ----------------
+      doc.fontSize(13).text(`Amount: ₹${amount}`, { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(11).text(amountInWords);
+
+      doc.moveDown(2);
+
+      // ---------------- PAYMENT INFO ----------------
+      doc.text(`Mode: ${paymentMode.paymentMode || 'N/A'}`);
+      doc.text(`Reference No: ${payment.refNo || 'N/A'}`);
+
+      doc.moveDown(3);
+
+      // ---------------- SIGNATURE ----------------
+      doc.text('Authorized Signatory', { align: 'right' });
+
+      doc.moveDown(2);
+
+      // ---------------- FOOTER ----------------
+      doc.fontSize(8).text(
+        `Entered by: ${user.username || 'System'} | Printed by: ${systemUser?.username || 'System'} | Printed on: ${new Date().toLocaleString()}`,
+        { align: 'center' }
+      );
+
+      doc.end();
+    });
   }
 }
