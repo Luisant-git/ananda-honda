@@ -65,7 +65,7 @@ export class PdfService {
         const printDate = new Date();
         const formattedPrintDate = `${printDate.getDate().toString().padStart(2, '0')}-${(printDate.getMonth() + 1).toString().padStart(2, '0')}-${printDate.getFullYear()} ${printDate.toLocaleTimeString('en-US', { hour12: true })}`;
 
-        // ---------------- HEADER WITH BORDER ----------------
+        // ---------------- HEADER WITH LOGO ----------------
         const pageWidth = doc.page.width - 80; // Account for margins
         const startY = 40;
         
@@ -74,21 +74,46 @@ export class PdfService {
 
         let currentY = startY + 20;
 
-        // Company Header
+        // Company Header (Left side)
+        const headerTextWidth = pageWidth - 150; // Leave space for logo
         doc.fontSize(18).font('Helvetica-Bold')
            .text('ANANDA MOTOWINGS PRIVATE LIMITED', 60, currentY, { 
-             width: pageWidth - 40, 
+             width: headerTextWidth, 
              align: 'left' 
            });
         
         currentY += 30;
         
         doc.fontSize(10).font('Helvetica')
-           .text('Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,', 60, currentY, { width: pageWidth - 40 })
-           .text('Near Silk board Junction, Bomannahalli, Bengaluru,', 60, currentY + 12, { width: pageWidth - 40 })
-           .text('Bengaluru Urban, Karnataka, 560068', 60, currentY + 24, { width: pageWidth - 40 })
-           .text('Contact No : +919071755550', 60, currentY + 36, { width: pageWidth - 40 })
-           .text('GSTIN: 29ABBCA7185M1Z2', 60, currentY + 48, { width: pageWidth - 40 });
+           .text('Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,', 60, currentY, { width: headerTextWidth })
+           .text('Near Silk board Junction, Bomannahalli, Bengaluru,', 60, currentY + 12, { width: headerTextWidth })
+           .text('Bengaluru Urban, Karnataka, 560068', 60, currentY + 24, { width: headerTextWidth })
+           .text('Contact No : +919071755550', 60, currentY + 36, { width: headerTextWidth })
+           .text('GSTIN: 29ABBCA7185M1Z2', 60, currentY + 48, { width: headerTextWidth });
+
+        // Logo (Right side)
+        const logoX = pageWidth - 60;
+        const logoY = startY + 20;
+        const logoWidth = 80;
+        const logoHeight = 60;
+        
+        // Try to load logo image
+        try {
+          const logoPath = path.join(__dirname, '../../assets/honda-logo.png');
+          if (fs.existsSync(logoPath)) {
+            doc.image(logoPath, logoX, logoY, { width: logoWidth, height: logoHeight, fit: [logoWidth, logoHeight] });
+          } else {
+            // Fallback: Draw placeholder box
+            doc.rect(logoX, logoY, logoWidth, logoHeight).stroke();
+            doc.fontSize(8).text('HONDA', logoX + 25, logoY + 25, { width: logoWidth });
+            doc.text('LOGO', logoX + 25, logoY + 35, { width: logoWidth });
+          }
+        } catch (error) {
+          // Fallback: Draw placeholder box
+          doc.rect(logoX, logoY, logoWidth, logoHeight).stroke();
+          doc.fontSize(8).text('HONDA', logoX + 25, logoY + 25, { width: logoWidth });
+          doc.text('LOGO', logoX + 25, logoY + 35, { width: logoWidth });
+        }
 
         currentY += 75;
 
@@ -183,13 +208,13 @@ export class PdfService {
         doc.fontSize(10).font('Helvetica-Bold').text('Mode Of Payment:', leftCol, currentY);
         doc.font('Helvetica').text(paymentMode.paymentMode || 'N/A', leftCol + 110, currentY);
         
-        doc.font('Helvetica-Bold').text(`Customer Opting ${paymentMode.paymentMode || 'N/A'}`, rightCol, currentY);
+        doc.font('Helvetica-Bold').text(`Customer Opting ${paymentMode.paymentMode || 'N/A'}`, rightCol + 50, currentY);
         currentY += lineHeight + 5;
 
         doc.font('Helvetica-Bold').text('Ref No:', leftCol, currentY);
         doc.font('Helvetica').text(payment.refNo || 'N/A', leftCol + 50, currentY);
         
-        doc.font('Helvetica').text(typeOfPayment.typeOfMode || 'N/A', rightCol + 50, currentY);
+        doc.font('Helvetica').text(typeOfPayment.typeOfMode || 'N/A', rightCol + 100, currentY);
         currentY += 30;
 
         // ---------------- TERMS & CONDITIONS ----------------
