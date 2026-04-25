@@ -97,12 +97,26 @@ export class PdfService {
         const logoWidth = 80;
         const logoHeight = 60;
         
-        // Try to load logo image
+        // Try to load logo image - handle both dev and production paths
         try {
-          const logoPath = path.join(__dirname, '../../assets/honda-logo.png');
-          if (fs.existsSync(logoPath)) {
-            doc.image(logoPath, logoX, logoY, { width: logoWidth, height: logoHeight, fit: [logoWidth, logoHeight] });
-          } else {
+          // Try multiple possible paths
+          const possiblePaths = [
+            path.join(__dirname, '../../assets/honda-logo.png'),  // From dist/pdf
+            path.join(__dirname, '../../../src/assets/honda-logo.png'),  // From dist to src
+            path.join(process.cwd(), 'src/assets/honda-logo.png'),  // From project root
+            path.join(process.cwd(), 'dist/assets/honda-logo.png')  // If assets copied to dist
+          ];
+          
+          let logoLoaded = false;
+          for (const logoPath of possiblePaths) {
+            if (fs.existsSync(logoPath)) {
+              doc.image(logoPath, logoX, logoY, { width: logoWidth, height: logoHeight, fit: [logoWidth, logoHeight] });
+              logoLoaded = true;
+              break;
+            }
+          }
+          
+          if (!logoLoaded) {
             // Fallback: Draw placeholder box
             doc.rect(logoX, logoY, logoWidth, logoHeight).stroke();
             doc.fontSize(8).text('HONDA', logoX + 25, logoY + 25, { width: logoWidth });
@@ -208,7 +222,7 @@ export class PdfService {
         doc.fontSize(10).font('Helvetica-Bold').text('Mode Of Payment:', leftCol, currentY);
         doc.font('Helvetica').text(paymentMode.paymentMode || 'N/A', leftCol + 110, currentY);
         
-        doc.font('Helvetica-Bold').text(`Customer Opting ${paymentMode.paymentMode || 'N/A'}`, rightCol + 50, currentY);
+        doc.font('Helvetica-Bold').text(`Customer Opting ${paymentMode.paymentMode || 'N/A'}`, rightCol + 80, currentY);
         currentY += lineHeight + 5;
 
         doc.font('Helvetica-Bold').text('Ref No:', leftCol, currentY);
