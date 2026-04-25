@@ -204,11 +204,11 @@ export class PdfService {
 
         // ---------------- SIGNATURE ----------------
         doc.fontSize(10).font('Helvetica-Bold')
-           .text('Received and Verified By', pageWidth - 100, currentY, { align: 'right' });
+           .text('Received and Verified By', 60, currentY, { width: pageWidth - 40, align: 'right' });
         
         currentY += 80;
         
-        doc.text('Authorised Signatory with Seal', pageWidth - 100, currentY, { align: 'right' });
+        doc.text('Authorised Signatory with Seal', 60, currentY, { width: pageWidth - 40, align: 'right' });
 
         // ---------------- FOOTER ----------------
         const footerY = doc.page.height - 60;
