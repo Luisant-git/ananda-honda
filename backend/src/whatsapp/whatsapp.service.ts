@@ -125,4 +125,69 @@ export class WhatsappService {
       throw error;
     }
   }
+
+  async sendServiceReceiptTemplate(
+    toPhoneNumber: string,
+    customerName: string,      // {{1}}
+    receiptNo: string,         // {{2}}
+    jobCardNumber: string | number, // {{3}}
+    amount: string | number,   // {{4}}
+    mediaId: string,
+    filename: string,
+  ): Promise<any> {
+    let formattedNumber = toPhoneNumber.trim();
+    if (/^\d{10}$/.test(formattedNumber)) {
+      formattedNumber = `91${formattedNumber}`;
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.apiUrl}/${this.phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedNumber,
+          type: 'template',
+          template: {
+            name: 'service_receipt_notification',
+            language: { code: 'en' },
+            components: [
+              {
+                type: 'header',
+                parameters: [
+                  {
+                    type: 'document',
+                    document: { id: mediaId, filename },
+                  },
+                ],
+              },
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(customerName) },   // {{1}}
+                  { type: 'text', text: String(receiptNo) },      // {{2}}
+                  { type: 'text', text: String(jobCardNumber) },  // {{3}}
+                  { type: 'text', text: String(amount) },         // {{4}}
+                ],
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Error sending WhatsApp service receipt template',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
+
+  
 }

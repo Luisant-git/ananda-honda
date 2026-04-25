@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 
