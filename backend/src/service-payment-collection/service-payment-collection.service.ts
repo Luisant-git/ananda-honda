@@ -93,30 +93,29 @@ export class ServicePaymentCollectionService {
   }
 
   private async sendWhatsappReceipt(payment: any) {
-    try {
-      const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
-      const filename = `Service_Receipt_${payment.receiptNo}.pdf`;
-      const mediaId = await this.whatsappService.uploadMedia(pdfBuffer, filename);
-      
-      const customerName = payment.customer.name;
-      const amount = `₹${payment.recAmt}`;
-      const contactNo = payment.customer.contactNo;
-      const purpose = payment.typeOfCollection?.typeOfCollect || 'Service Payment';
+  try {
+    const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
+    const filename = `Service_Receipt_${payment.receiptNo}.pdf`;
+    const mediaId = await this.whatsappService.uploadMedia(pdfBuffer, filename);
 
-      await this.whatsappService.sendPaymentReceiptTemplate(
-        contactNo,
-        customerName,
-        payment.receiptNo,
-        amount,
-        purpose,
-        mediaId,
-        filename
-      );
-      this.logger.log(`WhatsApp service receipt sent successfully to ${contactNo}`);
-    } catch (error) {
-      this.logger.error('Failed to send WhatsApp service receipt process', error);
-    }
+    const customerName = payment.customer.name;
+    const contactNo = payment.customer.contactNo;
+    const jobCardNumber = payment.jobCardNumber || '-';
+    const amount = payment.recAmt;
+
+    await this.whatsappService.sendServiceReceiptTemplate(
+      contactNo,
+      customerName,
+      payment.receiptNo,
+      jobCardNumber,
+      amount,
+      mediaId,
+      filename,
+    );
+  } catch (error) {
+    this.logger.error('Failed to send WhatsApp service receipt process', error);
   }
+}
 
   async findAll(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
