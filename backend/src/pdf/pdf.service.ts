@@ -211,7 +211,7 @@ export class PdfService {
         doc.rect(col2X, tableTop + cellHeight, tableWidth / 2, 60).stroke();
         
         doc.fontSize(10).font('Helvetica')
-           .text(`₹${amount}`, col1X + 10, tableTop + cellHeight + 10, { width: tableWidth / 2 - 20, align: 'center' })
+           .text(`Rs. ${amount}`, col1X + 10, tableTop + cellHeight + 10, { width: tableWidth / 2 - 20, align: 'center' })
            .text(amountInWords, col1X + 10, tableTop + cellHeight + 25, { width: tableWidth / 2 - 20, align: 'center' });
         
         doc.text(payment.remarks || 'N/A', col2X + 10, tableTop + cellHeight + 20, { width: tableWidth / 2 - 20, align: 'center' });
