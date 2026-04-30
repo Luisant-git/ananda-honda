@@ -41,6 +41,16 @@ model TypeOfPayment {
   paymentCollections PaymentCollection[]
 }
 
+model ServiceTypeOfCollection{
+  id                    Int    @id @default(autoincrement())
+  typeOfCollect         String
+  status                String
+  disableVehicleModel   Boolean @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  servicePaymentCollections ServicePaymentCollection[]
+}
+
 model TypeOfCollection {
   id          Int      @id @default(autoincrement())
   typeOfCollect  String
@@ -49,7 +59,6 @@ model TypeOfCollection {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   paymentCollections PaymentCollection[]
-  servicePaymentCollections ServicePaymentCollection[]
 }
 
 model VehicleModel {
@@ -124,7 +133,7 @@ model ServicePaymentCollection {
   vehicleNumber   String?
   paymentModeId   Int
   typeOfPaymentId Int?
-  typeOfCollectionId Int?
+  serviceTypeOfCollectionId Int?
   vehicleModelId  Int?
   enteredBy       Int?
   remarks         String?
@@ -139,7 +148,7 @@ model ServicePaymentCollection {
   customer        Customer @relation(fields: [customerId], references: [id])
   paymentMode     ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
   typeOfPayment   ServiceTypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
-  typeOfCollection TypeOfCollection? @relation(fields: [typeOfCollectionId], references: [id])
+  serviceTypeOfCollection ServiceTypeOfCollection? @relation(fields: [serviceTypeOfCollectionId], references: [id])
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])
   deletedByUser   User? @relation("DeletedServicePayments", fields: [deletedBy], references: [id])

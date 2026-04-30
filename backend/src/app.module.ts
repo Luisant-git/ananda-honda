@@ -16,9 +16,10 @@ import { MenuPermissionModule } from './menu-permission/menu-permission.module';
 import { EnquiryModule } from './enquiry/enquiry.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { PdfModule } from './pdf/pdf.module';
+import { ServiceTypeOfCollectionModule } from './service-type-of-collection/service-type-of-collection.module';
 
 @Module({
-  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule],
+  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule],
   controllers: [AppController],
   providers: [AppService],
 })

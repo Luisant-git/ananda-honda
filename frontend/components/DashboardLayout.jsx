@@ -19,6 +19,7 @@ import UserManagement from '../pages/UserManagement';
 import MenuPermission from '../pages/MenuPermission';
 import EnquiryManagement from '../pages/EnquiryManagement';
 import VehicleEnquiryForm from '../pages/VehicleEnquiryForm';
+import ServiceTypeOfCollection from '../pages/ServiceTypeOfCollection';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -50,6 +51,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ServicePaymentMode user={user} />;
       case 'service_type_of_payment':
         return <ServiceTypeOfPayment user={user} />;
+      case 'service_type_of_collection':               
+        return <ServiceTypeOfCollection user={user} />;
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':

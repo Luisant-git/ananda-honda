@@ -13,7 +13,7 @@ export class ServicePaymentCollectionService {
     private pdfService: PdfService,
   ) {}
 
-  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
       orderBy: { receiptNo: 'desc' }
     });
@@ -62,7 +62,7 @@ export class ServicePaymentCollectionService {
         totalAmt: data.totalAmt || null,
         vehicleNumber: data.vehicleNumber || null,
         typeOfPaymentId: data.typeOfPaymentId || null,
-        typeOfCollectionId: data.typeOfCollectionId || null,
+        serviceTypeOfCollectionId: data.serviceTypeOfCollectionId || null, 
         vehicleModelId: data.vehicleModelId || null,
         enteredBy: data.enteredBy || null,
         jobCardNumber: data.jobCardNumber || null,
@@ -72,7 +72,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true, 
         vehicleModel: true,
         user: true
       }
@@ -126,7 +126,7 @@ export class ServicePaymentCollectionService {
           customer: true,
           paymentMode: true,
           typeOfPayment: true,
-          typeOfCollection: true,
+          serviceTypeOfCollection: true,
           vehicleModel: true,
           user: true,
           cancelledByUser: true
@@ -147,7 +147,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true, 
         vehicleModel: true,
         user: true,
         cancelledByUser: true
@@ -155,7 +155,7 @@ export class ServicePaymentCollectionService {
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number;  vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);
@@ -163,8 +163,8 @@ export class ServicePaymentCollectionService {
     if (data.typeOfPaymentId === undefined) {
       delete updateData.typeOfPaymentId;
     }
-    if (data.typeOfCollectionId === undefined) {
-      delete updateData.typeOfCollectionId;
+     if (data.serviceTypeOfCollectionId === undefined) {
+    delete updateData.serviceTypeOfCollectionId; 
     }
     if (data.vehicleModelId === undefined) {
       delete updateData.vehicleModelId;
@@ -180,7 +180,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true,
         vehicleModel: true,
         user: true
       }
@@ -208,7 +208,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true,
         vehicleModel: true,
         user: true
       }
@@ -227,7 +227,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true,
         vehicleModel: true,
         user: true,
         cancelledByUser: true
@@ -242,7 +242,7 @@ export class ServicePaymentCollectionService {
         customer: true,
         paymentMode: true,
         typeOfPayment: true,
-        typeOfCollection: true,
+        serviceTypeOfCollection: true,
         vehicleModel: true,
         user: true,
         deletedByUser: true

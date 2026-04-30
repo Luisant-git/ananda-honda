@@ -54,36 +54,55 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
     );
   };
 
-  const NavGroup = ({ menuKey, label, icon, children }) => {
-    const isOpen = openMenus[menuKey];
+const NavGroup = ({ menuKey, label, icon, children }) => {
+  const isOpen = openMenus[menuKey];
 
-    if (isSidebarCollapsed) {
-      return (
-        <li>
-          <div className="flex items-center justify-center p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150" title={label}>
-            {icon}
-          </div>
-        </li>
-      );
-    }
-if (!permissions) return null;
+  // Collapsed (icon-only) sidebar
+  if (isSidebarCollapsed) {
     return (
-      <li>
-        <button
-          type="button"
-          className="flex items-center w-full p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
-          onClick={() => toggleMenu(menuKey)}
+      <li className="mt-2">
+        <div
+          className="flex items-center justify-center p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
+          title={label}
         >
           {icon}
-          <span className="flex-1 ml-3 text-left whitespace-nowrap">{label}</span>
-          <ChevronDownIcon className={`w-6 h-6 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <ul className={`py-2 space-y-2 transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 overflow-visible' : 'max-h-0 overflow-hidden'}`}>
-          {isOpen && children}
-        </ul>
+        </div>
       </li>
     );
-  };
+  }
+
+  if (!permissions) return null;
+
+  return (
+    <li className="mt-2">
+      {/* Group header */}
+      <button
+        type="button"
+        className="flex items-center w-full px-2 py-2 text-sm font-medium text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
+        onClick={() => toggleMenu(menuKey)}
+      >
+        <span className="mr-3 text-lg">{icon}</span>
+        <span className="flex-1 text-left whitespace-nowrap">{label}</span>
+        <ChevronDownIcon
+          className={`w-5 h-5 transform transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {/* Submenu container – no left border, just spacing and animation */}
+      <div
+        className={`mt-1 transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+        } overflow-hidden`}
+      >
+        <ul className="space-y-1">
+          {isOpen && children}
+        </ul>
+      </div>
+    </li>
+  );
+};
 
 
   return (
@@ -118,6 +137,7 @@ if (!permissions) return null;
                 {permissions.master.vehicle_model && <li><NavLink view="vehicle_model" label="Vehicle Model" isSubmenu /></li>}
                 {permissions.master.service_payment_mode && <li><NavLink view="service_payment_mode" label="S - Payment Mode" isSubmenu /></li>}
                 {permissions.master.service_type_of_payment && <li><NavLink view="service_type_of_payment" label="S - Type of Payment" isSubmenu /></li>}
+               {permissions?.master?.service_type_of_collection && (<li><NavLink view="service_type_of_collection" label="S - Type of Collection"  isSubmenu  /></li>)}
                 {permissions.master.create_enquiry && <li><NavLink view="vehicle_enquiry_form" label="Create Enquiry" isSubmenu /></li>}
               </NavGroup>
             )}

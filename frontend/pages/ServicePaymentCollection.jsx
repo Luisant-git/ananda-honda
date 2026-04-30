@@ -7,7 +7,7 @@ import { servicePaymentCollectionApi } from "../api/servicePaymentCollectionApi.
 import { customerApi } from "../api/customerApi.js";
 import { servicePaymentModeApi } from "../api/servicePaymentModeApi.js";
 import { serviceTypeOfPaymentApi } from "../api/serviceTypeOfPaymentApi.js";
-import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
+import { serviceTypeOfCollectionApi } from "../api/serviceTypeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
@@ -19,7 +19,6 @@ const ServicePaymentCollection = ({ user }) => {
   console.log('service payment modes', paymentModes);
   
   const [typeOfPayments, setTypeOfPayments] = useState([]);
-  const [typeOfCollections, setTypeOfCollections] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
@@ -41,6 +40,7 @@ const ServicePaymentCollection = ({ user }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [serviceTypeOfCollections, setServiceTypeOfCollections] = useState([]);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     totalAmt: "",
@@ -50,7 +50,7 @@ const ServicePaymentCollection = ({ user }) => {
     vehicleNumber: "",
     paymentModeId: "",
     typeOfPaymentId: "",
-    typeOfCollectionId: "",
+   serviceTypeOfCollectionId: "",
     vehicleModelId: "",
     refNo: "",
     remarks: "",
@@ -69,7 +69,7 @@ const ServicePaymentCollection = ({ user }) => {
     fetchCustomers();
     fetchPaymentModes();
     fetchTypeOfPayments();
-    fetchTypeOfCollections();
+    fetchServiceTypeOfCollections();
     fetchVehicleModels();
     fetchPayments();
     fetchPermissions();
@@ -122,14 +122,14 @@ const ServicePaymentCollection = ({ user }) => {
     }
   };
 
-  const fetchTypeOfCollections = async () => {
-    try {
-      const data = await typeOfCollectionApi.getAll();
-      setTypeOfCollections(data.filter((type) => type.status === "Enable"));
-    } catch (error) {
-      console.error("Error fetching type of collections:", error);
-    }
-  };
+ const fetchServiceTypeOfCollections = async () => {
+  try {
+    const data = await serviceTypeOfCollectionApi.getAll();
+    setServiceTypeOfCollections(data.filter((type) => type.status === "Enable"));
+  } catch (error) {
+    console.error("Error fetching service type of collections:", error);
+  }
+};
 
   const fetchVehicleModels = async () => {
     try {
@@ -166,7 +166,7 @@ const ServicePaymentCollection = ({ user }) => {
         vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
-        typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
+       typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || "N/A",
         vehicleModel: payment.vehicleModel?.model || "N/A",
         enteredBy: payment.user?.username || "N/A",
         refNo: payment.refNo || "N/A",
@@ -176,7 +176,7 @@ const ServicePaymentCollection = ({ user }) => {
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
-        typeOfCollectionId: payment.typeOfCollectionId,
+        serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
         vehicleModelId: payment.vehicleModelId,
         cancelledAt: payment.cancelledAt,
         cancelledBy: payment.cancelledByUser?.username || null,
@@ -212,7 +212,7 @@ const ServicePaymentCollection = ({ user }) => {
         vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
-        typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
+    typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || "N/A",
         vehicleModel: payment.vehicleModel?.model || "N/A",
         enteredBy: payment.user?.username || "N/A",
         deletedBy: payment.deletedByUser?.username || "N/A",
@@ -224,7 +224,7 @@ const ServicePaymentCollection = ({ user }) => {
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
-        typeOfCollectionId: payment.typeOfCollectionId,
+       serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
         vehicleModelId: payment.vehicleModelId,
       }));
       setDeletedPayments(formattedData);
@@ -300,9 +300,9 @@ const ServicePaymentCollection = ({ user }) => {
         typeOfPaymentId: formData.typeOfPaymentId
           ? parseInt(formData.typeOfPaymentId)
           : undefined,
-        typeOfCollectionId: formData.typeOfCollectionId
-          ? parseInt(formData.typeOfCollectionId)
-          : undefined,
+        serviceTypeOfCollectionId: formData.serviceTypeOfCollectionId
+    ? parseInt(formData.serviceTypeOfCollectionId)
+    : undefined, 
         vehicleModelId: formData.vehicleModelId
           ? parseInt(formData.vehicleModelId)
           : undefined,
@@ -334,7 +334,7 @@ const ServicePaymentCollection = ({ user }) => {
         vehicleNumber: "",
         paymentModeId: "",
         typeOfPaymentId: "",
-        typeOfCollectionId: "",
+        serviceTypeOfCollectionId: "",
         vehicleModelId: "",
         refNo: "",
         remarks: "",
@@ -391,7 +391,7 @@ const ServicePaymentCollection = ({ user }) => {
       vehicleNumber: payment.vehicleNumber || "",
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || "",
-      typeOfCollectionId: payment.typeOfCollectionId?.toString() || "",
+      serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId?.toString() || "",
       vehicleModelId: payment.vehicleModelId?.toString() || "",
       refNo: payment.refNo || "",
       remarks: payment.remarks,
@@ -749,6 +749,7 @@ const ServicePaymentCollection = ({ user }) => {
       },
     },
     { header: "ReceiptNo", accessor: "receiptNo" },
+    { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
@@ -761,7 +762,7 @@ const ServicePaymentCollection = ({ user }) => {
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
-    { header: "Job Card No", accessor: "jobCardNumber" },
+
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
   ];
@@ -1233,28 +1234,43 @@ const ServicePaymentCollection = ({ user }) => {
             onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })}
             options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))}
           />
-          <SearchableDropdown
-            label="Type of Collection"
-            value={formData.typeOfCollectionId}
-            onChange={(value) => {
-              const selectedType = typeOfCollections.find(type => type.id === parseInt(value));
-              setFormData({ ...formData, typeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId });
-            }}
-            options={typeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
-          />
-          {(() => {
-            const selectedTypeOfCollection = typeOfCollections.find(
-              (type) => type.id === parseInt(formData.typeOfCollectionId)
-            );
-            return !selectedTypeOfCollection?.disableVehicleModel && (
-              <SearchableDropdown
-                label="Vehicle Model"
-                value={formData.vehicleModelId}
-                onChange={(value) => setFormData({ ...formData, vehicleModelId: value })}
-                options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))}
-              />
-            );
-          })()}
+     <SearchableDropdown
+  label="Type of Collection"
+  value={formData.serviceTypeOfCollectionId}
+  onChange={(value) => {
+    const selectedType = serviceTypeOfCollections.find(
+      type => type.id === parseInt(value)
+    );
+    setFormData({
+      ...formData,
+      serviceTypeOfCollectionId: value,
+      vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId,
+    });
+  }}
+  options={serviceTypeOfCollections.map(type => ({
+    value: type.id.toString(),
+    label: type.typeOfCollect,
+  }))}
+/>
+
+{(() => {
+  const selectedTypeOfCollection = serviceTypeOfCollections.find(
+    type => type.id === parseInt(formData.serviceTypeOfCollectionId)
+  );
+  return !selectedTypeOfCollection?.disableVehicleModel && (
+    <SearchableDropdown
+      label="Vehicle Model"
+      value={formData.vehicleModelId}
+      onChange={(value) =>
+        setFormData({ ...formData, vehicleModelId: value })
+      }
+      options={vehicleModels.map(model => ({
+        value: model.id.toString(),
+        label: model.model,
+      }))}
+    />
+  );
+})()}
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
               Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}
