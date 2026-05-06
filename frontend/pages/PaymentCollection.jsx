@@ -9,6 +9,7 @@ import { paymentModeApi } from "../api/paymentModeApi.js";
 import { typeOfPaymentApi } from "../api/typeOfPaymentApi.js";
 import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
+import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
 
@@ -56,6 +57,7 @@ const PaymentCollection = ({ user }) => {
     address: "",
     status: "Walk in Customer",
   });
+  const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -89,8 +91,38 @@ const PaymentCollection = ({ user }) => {
 
   const fetchCustomers = async () => {
     try {
-      const data = await customerApi.getAll();
-      setCustomers(data);
+      const [customerData, invoiceData] = await Promise.all([
+        customerApi.getAll(),
+        salesInvoiceApi.getAll()
+      ]);
+      
+      // Get unique contacts from invoices
+      const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
+      
+      const enrichedCustomerData = customerData.map(c => ({
+        ...c,
+        hasInvoice: invoiceContacts.has(c.contactNo)
+      }));
+
+      const customerContacts = new Set(customerData.map(c => c.contactNo));
+      const invoiceCustomers = [];
+      const seenInvoiceContacts = new Set();
+      
+      invoiceData.forEach(inv => {
+        if (!customerContacts.has(inv.contactInfo) && !seenInvoiceContacts.has(inv.contactInfo)) {
+          invoiceCustomers.push({
+            id: `inv-${inv.id}`,
+            name: inv.customerName,
+            contactNo: inv.contactInfo,
+            address: inv.address || "N/A",
+            isInvoice: true,
+            invoiceData: inv
+          });
+          seenInvoiceContacts.add(inv.contactInfo);
+        }
+      });
+
+      setCustomers([...enrichedCustomerData, ...invoiceCustomers]);
     } catch (error) {
       console.error("Error fetching customers:", error);
     }
@@ -400,6 +432,31 @@ const PaymentCollection = ({ user }) => {
       setIsNewCustomer(true);
       setLoadedCustomer(null);
       setFilteredPayments(payments);
+      setSalesInvoiceInfo(null);
+    } else if (customer.isInvoice) {
+      setSelectedCustomerId("new");
+      setSearchTerm(customer.name);
+      setIsNewCustomer(true);
+      setLoadedCustomer(null);
+      setNewCustomerData({
+        name: customer.name,
+        contactNo: customer.contactNo,
+        address: customer.address || "N/A",
+        status: "Imported from Invoice",
+      });
+      setSalesInvoiceInfo(customer.invoiceData);
+      // Auto-fill vehicle model and reference number
+      setFormData(prev => ({
+        ...prev,
+        refNo: customer.invoiceData.referenceNo || prev.refNo,
+        vehicleModelId: vehicleModels.find(m => 
+          customer.invoiceData.vehicleModel && 
+          (m.model.toLowerCase() === customer.invoiceData.vehicleModel.toLowerCase() ||
+           customer.invoiceData.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
+           m.model.toLowerCase().includes(customer.invoiceData.vehicleModel.toLowerCase()))
+        )?.id.toString() || prev.vehicleModelId
+      }));
+      setFilteredPayments(payments);
     } else {
       setSelectedCustomerId(customer.id.toString());
       setSearchTerm(customer.name);
@@ -414,6 +471,25 @@ const PaymentCollection = ({ user }) => {
           sNo: index + 1,
         }))
       );
+      
+      // Fetch sales invoice info for this customer
+      salesInvoiceApi.getAll(customer.contactNo).then((results) => {
+        const info = results.length > 0 ? results[0] : null;
+        setSalesInvoiceInfo(info);
+        if (info) {
+          // Auto-fill vehicle model and reference number
+          setFormData(prev => ({
+            ...prev,
+            refNo: info.referenceNo || prev.refNo,
+            vehicleModelId: vehicleModels.find(m => 
+              info.vehicleModel && 
+              (m.model.toLowerCase() === info.vehicleModel.toLowerCase() ||
+               info.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
+               m.model.toLowerCase().includes(info.vehicleModel.toLowerCase()))
+            )?.id.toString() || prev.vehicleModelId
+          }));
+        }
+      }).catch(() => setSalesInvoiceInfo(null));
     }
     setShowDropdown(false);
   };
@@ -810,7 +886,12 @@ const PaymentCollection = ({ user }) => {
                         onClick={() => handleCustomerSelect(customer)}
                         className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
                       >
-                        <div className="font-medium">{customer.name}</div>
+                        <div className="flex justify-between items-center">
+                          <div className="font-medium">{customer.name}</div>
+                          {(customer.isInvoice || customer.hasInvoice) && (
+                            <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Invoice</span>
+                          )}
+                        </div>
                         <div className="text-sm text-brand-text-secondary">
                           {customer.contactNo}
                         </div>
@@ -930,62 +1011,101 @@ const PaymentCollection = ({ user }) => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-brand-text-secondary">
-                        CustId
-                      </label>
-                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                        {loadedCustomer.custId}
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
+                          CustId
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.custId}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
+                          Name
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.name}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
+                          Mobile Number
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.contactNo}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <label className="text-sm text-brand-text-secondary">
-                        Name
-                      </label>
-                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                        {loadedCustomer.name}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
+                          Address
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.address}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-brand-text-secondary">
-                        Mobile Number
-                      </label>
-                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                        {loadedCustomer.contactNo}
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
+                          Status
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.status}
+                        </div>
+                      </div>
+                      <div className="pt-2 flex justify-start">
+                        {permissions?.payment_collection?.sales?.add && (
+                          <button
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
+                          >
+                            Pay
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-brand-text-secondary">
-                        Address
-                      </label>
-                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                        {loadedCustomer.address}
+                  {salesInvoiceInfo && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="text-sm font-bold text-blue-900 mb-2">📋 Sales Invoice Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        {salesInvoiceInfo.referenceNo && (
+                          <div>
+                            <span className="text-blue-700 font-medium">Reference No:</span>
+                            <span className="ml-2 text-blue-900">{salesInvoiceInfo.referenceNo}</span>
+                          </div>
+                        )}
+                        {salesInvoiceInfo.vehicleRegNo && (
+                          <div>
+                            <span className="text-blue-700 font-medium">Vehicle Reg No:</span>
+                            <span className="ml-2 text-blue-900">{salesInvoiceInfo.vehicleRegNo}</span>
+                          </div>
+                        )}
+                        {salesInvoiceInfo.vehicleModel && (
+                          <div>
+                            <span className="text-blue-700 font-medium">Vehicle Model:</span>
+                            <span className="ml-2 text-blue-900">{salesInvoiceInfo.vehicleModel}</span>
+                          </div>
+                        )}
+                        {salesInvoiceInfo.assignedTo && (
+                          <div>
+                            <span className="text-blue-700 font-medium">DSE:</span>
+                            <span className="ml-2 text-blue-900">{salesInvoiceInfo.assignedTo}</span>
+                          </div>
+                        )}
+                        {salesInvoiceInfo.actualDeliverDate && (
+                          <div>
+                            <span className="text-blue-700 font-medium">Delivery Date:</span>
+                            <span className="ml-2 text-blue-900">{new Date(salesInvoiceInfo.actualDeliverDate).toLocaleDateString('en-GB')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div>
-                      <label className="text-sm text-brand-text-secondary">
-                        Status
-                      </label>
-                      <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                        {loadedCustomer.status}
-                      </div>
-                    </div>
-                    <div className="pt-2 flex justify-start">
-                      {permissions?.payment_collection?.sales?.add && (
-                        <button
-                          onClick={() => setIsPaymentModalOpen(true)}
-                          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
-                        >
-                          Pay
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}

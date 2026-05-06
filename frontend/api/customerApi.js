@@ -31,6 +31,12 @@ export const customerApi = {
     return response.json();
   },
 
+  searchByContact: async (contact) => {
+    const response = await fetch(`${API_URL}/search/${encodeURIComponent(contact)}`, { credentials: 'include' });
+    if (!response.ok) return { customers: [], salesInvoices: [] };
+    return response.json();
+  },
+
   update: async (id, data) => {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PATCH',
@@ -50,6 +56,12 @@ export const customerApi = {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Delete failed');
     }
+    return response.json();
+  },
+  
+  getDetails: async (id) => {
+    const response = await fetch(`${API_URL}/${id}/details`, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch customer details');
     return response.json();
   }
 };

@@ -23,6 +23,9 @@ const CustomerDetails = ({ user }) => {
     address: "",
     status: "Walk in Customer",
   });
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [detailedCustomer, setDetailedCustomer] = useState(null);
+  const [activeTab, setActiveTab] = useState("invoices");
   const [filters, setFilters] = useState({
     selectedCustomer: "",
     fromDate: "",
@@ -205,6 +208,17 @@ const CustomerDetails = ({ user }) => {
     });
     setIsModalOpen(true);
   };
+  
+  const handleViewDetails = async (customer) => {
+    try {
+      const details = await customerApi.getDetails(customer.id);
+      setDetailedCustomer(details);
+      setIsDetailsModalOpen(true);
+      setActiveTab("invoices");
+    } catch (error) {
+      toast.error("Error fetching details");
+    }
+  };
 
 
 
@@ -343,7 +357,6 @@ const CustomerDetails = ({ user }) => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No1", accessor: "contactNo" },
-    { header: "Address", accessor: "address" },
     { header: "Status", accessor: "status" },
   ];
 
@@ -438,6 +451,13 @@ const CustomerDetails = ({ user }) => {
                 Edit
               </button>
             )}
+
+            <button
+              onClick={() => handleViewDetails(customer)}
+              className="text-green-600 hover:underline"
+            >
+              View
+            </button>
 
             {permissions?.master?.customer_details?.delete && (
               <button
@@ -761,6 +781,179 @@ const CustomerDetails = ({ user }) => {
               </div>
             </div>
           )}
+        </div>
+      </Modal>
+      {/* View Details Modal */}
+      <Modal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        title={`Customer Profile: ${detailedCustomer?.name} (${detailedCustomer?.custId})`}
+        maxWidth="max-w-5xl"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-brand-border pb-4">
+            <div>
+              <p className="text-xs text-brand-text-secondary uppercase font-bold">Contact No</p>
+              <p className="text-brand-text-primary font-medium">{detailedCustomer?.contactNo}</p>
+            </div>
+            <div>
+              <p className="text-xs text-brand-text-secondary uppercase font-bold">Status</p>
+              <p className="text-brand-text-primary font-medium">{detailedCustomer?.status}</p>
+            </div>
+            <div>
+              <p className="text-xs text-brand-text-secondary uppercase font-bold">Address</p>
+              <p className="text-brand-text-primary font-medium">{detailedCustomer?.address}</p>
+            </div>
+          </div>
+
+          <div className="flex border-b border-brand-border overflow-x-auto">
+            {["invoices", "enquiries", "sales_payments", "service_payments"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                  activeTab === tab
+                    ? "border-b-2 border-brand-accent text-brand-accent bg-brand-accent/5"
+                    : "text-brand-text-secondary hover:text-brand-text-primary hover:bg-brand-hover"
+                }`}
+              >
+                {tab.replace("_", " ").toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <div className="min-h-[300px]">
+            {activeTab === "invoices" && (
+              <div className="overflow-x-auto">
+                 <table className="min-w-full divide-y divide-brand-border">
+                    <thead className="bg-brand-bg">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Reg No</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Model</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">DSE</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Delivery Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {detailedCustomer?.salesInvoices?.map((inv) => (
+                        <tr key={inv.id} className="hover:bg-brand-hover">
+                          <td className="px-4 py-2 text-sm">{inv.vehicleRegNo || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm">{inv.vehicleModel || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm">{inv.assignedTo || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {inv.actualDeliverDate ? new Date(inv.actualDeliverDate).toLocaleDateString('en-GB') : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                      {(!detailedCustomer?.salesInvoices || detailedCustomer.salesInvoices.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-brand-text-secondary italic">No invoices found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                 </table>
+              </div>
+            )}
+
+            {activeTab === "enquiries" && (
+               <div className="overflow-x-auto">
+                 <table className="min-w-full divide-y divide-brand-border">
+                    <thead className="bg-brand-bg">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Vehicle</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Executive</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {detailedCustomer?.enquiries?.map((enq) => (
+                        <tr key={enq.id} className="hover:bg-brand-hover">
+                          <td className="px-4 py-2 text-sm">{enq.enquiryType}</td>
+                          <td className="px-4 py-2 text-sm">{enq.vehicleModel || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm">{enq.executiveName || 'N/A'}</td>
+                          <td className="px-4 py-2 text-sm">{new Date(enq.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                       {(!detailedCustomer?.enquiries || detailedCustomer.enquiries.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-brand-text-secondary italic">No enquiries found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                 </table>
+               </div>
+            )}
+
+            {activeTab === "sales_payments" && (
+               <div className="overflow-x-auto">
+                 <table className="min-w-full divide-y divide-brand-border">
+                    <thead className="bg-brand-bg">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Receipt</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Mode</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {detailedCustomer?.paymentCollections?.map((pay) => (
+                        <tr key={pay.id} className="hover:bg-brand-hover">
+                          <td className="px-4 py-2 text-sm">{new Date(pay.date).toLocaleDateString()}</td>
+                          <td className="px-4 py-2 text-sm font-medium">{pay.receiptNo}</td>
+                          <td className="px-4 py-2 text-sm">{pay.paymentMode?.paymentMode}</td>
+                          <td className="px-4 py-2 text-sm font-bold text-brand-accent">₹{pay.recAmt.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                       {(!detailedCustomer?.paymentCollections || detailedCustomer.paymentCollections.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-brand-text-secondary italic">No payment records found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                 </table>
+               </div>
+            )}
+
+            {activeTab === "service_payments" && (
+               <div className="overflow-x-auto">
+                 <table className="min-w-full divide-y divide-brand-border">
+                    <thead className="bg-brand-bg">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Receipt</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Mode</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-brand-text-secondary uppercase">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brand-border">
+                      {detailedCustomer?.servicePaymentCollections?.map((pay) => (
+                        <tr key={pay.id} className="hover:bg-brand-hover">
+                          <td className="px-4 py-2 text-sm">{new Date(pay.date).toLocaleDateString()}</td>
+                          <td className="px-4 py-2 text-sm font-medium">{pay.receiptNo}</td>
+                          <td className="px-4 py-2 text-sm">{pay.paymentMode?.paymentMode}</td>
+                          <td className="px-4 py-2 text-sm font-bold text-brand-accent">₹{pay.recAmt.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                       {(!detailedCustomer?.servicePaymentCollections || detailedCustomer.servicePaymentCollections.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-brand-text-secondary italic">No service records found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                 </table>
+               </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end pt-4 border-t border-brand-border">
+            <button
+              onClick={() => setIsDetailsModalOpen(false)}
+              className="px-6 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

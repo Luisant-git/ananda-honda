@@ -13,7 +13,7 @@ export class ServicePaymentCollectionService {
     private pdfService: PdfService,
   ) {}
 
-  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string; serviceType?: string }) {
     const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
       orderBy: { receiptNo: 'desc' }
     });
@@ -155,7 +155,7 @@ export class ServicePaymentCollectionService {
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number;  vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string }) {
+  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number;  vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string; serviceType?: string }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);

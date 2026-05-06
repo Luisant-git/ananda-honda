@@ -39,6 +39,18 @@ export class CustomerService {
     });
   }
 
+  async searchByContact(contact: string) {
+    const customers = await this.prisma.customer.findMany({
+      where: { contactNo: { contains: contact } },
+      orderBy: { id: 'desc' }
+    });
+    const salesInvoices = await this.prisma.salesInvoice.findMany({
+      where: { contactInfo: { contains: contact } },
+      orderBy: { id: 'desc' }
+    });
+    return { customers, salesInvoices };
+  }
+
   async update(id: number, data: { name?: string; contactNo?: string; address?: string; status?: string }) {
     return this.prisma.customer.update({
       where: { id },
@@ -59,5 +71,51 @@ export class CustomerService {
     return this.prisma.customer.delete({
       where: { id }
     });
+  }
+
+  async getDetails(id: number) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id },
+      include: {
+        paymentCollections: {
+          include: {
+            paymentMode: true,
+            typeOfPayment: true,
+            typeOfCollection: true,
+            vehicleModel: true,
+            user: true,
+          },
+          orderBy: { date: 'desc' },
+        },
+        servicePaymentCollections: {
+          include: {
+            paymentMode: true,
+            typeOfPayment: true,
+            serviceTypeOfCollection: true,
+            vehicleModel: true,
+            user: true,
+          },
+          orderBy: { date: 'desc' },
+        },
+      },
+    });
+
+    if (!customer) return null;
+
+    const enquiries = await this.prisma.enquiry.findMany({
+      where: { mobileNumber: customer.contactNo },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const salesInvoices = await this.prisma.salesInvoice.findMany({
+      where: { contactInfo: customer.contactNo },
+      orderBy: { id: 'desc' },
+    });
+
+    return {
+      ...customer,
+      enquiries,
+      salesInvoices,
+    };
   }
 }

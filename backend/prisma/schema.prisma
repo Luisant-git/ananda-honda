@@ -138,6 +138,7 @@ model ServicePaymentCollection {
   enteredBy       Int?
   remarks         String?
   jobCardNumber   String?
+  serviceType     String?
   paymentSessions Json     @default("[]")
   deletedAt       DateTime?
   deletedBy       Int?
@@ -199,4 +200,25 @@ model Enquiry {
   executiveName   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model SalesInvoice {
+  id              Int      @id @default(autoincrement())
+  customerName    String
+  contactInfo     String
+  referenceNo     String?
+  vehicleRegNo    String?
+  vehicleModel    String?
+  assignedTo      String?
+  address1        String?
+  address2        String?
+  city            String?
+  state           String?
+  zipCode         String?
+  actualDeliverDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([contactInfo])
+  @@index([vehicleRegNo])
 }

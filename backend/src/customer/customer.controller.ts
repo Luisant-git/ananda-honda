@@ -20,9 +20,19 @@ export class CustomerController {
     return this.customerService.findByMobile(mobile);
   }
 
+  @Get('search/:contact')
+  searchByContact(@Param('contact') contact: string) {
+    return this.customerService.searchByContact(contact);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customerService.findOne(+id);
+  }
+
+  @Get(':id/details')
+  getDetails(@Param('id') id: string) {
+    return this.customerService.getDetails(+id);
   }
 
   @Patch(':id')

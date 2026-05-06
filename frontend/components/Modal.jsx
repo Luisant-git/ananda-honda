@@ -1,7 +1,7 @@
 import React from 'react';
 import { CloseIcon } from './icons/Icons';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg" }) => {
   if (!isOpen) {
     return null;
   }
@@ -12,7 +12,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full max-w-lg mx-auto border border-brand-border"
+        className={`bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full ${maxWidth} mx-auto border border-brand-border`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-brand-border">
