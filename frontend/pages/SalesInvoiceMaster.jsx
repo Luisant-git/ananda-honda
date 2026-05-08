@@ -283,15 +283,38 @@ const SalesInvoiceMaster = ({ user }) => {
                   {selectedInvoice.actualDeliverDate ? new Date(selectedInvoice.actualDeliverDate).toLocaleDateString('en-GB') : 'N/A'}
                 </div>
               </div>
-              {selectedInvoice.receiptNumbers && selectedInvoice.receiptNumbers.length > 0 && (
-                <div>
-                  <label className="text-xs text-brand-text-secondary uppercase">Receipt Numbers (Sales Report)</label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedInvoice.receiptNumbers.map((rn, idx) => (
-                      <span key={idx} className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm font-bold border border-green-200">
-                        {rn}
-                      </span>
-                    ))}
+              {selectedInvoice.paymentDetails && selectedInvoice.paymentDetails.length > 0 && (
+                <div className="col-span-2">
+                  <label className="text-xs text-brand-text-secondary uppercase">Payments (Sales Report)</label>
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="min-w-full divide-y divide-brand-border">
+                      <thead>
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-brand-text-secondary uppercase">Receipt No</th>
+                          <th className="px-3 py-2 text-right text-xs font-medium text-brand-text-secondary uppercase">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-brand-border">
+                        {selectedInvoice.paymentDetails.map((payment, idx) => (
+                          <tr key={idx}>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-green-700">
+                              {payment.receiptNo}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-medium text-brand-text-primary">
+                              ₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-gray-50">
+                          <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-brand-text-primary">
+                            Total Collected
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-bold text-brand-text-primary">
+                            ₹{selectedInvoice.totalCollectedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}

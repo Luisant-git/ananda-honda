@@ -122,6 +122,7 @@ export class SalesInvoiceService {
       },
       select: {
         receiptNo: true,
+        recAmt: true,
         customer: {
           select: {
             contactNo: true
@@ -131,12 +132,18 @@ export class SalesInvoiceService {
     });
     
     // Map payments to invoices
-    return invoices.map(inv => ({
-      ...inv,
-      receiptNumbers: payments
-        .filter(p => p.customer.contactNo === inv.contactInfo)
-        .map(p => p.receiptNo)
-    }));
+    return invoices.map(inv => {
+      const customerPayments = payments.filter(p => p.customer.contactNo === inv.contactInfo);
+      return {
+        ...inv,
+        receiptNumbers: customerPayments.map(p => p.receiptNo),
+        paymentDetails: customerPayments.map(p => ({
+          receiptNo: p.receiptNo,
+          amount: p.recAmt
+        })),
+        totalCollectedAmount: customerPayments.reduce((sum, p) => sum + p.recAmt, 0)
+      };
+    });
   }
 
   async remove(id: number) {
