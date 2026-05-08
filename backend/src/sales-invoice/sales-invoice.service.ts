@@ -106,7 +106,37 @@ export class SalesInvoiceService {
         { assignedTo: { contains: search, mode: 'insensitive' as const } },
       ],
     } : {};
-    return this.prisma.salesInvoice.findMany({ where, orderBy: { id: 'desc' } });
+    
+    const invoices = await this.prisma.salesInvoice.findMany({ where, orderBy: { id: 'desc' } });
+    
+    // Get all contact numbers from invoices
+    const contacts = Array.from(new Set(invoices.map(inv => inv.contactInfo)));
+    
+    // Fetch all payments for these contacts
+    const payments = await this.prisma.paymentCollection.findMany({
+      where: {
+        customer: {
+          contactNo: { in: contacts }
+        },
+        deletedAt: null
+      },
+      select: {
+        receiptNo: true,
+        customer: {
+          select: {
+            contactNo: true
+          }
+        }
+      }
+    });
+    
+    // Map payments to invoices
+    return invoices.map(inv => ({
+      ...inv,
+      receiptNumbers: payments
+        .filter(p => p.customer.contactNo === inv.contactInfo)
+        .map(p => p.receiptNo)
+    }));
   }
 
   async remove(id: number) {

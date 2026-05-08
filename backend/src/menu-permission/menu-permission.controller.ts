@@ -16,7 +16,7 @@ export class MenuPermissionController {
 
   @Get('all')
   async getAll(@Session() session: Record<string, any>) {
-    if (!session.user || session.user.role !== 'DEVELOPER') {
+    if (!session.user || (session.user.role !== 'DEVELOPER' && session.user.role !== 'SUPER_ADMIN')) {
       throw new HttpException('Unauthorized', HttpStatus.FORBIDDEN);
     }
     return this.menuPermissionService.getAll();
@@ -24,7 +24,7 @@ export class MenuPermissionController {
 
   @Post()
   async upsert(@Body() body: { role: Role; permissions: any }, @Session() session: Record<string, any>) {
-    if (!session.user || session.user.role !== 'DEVELOPER') {
+    if (!session.user || (session.user.role !== 'DEVELOPER' && session.user.role !== 'SUPER_ADMIN')) {
       throw new HttpException('Unauthorized', HttpStatus.FORBIDDEN);
     }
     return this.menuPermissionService.upsert(body.role, body.permissions);

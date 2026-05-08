@@ -283,6 +283,18 @@ const SalesInvoiceMaster = ({ user }) => {
                   {selectedInvoice.actualDeliverDate ? new Date(selectedInvoice.actualDeliverDate).toLocaleDateString('en-GB') : 'N/A'}
                 </div>
               </div>
+              {selectedInvoice.receiptNumbers && selectedInvoice.receiptNumbers.length > 0 && (
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Receipt Numbers (Sales Report)</label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedInvoice.receiptNumbers.map((rn, idx) => (
+                      <span key={idx} className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm font-bold border border-green-200">
+                        {rn}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="border-t border-brand-border pt-4">

@@ -32,7 +32,7 @@ const ServiceReports = () => {
         vehicleNumber: payment.vehicleNumber || 'N/A',
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
-        typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
+        typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
         vehicleModel: payment.vehicleModel?.model || 'N/A',
         enteredBy: payment.user?.username || 'N/A',
         refNo: payment.refNo || 'N/A',

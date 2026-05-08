@@ -103,7 +103,7 @@ const ServiceType = ({ user }) => {
 
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
-    { header: 'Service Type', accessor: 'name' },
+    { header: 'S - Type of Service', accessor: 'name' },
     { header: 'Status', accessor: 'status' },
   ];
 
@@ -112,7 +112,7 @@ const ServiceType = ({ user }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">
-          Service Types
+          S - Type of Service
         </h1>
 
         {permissions?.master?.service_type?.add && (
@@ -156,12 +156,12 @@ const ServiceType = ({ user }) => {
       <Modal
         isOpen={isModalOpen}
         onClose={resetForm}
-        title={isEditMode ? 'Edit Service Type' : 'Add Service Type'}
+        title={isEditMode ? 'Edit S - Type of Service' : 'Add S - Type of Service'}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Service Type <span className="text-red-500">*</span>
+              S - Type of Service <span className="text-red-500">*</span>
             </label>
 
             <input

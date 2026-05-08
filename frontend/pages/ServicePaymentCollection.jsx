@@ -371,13 +371,14 @@ const fetchServiceTypes = async () => {
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
         jobCardNumber: payment.jobCardNumber || "N/A",
-        serviceType: payment.serviceType || "N/A",
+        serviceType: payment.serviceTypeRelation?.name || "N/A",
         paymentSessions: payment.paymentSessions || [],
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
         serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
         vehicleModelId: payment.vehicleModelId,
+        serviceTypeId: payment.serviceTypeId,
         cancelledAt: payment.cancelledAt,
         cancelledBy: payment.cancelledByUser?.username || null,
       }));
@@ -420,12 +421,14 @@ const fetchServiceTypes = async () => {
         refNo: payment.refNo || "N/A",
         remarks: payment.remarks || "N/A",
         jobCardNumber: payment.jobCardNumber || "N/A",
+        serviceType: payment.serviceTypeRelation?.name || "N/A",
         paymentSessions: payment.paymentSessions || [],
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
         serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
         vehicleModelId: payment.vehicleModelId,
+        serviceTypeId: payment.serviceTypeId,
       }));
       setDeletedPayments(formattedData);
     } catch (error) {
@@ -601,8 +604,8 @@ const fetchServiceTypes = async () => {
       refNo: payment.refNo || "",
       remarks: payment.remarks,
       jobCardNumber: payment.jobCardNumber || "",
-      serviceType: payment.serviceType || "Paid Service",
-      serviceTypeId: "",
+      serviceType: payment.serviceType || "N/A",
+      serviceTypeId: payment.serviceTypeId?.toString() || "",
     });
     setIsPaymentModalOpen(true);
   };
@@ -716,7 +719,7 @@ const fetchServiceTypes = async () => {
       setNewCustomerData({
         name: customer.name,
         contactNo: customer.contactNo,
-        address: "Imported from Service Master Card",
+        address: "NA",
         status: "Service Dealer Customer",
       });
       setSalesInvoiceInfo(null);
@@ -1131,7 +1134,7 @@ const fetchServiceTypes = async () => {
                   </div>
                   <div className="space-y-4">
                     <div><label className="text-sm text-brand-text-secondary">Address *</label><textarea value={newCustomerData.address} onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" rows={2} required></textarea></div>
-                    <div><label className="text-sm text-brand-text-secondary">Status</label><select value={newCustomerData.status} onChange={(e) => setNewCustomerData({ ...newCustomerData, status: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"><option>Walk in Customer</option><option>Online Enquiry</option></select></div>
+                    <div><label className="text-sm text-brand-text-secondary">Status</label><select value={newCustomerData.status} onChange={(e) => { const newStatus = e.target.value; setNewCustomerData({ ...newCustomerData, status: newStatus, address: newStatus === "Service Dealer Customer" ? "NA" : newCustomerData.address }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"><option>Walk in Customer</option><option>Online Enquiry</option><option>Service Dealer Customer</option></select></div>
                     <div className="pt-2 flex justify-start">{permissions?.payment_collection?.service?.add && (<button onClick={() => setIsPaymentModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" disabled={!newCustomerData.name || !newCustomerData.contactNo || !newCustomerData.address}>Pay</button>)}</div>
                   </div>
                 </div>

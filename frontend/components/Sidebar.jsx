@@ -93,7 +93,7 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
       {/* Submenu container – no left border, just spacing and animation */}
       <div
         className={`mt-1 transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
         } overflow-hidden`}
       >
         <ul className="space-y-1">
@@ -152,7 +152,7 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
   <li>
     <NavLink
       view="service_type"
-      label="Service Type"
+      label="S - Type of Service"
       isSubmenu
     />
   </li>

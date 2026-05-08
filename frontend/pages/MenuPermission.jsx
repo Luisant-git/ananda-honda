@@ -97,6 +97,16 @@ const MenuPermission = () => {
       p?.permissions?.dashboard?.sales === true ||
       p?.permissions?.dashboard?.service === true
   );
+  const getModuleLabel = (module) => {
+    const customLabels = {
+      'service_type': 'S - Type of Service',
+      'service_payment_mode': 'S - Payment Mode',
+      'service_type_of_payment': 'S - Type of Payment',
+      'service_type_of_collection': 'S - Type of Collection',
+    };
+    return customLabels[module] || module.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
   return (
     <div className="p-3 sm:p-4 md:p-6">
       <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -242,7 +252,7 @@ const MenuPermission = () => {
                       <div key={module}>
                         <label className="flex items-center space-x-2 mb-1">
                           <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : { add: false, edit: false, delete: false } } }))} className="rounded" />
-                          <span className="font-medium text-sm sm:text-base">{module.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
+                          <span className="font-medium text-sm sm:text-base">{getModuleLabel(module)}</span>
                         </label>
                         {editData.master[module] && typeof editData.master[module] === 'object' && (
                           <div className="ml-4 sm:ml-6 space-y-1">
