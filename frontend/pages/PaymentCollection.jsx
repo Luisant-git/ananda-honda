@@ -12,6 +12,7 @@ import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
+import { serviceJobCardApi } from "../api/serviceJobcard.js";
 
 const PaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -40,6 +41,7 @@ const PaymentCollection = ({ user }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
   const [itemsPerPage] = useState(10);
+  const [serviceJobCardInfo, setServiceJobCardInfo] = useState(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     recAmt: "",
@@ -70,6 +72,60 @@ const PaymentCollection = ({ user }) => {
     fetchDeletedPayments();
   }, []);
 
+
+  // Effect to prefill form when job card info is set
+useEffect(() => {
+  if (serviceJobCardInfo && !isEditMode) {
+    const jc = serviceJobCardInfo;
+    
+    console.log("Job Card Data:", jc);
+    
+    // Get vehicle model - try multiple field names
+    let vehicleModelValue = "";
+    if (jc.vehicleDetails) {
+      vehicleModelValue = jc.vehicleDetails;
+    } else if (jc.vehicleModel) {
+      vehicleModelValue = jc.vehicleModel;
+    } else if (jc.modelName) {
+      vehicleModelValue = jc.modelName;
+    }
+    
+    console.log("Vehicle Model from Job Card:", vehicleModelValue);
+    
+    // Find matching vehicle model ID from master list
+    let matchedModelId = "";
+    if (vehicleModelValue && vehicleModels.length > 0) {
+      const searchTerm = vehicleModelValue.toLowerCase();
+      const matchedModel = vehicleModels.find((m) => {
+        const modelName = m.model.toLowerCase();
+        return (
+          modelName === searchTerm ||
+          modelName.includes(searchTerm) ||
+          searchTerm.includes(modelName)
+        );
+      });
+      matchedModelId = matchedModel ? matchedModel.id.toString() : "";
+      console.log("Matched Vehicle Model:", matchedModel);
+      console.log("Matched Model ID:", matchedModelId);
+    }
+    
+    // Get service type name
+    let serviceTypeName = "";
+    if (jc.serviceType) {
+      if (typeof jc.serviceType === 'string') {
+        serviceTypeName = jc.serviceType;
+      } else if (jc.serviceType.name) {
+        serviceTypeName = jc.serviceType.name;
+      }
+    }
+    
+    setFormData((prev) => ({
+      ...prev,
+      refNo: jc.referenceNo || prev.refNo,
+      vehicleModelId: matchedModelId || prev.vehicleModelId,
+    }));
+  }
+}, [serviceJobCardInfo, vehicleModels, isEditMode]);
   const fetchPermissions = async () => {
     try {
       const perms = await menuPermissionApi.get();
@@ -89,45 +145,63 @@ const PaymentCollection = ({ user }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      const [customerData, invoiceData] = await Promise.all([
-        customerApi.getAll(),
-        salesInvoiceApi.getAll()
-      ]);
-      
-      // Get unique contacts from invoices
-      const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
-      
-      const enrichedCustomerData = customerData.map(c => ({
-        ...c,
-        hasInvoice: invoiceContacts.has(c.contactNo)
-      }));
+ const fetchCustomers = async () => {
+  try {
+    const [customerData, invoiceData, jobCardData] = await Promise.all([
+      customerApi.getAll(),
+      salesInvoiceApi.getAll(),
+      serviceJobCardApi.getAll() // Add this
+    ]);
+    
+    // Get unique contacts from invoices and job cards
+    const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
+    const jobCardContacts = new Set(jobCardData.map(jc => jc.mobileNumber));
+    
+    const enrichedCustomerData = customerData.map(c => ({
+      ...c,
+      hasInvoice: invoiceContacts.has(c.contactNo),
+      hasJobCard: jobCardContacts.has(c.contactNo)
+    }));
 
-      const customerContacts = new Set(customerData.map(c => c.contactNo));
-      const invoiceCustomers = [];
-      const seenInvoiceContacts = new Set();
-      
-      invoiceData.forEach(inv => {
-        if (!customerContacts.has(inv.contactInfo) && !seenInvoiceContacts.has(inv.contactInfo)) {
-          invoiceCustomers.push({
-            id: `inv-${inv.id}`,
-            name: inv.customerName,
-            contactNo: inv.contactInfo,
-            address: inv.address || "N/A",
-            isInvoice: true,
-            invoiceData: inv
-          });
-          seenInvoiceContacts.add(inv.contactInfo);
-        }
-      });
+    const customerContacts = new Set(customerData.map(c => c.contactNo));
+    const external = [];
+    const seenContacts = new Set();
+    
+    // Customers only in Sales Invoice
+    invoiceData.forEach(inv => {
+      if (!customerContacts.has(inv.contactInfo) && !seenContacts.has(inv.contactInfo)) {
+        external.push({
+          id: `inv-${inv.id}`,
+          name: inv.customerName,
+          contactNo: inv.contactInfo,
+          address: inv.address || "N/A",
+          isInvoice: true,
+          invoiceData: inv
+        });
+        seenContacts.add(inv.contactInfo);
+      }
+    });
 
-      setCustomers([...enrichedCustomerData, ...invoiceCustomers]);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    }
-  };
+    // Customers only in Service Job Card Master
+    jobCardData.forEach(jc => {
+      if (!customerContacts.has(jc.mobileNumber) && !seenContacts.has(jc.mobileNumber)) {
+        external.push({
+          id: `jc-${jc.id}`,
+          name: jc.customerName || "Unknown",
+          contactNo: jc.mobileNumber,
+          address: "Imported from Service Master",
+          isJobCard: true,
+          jobCardData: jc
+        });
+        seenContacts.add(jc.mobileNumber);
+      }
+    });
 
+    setCustomers([...enrichedCustomerData, ...external]);
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+  }
+};
   const fetchPaymentModes = async () => {
     try {
       const data = await paymentModeApi.getAll();
@@ -425,74 +499,159 @@ const PaymentCollection = ({ user }) => {
       customer.contactNo.includes(searchTerm)
   );
 
-  const handleCustomerSelect = (customer) => {
-    if (customer === "new") {
-      setSelectedCustomerId("new");
-      setSearchTerm("+ Add New Customer");
-      setIsNewCustomer(true);
-      setLoadedCustomer(null);
-      setFilteredPayments(payments);
-      setSalesInvoiceInfo(null);
-    } else if (customer.isInvoice) {
-      setSelectedCustomerId("new");
-      setSearchTerm(customer.name);
-      setIsNewCustomer(true);
-      setLoadedCustomer(null);
-      setNewCustomerData({
-        name: customer.name,
-        contactNo: customer.contactNo,
-        address: customer.address || "N/A",
-        status: "Imported from Invoice",
-      });
-      setSalesInvoiceInfo(customer.invoiceData);
-      // Auto-fill vehicle model and reference number
-      setFormData(prev => ({
-        ...prev,
-        refNo: customer.invoiceData.referenceNo || prev.refNo,
-        vehicleModelId: vehicleModels.find(m => 
-          customer.invoiceData.vehicleModel && 
-          (m.model.toLowerCase() === customer.invoiceData.vehicleModel.toLowerCase() ||
-           customer.invoiceData.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
-           m.model.toLowerCase().includes(customer.invoiceData.vehicleModel.toLowerCase()))
-        )?.id.toString() || prev.vehicleModelId
-      }));
-      setFilteredPayments(payments);
-    } else {
-      setSelectedCustomerId(customer.id.toString());
-      setSearchTerm(customer.name);
-      setLoadedCustomer(customer);
-      setIsNewCustomer(false);
-      const customerPayments = payments.filter(
-        (payment) => payment.customerId === customer.id
+const handleCustomerSelect = (customer) => {
+  if (customer === "new") {
+    setSelectedCustomerId("new");
+    setSearchTerm("+ Add New Customer");
+    setIsNewCustomer(true);
+    setLoadedCustomer(null);
+    setFilteredPayments(payments);
+    setSalesInvoiceInfo(null);
+    setServiceJobCardInfo(null);
+  } else if (customer.isInvoice) {
+    setSelectedCustomerId("new");
+    setSearchTerm(customer.name);
+    setIsNewCustomer(true);
+    setLoadedCustomer(null);
+    setNewCustomerData({
+      name: customer.name,
+      contactNo: customer.contactNo,
+      address: customer.address || "N/A",
+      status: "Imported from Invoice",
+    });
+    setSalesInvoiceInfo(customer.invoiceData);
+    setServiceJobCardInfo(null);
+    // Auto-fill vehicle model and reference number
+    setFormData(prev => ({
+      ...prev,
+      refNo: customer.invoiceData.referenceNo || prev.refNo,
+      vehicleModelId: vehicleModels.find(m => 
+        customer.invoiceData.vehicleModel && 
+        (m.model.toLowerCase() === customer.invoiceData.vehicleModel.toLowerCase() ||
+         customer.invoiceData.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
+         m.model.toLowerCase().includes(customer.invoiceData.vehicleModel.toLowerCase()))
+      )?.id.toString() || prev.vehicleModelId
+    }));
+    setFilteredPayments(payments);
+  } else if (customer.isJobCard) {
+  setSelectedCustomerId("new");
+  setSearchTerm(customer.name);
+  setIsNewCustomer(true);
+  setLoadedCustomer(null);
+  setNewCustomerData({
+    name: customer.name,
+    contactNo: customer.contactNo,
+    address: "Imported from Service Master Card",
+    status: "Service Dealer Customer",
+  });
+  setSalesInvoiceInfo(null);
+  
+  const jc = customer.jobCardData;
+  setServiceJobCardInfo(jc);
+  
+  // Get vehicle model from job card
+  let vehicleModelValue = "";
+  if (jc.vehicleDetails) {
+    vehicleModelValue = jc.vehicleDetails;
+  } else if (jc.vehicleModel) {
+    vehicleModelValue = jc.vehicleModel;
+  }
+  
+  // Find matching vehicle model ID
+  let matchedModelId = "";
+  if (vehicleModelValue && vehicleModels.length > 0) {
+    const searchTerm = vehicleModelValue.toLowerCase();
+    const matchedModel = vehicleModels.find((m) => {
+      const modelName = m.model.toLowerCase();
+      return (
+        modelName === searchTerm ||
+        modelName.includes(searchTerm) ||
+        searchTerm.includes(modelName)
       );
-      setFilteredPayments(
-        customerPayments.map((payment, index) => ({
-          ...payment,
-          sNo: index + 1,
-        }))
-      );
-      
-      // Fetch sales invoice info for this customer
-      salesInvoiceApi.getAll(customer.contactNo).then((results) => {
-        const info = results.length > 0 ? results[0] : null;
-        setSalesInvoiceInfo(info);
-        if (info) {
-          // Auto-fill vehicle model and reference number
-          setFormData(prev => ({
-            ...prev,
-            refNo: info.referenceNo || prev.refNo,
-            vehicleModelId: vehicleModels.find(m => 
-              info.vehicleModel && 
-              (m.model.toLowerCase() === info.vehicleModel.toLowerCase() ||
-               info.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
-               m.model.toLowerCase().includes(info.vehicleModel.toLowerCase()))
-            )?.id.toString() || prev.vehicleModelId
-          }));
-        }
-      }).catch(() => setSalesInvoiceInfo(null));
+    });
+    matchedModelId = matchedModel ? matchedModel.id.toString() : "";
+  }
+  
+  // Set form data with vehicle model
+  setFormData(prev => ({
+    ...prev,
+    refNo: jc.referenceNo || prev.refNo,
+    vehicleModelId: matchedModelId || prev.vehicleModelId,
+  }));
+  
+  setFilteredPayments(payments);
+}else {
+    setSelectedCustomerId(customer.id.toString());
+    setSearchTerm(customer.name);
+    setLoadedCustomer(customer);
+    setIsNewCustomer(false);
+    const customerPayments = payments.filter(
+      (payment) => payment.customerId === customer.id
+    );
+    setFilteredPayments(
+      customerPayments.map((payment, index) => ({
+        ...payment,
+        sNo: index + 1,
+      }))
+    );
+    
+    // Fetch sales invoice info for this customer
+    salesInvoiceApi.getAll(customer.contactNo).then((results) => {
+      const info = results.length > 0 ? results[0] : null;
+      setSalesInvoiceInfo(info);
+      if (info) {
+        setFormData(prev => ({
+          ...prev,
+          refNo: info.referenceNo || prev.refNo,
+          vehicleModelId: vehicleModels.find(m => 
+            info.vehicleModel && 
+            (m.model.toLowerCase() === info.vehicleModel.toLowerCase() ||
+             info.vehicleModel.toLowerCase().includes(m.model.toLowerCase()) ||
+             m.model.toLowerCase().includes(info.vehicleModel.toLowerCase()))
+          )?.id.toString() || prev.vehicleModelId
+        }));
+      }
+    }).catch(() => setSalesInvoiceInfo(null));
+    
+   // Fetch service job card for this customer
+serviceJobCardApi.getAll(customer.contactNo).then((results) => {
+  const jc = results && results.length > 0 ? results[0] : null;
+  setServiceJobCardInfo(jc);
+  
+  if (jc) {
+    // Get vehicle model from job card
+    let vehicleModelValue = "";
+    if (jc.vehicleDetails) {
+      vehicleModelValue = jc.vehicleDetails;
+    } else if (jc.vehicleModel) {
+      vehicleModelValue = jc.vehicleModel;
     }
-    setShowDropdown(false);
-  };
+    
+    // Find matching vehicle model ID
+    let matchedModelId = "";
+    if (vehicleModelValue && vehicleModels.length > 0) {
+      const searchTerm = vehicleModelValue.toLowerCase();
+      const matchedModel = vehicleModels.find((m) => {
+        const modelName = m.model.toLowerCase();
+        return (
+          modelName === searchTerm ||
+          modelName.includes(searchTerm) ||
+          searchTerm.includes(modelName)
+        );
+      });
+      matchedModelId = matchedModel ? matchedModel.id.toString() : "";
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      refNo: jc.referenceNo || prev.refNo,
+      vehicleModelId: matchedModelId || prev.vehicleModelId,
+    }));
+  }
+}).catch(() => setServiceJobCardInfo(null));
+  }
+  setShowDropdown(false);
+};
 
   const numberToWords = (num) => {
     const ones = [
@@ -881,22 +1040,31 @@ const PaymentCollection = ({ user }) => {
                       </div>
                     )}
                     {filteredCustomers.map((customer) => (
-                      <div
-                        key={customer.id}
-                        onClick={() => handleCustomerSelect(customer)}
-                        className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="font-medium">{customer.name}</div>
-                          {(customer.isInvoice || customer.hasInvoice) && (
-                            <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Invoice</span>
-                          )}
-                        </div>
-                        <div className="text-sm text-brand-text-secondary">
-                          {customer.contactNo}
-                        </div>
-                      </div>
-                    ))}
+  <div
+    key={customer.id}
+    onClick={() => handleCustomerSelect(customer)}
+    className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
+  >
+    <div className="flex justify-between items-center">
+      <div className="font-medium">{customer.name}</div>
+      <div className="flex gap-1">
+        {(customer.isInvoice || customer.hasInvoice) && (
+          <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">
+            Invoice
+          </span>
+        )}
+        {(customer.isJobCard || customer.hasJobCard) && (
+          <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">
+            Service DealerShip
+          </span>
+        )}
+      </div>
+    </div>
+    <div className="text-sm text-brand-text-secondary">
+      {customer.contactNo}
+    </div>
+  </div>
+))}
                     {filteredCustomers.length === 0 &&
                       searchTerm &&
                       searchTerm !== "+ Add New Customer" && (
@@ -1105,6 +1273,45 @@ const PaymentCollection = ({ user }) => {
                       </div>
                     </div>
                   )}
+                  {serviceJobCardInfo && (
+  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+    <h4 className="text-sm font-bold text-green-900 mb-2">📋 Service DealerShip Customer Information</h4>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <div>
+        <span className="text-green-700 font-medium">Job Card No:</span>
+        <span className="ml-2 text-green-900">
+          {serviceJobCardInfo.jobCardNumber || "N/A"}
+        </span>
+      </div>
+      <div>
+        <span className="text-green-700 font-medium">Vehicle Reg No:</span>
+        <span className="ml-2 text-green-900">
+          {serviceJobCardInfo.registrationNumber || "N/A"}
+        </span>
+      </div>
+      <div>
+        <span className="text-green-700 font-medium">Vehicle Model:</span>
+        <span className="ml-2 text-green-900">
+          {serviceJobCardInfo.vehicleDetails || "N/A"}
+        </span>
+      </div>
+      <div>
+        <span className="text-green-700 font-medium">Service Type:</span>
+        <span className="ml-2 text-green-900">
+          {typeof serviceJobCardInfo.serviceType === 'object' 
+            ? serviceJobCardInfo.serviceType?.name || "N/A"
+            : serviceJobCardInfo.serviceType || "N/A"}
+        </span>
+      </div>
+      <div>
+        <span className="text-green-700 font-medium">Status:</span>
+        <span className="ml-2 text-green-900">
+          {serviceJobCardInfo.status || "N/A"}
+        </span>
+      </div>
+    </div>
+  </div>
+)}
                 </>
               )}
             </div>

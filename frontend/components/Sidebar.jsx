@@ -132,6 +132,15 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
                 <li><NavLink view="sales_invoice_master" label="Sales Invoice Master" isSubmenu /></li>
+                {permissions.master.jobcard_master && (
+  <li>
+    <NavLink
+      view="service_jobcard_master"
+      label="Service Dealership"
+      isSubmenu
+    />
+  </li>
+)}
                 {permissions.master.payment_mode && <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>}
                 {permissions.master.type_of_payment && <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>}
                 {permissions.master.type_of_collection && <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>}
@@ -139,6 +148,15 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
                 {permissions.master.service_payment_mode && <li><NavLink view="service_payment_mode" label="S - Payment Mode" isSubmenu /></li>}
                 {permissions.master.service_type_of_payment && <li><NavLink view="service_type_of_payment" label="S - Type of Payment" isSubmenu /></li>}
                {permissions?.master?.service_type_of_collection && (<li><NavLink view="service_type_of_collection" label="S - Type of Collection"  isSubmenu  /></li>)}
+             {permissions.master.service_type && 
+  <li>
+    <NavLink
+      view="service_type"
+      label="Service Type"
+      isSubmenu
+    />
+  </li>
+}
                 {permissions.master.create_enquiry && <li><NavLink view="vehicle_enquiry_form" label="Create Enquiry" isSubmenu /></li>}
               </NavGroup>
             )}

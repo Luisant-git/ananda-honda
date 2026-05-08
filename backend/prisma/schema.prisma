@@ -19,6 +19,7 @@ model Customer {
   updatedAt DateTime @updatedAt
   paymentCollections PaymentCollection[]
   servicePaymentCollections ServicePaymentCollection[]
+
 }
 
 model PaymentMode {
@@ -138,7 +139,7 @@ model ServicePaymentCollection {
   enteredBy       Int?
   remarks         String?
   jobCardNumber   String?
-  serviceType     String?
+  serviceTypeId   Int?   
   paymentSessions Json     @default("[]")
   deletedAt       DateTime?
   deletedBy       Int?
@@ -150,6 +151,7 @@ model ServicePaymentCollection {
   paymentMode     ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
   typeOfPayment   ServiceTypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
   serviceTypeOfCollection ServiceTypeOfCollection? @relation(fields: [serviceTypeOfCollectionId], references: [id])
+  serviceTypeRelation ServiceType? @relation(fields: [serviceTypeId], references: [id])  
   vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
   user            User? @relation(fields: [enteredBy], references: [id])
   deletedByUser   User? @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
@@ -221,4 +223,32 @@ model SalesInvoice {
   
   @@index([contactInfo])
   @@index([vehicleRegNo])
+}
+
+
+model ServiceJobCard {
+  id                 Int      @id @default(autoincrement())
+  jobCardNumber      String   @unique  // This is used for matching
+  registrationNumber String
+  customerName       String?
+  mobileNumber       String?
+  vehicleDetails     String?
+  serviceId      Int?
+  serviceType        ServiceType? @relation(fields: [serviceId], references: [id])
+  status             String   @default("Pending")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+   @@index([mobileNumber]) 
+  @@index([registrationNumber])
+}
+
+model ServiceType{
+  id        Int      @id @default(autoincrement())
+  name    String @unique
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  serviceJobCard  ServiceJobCard[]
+  servicePayments ServicePaymentCollection[] 
 }

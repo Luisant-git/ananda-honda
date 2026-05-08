@@ -13,109 +13,134 @@ export class ServicePaymentCollectionService {
     private pdfService: PdfService,
   ) {}
 
-  async create(data: { date: string; customerId: number; totalAmt?: number; recAmt: number; paymentType: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string; serviceType?: string }) {
-    const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
-      orderBy: { receiptNo: 'desc' }
+ async create(data: { 
+  date: string; 
+  customerId: number; 
+  totalAmt?: number; 
+  recAmt: number; 
+  paymentType: string; 
+  paymentStatus?: string; 
+  vehicleNumber?: string; 
+  paymentModeId: number; 
+  typeOfPaymentId?: number; 
+  serviceTypeOfCollectionId?: number; 
+  vehicleModelId?: number; 
+  enteredBy?: number; 
+  remarks?: string; 
+  refNo?: string; 
+  jobCardNumber?: string; 
+  serviceTypeId?: number;
+}) {
+  const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
+    orderBy: { receiptNo: 'desc' }
+  });
+  
+  let nextNumber = 1;
+  if (lastPayment && lastPayment.receiptNo) {
+    const lastNumber = parseInt(lastPayment.receiptNo.replace('SRV', ''));
+    nextNumber = lastNumber + 1;
+  }
+  const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
+
+  let paymentSessions: any[] = [];
+
+  // If status is completed, mark all previous pending payments as completed
+  if (data.paymentStatus === 'completed') {
+    const partPayments = await this.prisma.servicePaymentCollection.findMany({
+      where: {
+        customerId: data.customerId,
+        paymentStatus: 'pending',
+        deletedAt: null
+      }
     });
-    
-    let nextNumber = 1;
-    if (lastPayment && lastPayment.receiptNo) {
-      const lastNumber = parseInt(lastPayment.receiptNo.replace('SRV', ''));
-      nextNumber = lastNumber + 1;
-    }
-    const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
 
-    let paymentSessions: any[] = [];
+    if (partPayments.length > 0) {
+      paymentSessions = partPayments.map(p => ({
+        receiptNo: p.receiptNo,
+        date: p.date,
+        amount: p.recAmt
+      }));
 
-    // If status is completed, mark all previous pending payments as completed
-    if (data.paymentStatus === 'completed') {
-      const partPayments = await this.prisma.servicePaymentCollection.findMany({
+      await this.prisma.servicePaymentCollection.updateMany({
         where: {
-          customerId: data.customerId,
-          paymentStatus: 'pending',
-          deletedAt: null
-        }
+          id: { in: partPayments.map(p => p.id) }
+        },
+        data: { paymentStatus: 'completed' }
       });
-
-      if (partPayments.length > 0) {
-        paymentSessions = partPayments.map(p => ({
-          receiptNo: p.receiptNo,
-          date: p.date,
-          amount: p.recAmt
-        }));
-
-        await this.prisma.servicePaymentCollection.updateMany({
-          where: {
-            id: { in: partPayments.map(p => p.id) }
-          },
-          data: { paymentStatus: 'completed' }
-        });
-      }
     }
-
-    const savedPayment = await this.prisma.servicePaymentCollection.create({
-      data: {
-        ...data,
-        date: new Date(data.date),
-        receiptNo,
-        paymentStatus: data.paymentStatus || 'completed',
-        totalAmt: data.totalAmt || null,
-        vehicleNumber: data.vehicleNumber || null,
-        typeOfPaymentId: data.typeOfPaymentId || null,
-        serviceTypeOfCollectionId: data.serviceTypeOfCollectionId || null, 
-        vehicleModelId: data.vehicleModelId || null,
-        enteredBy: data.enteredBy || null,
-        jobCardNumber: data.jobCardNumber || null,
-        paymentSessions
-      },
-      include: {
-        customer: true,
-        paymentMode: true,
-        typeOfPayment: true,
-        serviceTypeOfCollection: true, 
-        vehicleModel: true,
-        user: true
-      }
-    });
-
-    try {
-      if (savedPayment.customer && savedPayment.customer.contactNo) {
-        // Run asynchronously so it doesn't block the API response
-        this.sendWhatsappReceipt(savedPayment).catch((err) => {
-          this.logger.error('Failed to send WhatsApp receipt asynchronously', err);
-        });
-      }
-    } catch (error) {
-      this.logger.error('Error triggering WhatsApp receipt', error);
-    }
-
-    return savedPayment;
   }
 
-  private async sendWhatsappReceipt(payment: any) {
+  const savedPayment = await this.prisma.servicePaymentCollection.create({
+    data: {
+      date: new Date(data.date),
+      customerId: data.customerId,
+      totalAmt: data.totalAmt || null,
+      recAmt: data.recAmt,
+      paymentType: data.paymentType,
+      paymentStatus: data.paymentStatus || 'completed',
+      vehicleNumber: data.vehicleNumber || null,
+      paymentModeId: data.paymentModeId,
+      typeOfPaymentId: data.typeOfPaymentId || null,
+      serviceTypeOfCollectionId: data.serviceTypeOfCollectionId || null,
+      vehicleModelId: data.vehicleModelId || null,
+      enteredBy: data.enteredBy || null,
+      remarks: data.remarks || null,
+      refNo: data.refNo || null,
+      jobCardNumber: data.jobCardNumber || null,
+      serviceTypeId: data.serviceTypeId || null,
+      receiptNo,
+      paymentSessions
+    },
+    include: {
+      customer: true,
+      paymentMode: true,
+      typeOfPayment: true,
+      serviceTypeOfCollection: true,
+      vehicleModel: true,
+      serviceTypeRelation: true,
+      user: true
+    }
+  });
+
   try {
-    const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
-    const filename = `Service_Receipt_${payment.receiptNo}.pdf`;
-    const mediaId = await this.whatsappService.uploadMedia(pdfBuffer, filename);
-
-    const customerName = payment.customer.name;
-    const contactNo = payment.customer.contactNo;
-    const jobCardNumber = payment.jobCardNumber || '-';
-    const amount = payment.recAmt;
-
-    await this.whatsappService.sendServiceReceiptTemplate(
-      contactNo,
-      customerName,
-      payment.receiptNo,
-      jobCardNumber,
-      amount,
-      mediaId,
-      filename,
-    );
+    if (savedPayment.customer && savedPayment.customer.contactNo) {
+      // Run asynchronously so it doesn't block the API response
+      this.sendWhatsappReceipt(savedPayment).catch((err) => {
+        this.logger.error('Failed to send WhatsApp receipt asynchronously', err);
+      });
+    }
   } catch (error) {
-    this.logger.error('Failed to send WhatsApp service receipt process', error);
+    this.logger.error('Error triggering WhatsApp receipt', error);
   }
+
+  return savedPayment;
 }
+  private async sendWhatsappReceipt(payment: any) {
+    try {
+      const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
+      const filename = `Service_Receipt_${payment.receiptNo}.pdf`;
+      const mediaId = await this.whatsappService.uploadMedia(pdfBuffer, filename);
+
+      const customerName = payment.customer.name;
+      const contactNo = payment.customer.contactNo;
+      const jobCardNumber = payment.jobCardNumber || '-';
+      const amount = payment.recAmt;
+      const serviceType = payment.serviceTypeRelation?.name || payment.serviceType || 'N/A';
+
+      await this.whatsappService.sendServiceReceiptTemplate(
+        contactNo,
+        customerName,
+        payment.receiptNo,
+        jobCardNumber,
+        amount,
+        mediaId,
+        filename,
+       
+      );
+    } catch (error) {
+      this.logger.error('Failed to send WhatsApp service receipt process', error);
+    }
+  }
 
   async findAll(page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
@@ -128,6 +153,7 @@ export class ServicePaymentCollectionService {
           typeOfPayment: true,
           serviceTypeOfCollection: true,
           vehicleModel: true,
+          serviceTypeRelation: true,
           user: true,
           cancelledByUser: true
         },
@@ -149,13 +175,32 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         serviceTypeOfCollection: true, 
         vehicleModel: true,
+        serviceTypeRelation: true,
         user: true,
         cancelledByUser: true
       }
     });
   }
 
-  async update(id: number, data: { date?: string; customerId?: number; totalAmt?: number; recAmt?: number; paymentType?: string; paymentStatus?: string; vehicleNumber?: string; paymentModeId?: number; typeOfPaymentId?: number; serviceTypeOfCollectionId?: number;  vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; jobCardNumber?: string; serviceType?: string }) {
+  async update(id: number, data: { 
+    date?: string; 
+    customerId?: number; 
+    totalAmt?: number; 
+    recAmt?: number; 
+    paymentType?: string; 
+    paymentStatus?: string; 
+    vehicleNumber?: string; 
+    paymentModeId?: number; 
+    typeOfPaymentId?: number; 
+    serviceTypeOfCollectionId?: number; 
+    vehicleModelId?: number; 
+    enteredBy?: number; 
+    remarks?: string; 
+    refNo?: string; 
+    jobCardNumber?: string; 
+   
+    serviceTypeId?: number;
+  }) {
     const updateData: any = { ...data };
     if (data.date) {
       updateData.date = new Date(data.date);
@@ -163,14 +208,17 @@ export class ServicePaymentCollectionService {
     if (data.typeOfPaymentId === undefined) {
       delete updateData.typeOfPaymentId;
     }
-     if (data.serviceTypeOfCollectionId === undefined) {
-    delete updateData.serviceTypeOfCollectionId; 
+    if (data.serviceTypeOfCollectionId === undefined) {
+      delete updateData.serviceTypeOfCollectionId; 
     }
     if (data.vehicleModelId === undefined) {
       delete updateData.vehicleModelId;
     }
     if (data.enteredBy === undefined) {
       delete updateData.enteredBy;
+    }
+    if (data.serviceTypeId === undefined) {
+      delete updateData.serviceTypeId;
     }
 
     return this.prisma.servicePaymentCollection.update({
@@ -182,6 +230,7 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         serviceTypeOfCollection: true,
         vehicleModel: true,
+        serviceTypeRelation: true,
         user: true
       }
     });
@@ -210,6 +259,7 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         serviceTypeOfCollection: true,
         vehicleModel: true,
+        serviceTypeRelation: true,
         user: true
       }
     });
@@ -229,6 +279,7 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         serviceTypeOfCollection: true,
         vehicleModel: true,
+        serviceTypeRelation: true,
         user: true,
         cancelledByUser: true
       }
@@ -244,6 +295,7 @@ export class ServicePaymentCollectionService {
         typeOfPayment: true,
         serviceTypeOfCollection: true,
         vehicleModel: true,
+        serviceTypeRelation: true,
         user: true,
         deletedByUser: true
       },
@@ -251,70 +303,66 @@ export class ServicePaymentCollectionService {
     });
   }
 
- async getDashboardStats(fromDate: string, toDate: string) {
-  const startDate = new Date(fromDate);
-  startDate.setHours(0, 0, 0, 0);
+  async getDashboardStats(fromDate: string, toDate: string) {
+    const startDate = new Date(fromDate);
+    startDate.setHours(0, 0, 0, 0);
 
-  const endDate = new Date(toDate);
-  endDate.setHours(23, 59, 59, 999);
+    const endDate = new Date(toDate);
+    endDate.setHours(23, 59, 59, 999);
 
-  const paymentModes = await this.prisma.servicePaymentMode.findMany({
-    include: { serviceTypeOfPayments: true }
-  });
+    const paymentModes = await this.prisma.servicePaymentMode.findMany({
+      include: { serviceTypeOfPayments: true }
+    });
 
-  const modes = await Promise.all(
-    paymentModes.map(async (mode) => {
+    const modes = await Promise.all(
+      paymentModes.map(async (mode) => {
+        const data = await this.prisma.servicePaymentCollection.aggregate({
+          where: {
+            date: { gte: startDate, lte: endDate },
+            paymentModeId: mode.id,
+            deletedAt: null
+          },
+          _sum: { recAmt: true },
+          _count: true
+        });
 
-    
-      const data = await this.prisma.servicePaymentCollection.aggregate({
-        where: {
-          date: { gte: startDate, lte: endDate },
-          paymentModeId: mode.id,
-          deletedAt: null
-        },
-        _sum: { recAmt: true },
-        _count: true
-      });
+        const types = await Promise.all(
+          mode.serviceTypeOfPayments.map(async (type) => {
+            const typeData = await this.prisma.servicePaymentCollection.aggregate({
+              where: {
+                date: { gte: startDate, lte: endDate },
+                paymentModeId: mode.id,
+                typeOfPaymentId: type.id,
+                deletedAt: null
+              },
+              _sum: { recAmt: true },
+              _count: true
+            });
 
-    
-      const types = await Promise.all(
-        mode.serviceTypeOfPayments.map(async (type) => {
-          const typeData = await this.prisma.servicePaymentCollection.aggregate({
-            where: {
-              date: { gte: startDate, lte: endDate },
-              paymentModeId: mode.id,
-              typeOfPaymentId: type.id,
-              deletedAt: null
-            },
-            _sum: { recAmt: true },
-            _count: true
-          });
+            return {
+              type: type.typeOfMode,
+              amount: typeData._sum.recAmt || 0,
+              count: typeData._count
+            };
+          })
+        );
 
-          return {
-            type: type.typeOfMode,
-            amount: typeData._sum.recAmt || 0,
-            count: typeData._count
-          };
-        })
-      );
+        return {
+          mode: mode.paymentMode,
+          amount: data._sum.recAmt || 0,
+          count: data._count,
+          types
+        };
+      })
+    );
 
-      return {
-        mode: mode.paymentMode,
-        amount: data._sum.recAmt || 0,
-        count: data._count,
-        types
-      };
-    })
-  );
+    const totalCount = await this.prisma.servicePaymentCollection.count({
+      where: {
+        date: { gte: startDate, lte: endDate },
+        deletedAt: null
+      }
+    });
 
-
-  const totalCount = await this.prisma.servicePaymentCollection.count({
-    where: {
-      date: { gte: startDate, lte: endDate },
-      deletedAt: null
-    }
-  });
-
-  return { modes, totalCount };
-}
+    return { modes, totalCount };
+  }
 }

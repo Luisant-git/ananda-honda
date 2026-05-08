@@ -15,6 +15,13 @@ export class CustomerController {
     return this.customerService.findAll();
   }
 
+  // ✅ PUT THIS ROUTE BEFORE THE :id ROUTE!
+  @Get(':id/details')
+  getDetails(@Param('id') id: string) {
+    console.log("[Controller] getDetails called with ID:", id);
+    return this.customerService.getDetails(+id);
+  }
+
   @Get('mobile/:mobile')
   findByMobile(@Param('mobile') mobile: string) {
     return this.customerService.findByMobile(mobile);
@@ -25,14 +32,10 @@ export class CustomerController {
     return this.customerService.searchByContact(contact);
   }
 
+  // ✅ THIS GENERIC ROUTE COMES LAST
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.customerService.findOne(+id);
-  }
-
-  @Get(':id/details')
-  getDetails(@Param('id') id: string) {
-    return this.customerService.getDetails(+id);
   }
 
   @Patch(':id')

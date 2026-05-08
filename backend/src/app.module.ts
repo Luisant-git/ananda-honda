@@ -18,9 +18,11 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { PdfModule } from './pdf/pdf.module';
 import { ServiceTypeOfCollectionModule } from './service-type-of-collection/service-type-of-collection.module';
 import { SalesInvoiceModule } from './sales-invoice/sales-invoice.module';
+import { ServiceJobCardModule } from './service-job-card/service-job-card.module';
+import { ServiceTypeModule } from './service-type/service-type.module';
 
 @Module({
-  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule],
+  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule],
   controllers: [AppController],
   providers: [AppService],
 })

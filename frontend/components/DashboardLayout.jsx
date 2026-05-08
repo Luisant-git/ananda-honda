@@ -21,6 +21,8 @@ import EnquiryManagement from '../pages/EnquiryManagement';
 import VehicleEnquiryForm from '../pages/VehicleEnquiryForm';
 import ServiceTypeOfCollection from '../pages/ServiceTypeOfCollection';
 import SalesInvoiceMaster from '../pages/SalesInvoiceMaster';
+import ServiceJobCardMaster from '../pages/ServiceJobCardMaster';
+import ServiceType from '../pages/ServiceType';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -56,6 +58,10 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ServiceTypeOfCollection user={user} />;
       case 'sales_invoice_master':
         return <SalesInvoiceMaster user={user} />;
+      case 'service_jobcard_master':
+        return <ServiceJobCardMaster user={user} />;
+      case 'service_type':
+        return <ServiceType user={user} />;
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':

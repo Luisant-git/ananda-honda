@@ -73,7 +73,7 @@ export class CustomerService {
     });
   }
 
-  async getDetails(id: number) {
+async getDetails(id: number) {
     const customer = await this.prisma.customer.findUnique({
       where: { id },
       include: {
@@ -102,20 +102,49 @@ export class CustomerService {
 
     if (!customer) return null;
 
+    const mobile = customer.contactNo?.trim();
+
+    // ✅ Enquiries - matched by mobile number
     const enquiries = await this.prisma.enquiry.findMany({
-      where: { mobileNumber: customer.contactNo },
+      where: {
+        mobileNumber: {
+          equals: mobile,
+          mode: 'insensitive',
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
+    // ✅ Sales Invoices - matched by contact info (mobile)
     const salesInvoices = await this.prisma.salesInvoice.findMany({
-      where: { contactInfo: customer.contactNo },
+      where: {
+        contactInfo: {
+          equals: mobile,
+          mode: 'insensitive',
+        },
+      },
       orderBy: { id: 'desc' },
+    });
+
+    // ✅ Service Job Cards - matched by mobile number (same as enquiries)
+    const serviceJobCards = await this.prisma.serviceJobCard.findMany({
+      where: {
+        mobileNumber: {
+          equals: mobile,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        serviceType: true,
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
     return {
       ...customer,
       enquiries,
       salesInvoices,
+      serviceJobCards,
     };
   }
 }
