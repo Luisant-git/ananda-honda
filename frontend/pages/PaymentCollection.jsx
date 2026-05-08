@@ -182,7 +182,7 @@ useEffect(() => {
       }
     });
 
-    // Customers only in Service Job Card Master
+    // Customers only in Service Dealership Master
     jobCardData.forEach(jc => {
       if (!customerContacts.has(jc.mobileNumber) && !seenContacts.has(jc.mobileNumber)) {
         external.push({

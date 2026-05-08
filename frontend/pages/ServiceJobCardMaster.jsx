@@ -183,7 +183,7 @@ const ServiceJobCardMaster = ({ user }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-brand-text-primary">Service Job Card Master</h1>
+        <h1 className="text-2xl font-bold text-brand-text-primary">Service Dealership Master</h1>
         <div className="flex gap-2">
           <button
             onClick={downloadTemplate}
