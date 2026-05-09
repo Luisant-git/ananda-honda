@@ -810,6 +810,7 @@ const fetchServiceTypes = async () => {
       const fetchData = async () => {
         let invoiceInfo = null;
         let jobCardInfo = null;
+        let history = [];
         
         try {
           const invoiceResults = await salesInvoiceApi.getAll(customer.contactNo);
@@ -819,6 +820,14 @@ const fetchServiceTypes = async () => {
           console.error("Error fetching invoice:", error);
         }
         
+        try {
+          const historyResponse = await servicePaymentCollectionApi.getAll(1, 1000, customer.id);
+          history = historyResponse.data || [];
+          setCustomerHistory(history);
+        } catch (error) {
+          console.error("Error fetching history:", error);
+        }
+
         try {
           const jobCardResults = await serviceJobCardApi.getAll(customer.contactNo);
           jobCardInfo = jobCardResults && jobCardResults.length > 0 ? jobCardResults[0] : null;
@@ -862,9 +871,15 @@ const fetchServiceTypes = async () => {
             }
             
             updated.jobCardNumber = jobCardInfo.jobCardNumber || prev.jobCardNumber;
-            updated.serviceTypeId = serviceTypeId;
-            updated.serviceType = serviceTypeName || prev.serviceType;
-            updated.serviceTypeOfCollectionId = matchedCollectionId || prev.serviceTypeOfCollectionId;
+            
+            // Only auto-fill service type if it's allowed based on history
+            if (isServiceTypeAllowed(serviceTypeName, history)) {
+              updated.serviceTypeId = serviceTypeId;
+              updated.serviceType = serviceTypeName || prev.serviceType;
+              updated.serviceTypeOfCollectionId = matchedCollectionId || prev.serviceTypeOfCollectionId;
+            } else {
+              console.log("Service type from job card is not allowed/already done:", serviceTypeName);
+            }
             
             if (!updated.vehicleModelId && jobCardInfo.vehicleDetails) {
               const modelName = jobCardInfo.vehicleDetails.toLowerCase();
@@ -1062,24 +1077,28 @@ const fetchServiceTypes = async () => {
     { header: "Remarks", accessor: "remarks" },
   ];
 
-  const getFilteredServiceTypes = () => {
-    if (!loadedCustomer) return serviceTypes;
+  // Helper to normalize names (e.g., "FREE 02" -> "FREE2", "Free 1" -> "FREE1")
+  const normalizeServiceName = (name) => {
+    if (!name) return "";
+    return name.toUpperCase()
+      .replace(/\s+/g, '')               // Remove all spaces
+      .replace(/FREE0?([1-9])/g, 'FREE$1'); // Normalize FREE01/FREE 01 to FREE1
+  };
 
-    // Helper to normalize names (e.g., "FREE 02" -> "FREE2", "Free 1" -> "FREE1")
-    const normalize = (name) => {
-      if (!name) return "";
-      return name.toUpperCase()
-        .replace(/\s+/g, '')               // Remove all spaces
-        .replace(/FREE0?([1-9])/g, 'FREE$1'); // Normalize FREE01/FREE 01 to FREE1
-    };
+  const isServiceTypeAllowed = (typeName, history) => {
+    if (!typeName) return true;
+    const normalizedName = normalizeServiceName(typeName);
+    
+    // If it's not a FREE service, always allow it (e.g., PAID)
+    if (!normalizedName.includes("FREE")) return true;
 
     // Filter out cancelled payments from history
-    const activeHistory = customerHistory.filter(p => !p.cancelledAt);
+    const activeHistory = (history || []).filter(p => !p.cancelledAt);
     
     // Get used service names
     const usedNames = activeHistory.map(p => {
       const name = p.serviceTypeRelation?.name || p.serviceType || "";
-      return normalize(name);
+      return normalizeServiceName(name);
     });
     
     // Check if services are already in history
@@ -1087,31 +1106,32 @@ const fetchServiceTypes = async () => {
     const hasFree2 = usedNames.includes("FREE2");
     const hasFree3 = usedNames.includes("FREE3");
 
-    console.log("Customer Service History Normalized:", usedNames);
-    console.log("Status - Free1:", hasFree1, "Free2:", hasFree2, "Free3:", hasFree3);
+    // FREE1 logic: Show if not already done
+    if (normalizedName === "FREE1") {
+      return !hasFree1;
+    }
+    
+    // FREE2 logic: Show only AFTER FREE1 is done, and if FREE2 itself is not done
+    if (normalizedName === "FREE2") {
+      return hasFree1 && !hasFree2;
+    }
+    
+    // FREE3 logic: Show only AFTER FREE1 is done, and if FREE3 itself is not done
+    if (normalizedName === "FREE3") {
+      return hasFree1 && !hasFree3;
+    }
+    
+    return true; // Show other services (PAID, etc.) always
+  };
+
+  const getFilteredServiceTypes = () => {
+    if (!loadedCustomer) return serviceTypes;
 
     return serviceTypes.filter(type => {
       // If we're editing, always include the currently selected type
       if (isEditMode && type.id.toString() === formData.serviceTypeId) return true;
 
-      const name = normalize(type.name);
-      
-      // FREE1 logic: Show if not already done
-      if (name === "FREE1") {
-        return !hasFree1;
-      }
-      
-      // FREE2 logic: Show only AFTER FREE1 is done, and if FREE2 itself is not done
-      if (name === "FREE2") {
-        return hasFree1 && !hasFree2;
-      }
-      
-      // FREE3 logic: Show only AFTER FREE1 is done, and if FREE3 itself is not done
-      if (name === "FREE3") {
-        return hasFree1 && !hasFree3;
-      }
-      
-      return true; // Show other services (PAID, etc.) always
+      return isServiceTypeAllowed(type.name, customerHistory);
     });
   };
 
