@@ -142,11 +142,16 @@ export class ServicePaymentCollectionService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(page: number = 1, limit: number = 10, customerId?: number) {
     const skip = (page - 1) * limit;
+    const where: any = { deletedAt: null };
+    if (customerId) {
+      where.customerId = customerId;
+    }
+    
     const [data, total] = await Promise.all([
       this.prisma.servicePaymentCollection.findMany({
-        where: { deletedAt: null },
+        where,
         include: {
           customer: true,
           paymentMode: true,
@@ -161,7 +166,7 @@ export class ServicePaymentCollectionService {
         skip,
         take: limit
       }),
-      this.prisma.servicePaymentCollection.count({ where: { deletedAt: null } })
+      this.prisma.servicePaymentCollection.count({ where })
     ]);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

@@ -69,6 +69,7 @@ const ServicePaymentCollection = ({ user }) => {
     address: "",
     status: "Walk in Customer",
   });
+  const [customerHistory, setCustomerHistory] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
   const [serviceJobCardInfo, setServiceJobCardInfo] = useState(null);
@@ -522,6 +523,7 @@ const fetchServiceTypes = async () => {
     setIsEditMode(false);
     setEditingPayment(null);
     setIsNewCustomer(false);
+    setCustomerHistory([]);
     setPendingPayments([]);
     
     setFormData({
@@ -579,6 +581,18 @@ const fetchServiceTypes = async () => {
   };
 
   useEffect(() => {
+    const fetchHistory = async () => {
+      if (isPaymentModalOpen && loadedCustomer) {
+        try {
+          const response = await servicePaymentCollectionApi.getAll(1, 1000, loadedCustomer.id);
+          setCustomerHistory(response.data || []);
+        } catch (error) {
+          console.error("Error fetching customer history:", error);
+        }
+      }
+    };
+    fetchHistory();
+
     if (isPaymentModalOpen && !isEditMode && loadedCustomer) {
       fetchPendingPayments(loadedCustomer.id);
     }
@@ -1048,6 +1062,59 @@ const fetchServiceTypes = async () => {
     { header: "Remarks", accessor: "remarks" },
   ];
 
+  const getFilteredServiceTypes = () => {
+    if (!loadedCustomer) return serviceTypes;
+
+    // Helper to normalize names (e.g., "FREE 02" -> "FREE2", "Free 1" -> "FREE1")
+    const normalize = (name) => {
+      if (!name) return "";
+      return name.toUpperCase()
+        .replace(/\s+/g, '')               // Remove all spaces
+        .replace(/FREE0?([1-9])/g, 'FREE$1'); // Normalize FREE01/FREE 01 to FREE1
+    };
+
+    // Filter out cancelled payments from history
+    const activeHistory = customerHistory.filter(p => !p.cancelledAt);
+    
+    // Get used service names
+    const usedNames = activeHistory.map(p => {
+      const name = p.serviceTypeRelation?.name || p.serviceType || "";
+      return normalize(name);
+    });
+    
+    // Check if services are already in history
+    const hasFree1 = usedNames.includes("FREE1");
+    const hasFree2 = usedNames.includes("FREE2");
+    const hasFree3 = usedNames.includes("FREE3");
+
+    console.log("Customer Service History Normalized:", usedNames);
+    console.log("Status - Free1:", hasFree1, "Free2:", hasFree2, "Free3:", hasFree3);
+
+    return serviceTypes.filter(type => {
+      // If we're editing, always include the currently selected type
+      if (isEditMode && type.id.toString() === formData.serviceTypeId) return true;
+
+      const name = normalize(type.name);
+      
+      // FREE1 logic: Show if not already done
+      if (name === "FREE1") {
+        return !hasFree1;
+      }
+      
+      // FREE2 logic: Show only AFTER FREE1 is done, and if FREE2 itself is not done
+      if (name === "FREE2") {
+        return hasFree1 && !hasFree2;
+      }
+      
+      // FREE3 logic: Show only AFTER FREE1 is done, and if FREE3 itself is not done
+      if (name === "FREE3") {
+        return hasFree1 && !hasFree3;
+      }
+      
+      return true; // Show other services (PAID, etc.) always
+    });
+  };
+
   const renderActions = (payment) => {
     if (showDeleted) {
       return permissions?.payment_collection?.service?.restore ? (
@@ -1191,56 +1258,131 @@ const fetchServiceTypes = async () => {
         pagination={!showDeleted ? { page: currentPage, limit: itemsPerPage, total: totalEntries, totalPages: totalPages, onPageChange: (page) => { setCurrentPage(page); fetchPayments(page); } } : undefined}
       />
 
-      <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"}>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label><select value={formData.paymentType} onChange={(e) => { const newPaymentType = e.target.value; setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); if (loadedCustomer) fetchPendingPayments(loadedCustomer.id); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required><option value="full payment">Full Payment</option><option value="part payment">Part Payment</option></select></div>
-          {formData.paymentType === "part payment" && (<div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label><select value={formData.paymentStatus} onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required><option value="pending">Pending</option><option value="completed">Completed</option></select></div>)}
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={formData.paymentType === "part payment"} /></div>
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Amount <span className="text-red-500">*</span></label><input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({ ...formData, recAmt: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required /></div>
-          {formData.paymentType === "part payment" && pendingPayments.length > 0 && (<div className="bg-blue-50 border border-blue-200 rounded-lg p-3"><label className="block text-sm font-medium text-blue-900 mb-2">Previous Received Part Payments for this customer</label><div className="space-y-2">{pendingPayments.map((payment) => (<div key={payment.id} className="flex justify-between text-sm"><span className="text-blue-800">{payment.receiptNo} - {new Date(payment.date).toLocaleDateString('en-GB')} - {payment.vehicleNumber}</span><span className="font-medium text-blue-900">₹{payment.recAmt}</span></div>))}<div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold"><span className="text-blue-900">Total Received:</span><span className="text-blue-900">₹{pendingPayments.reduce((sum, p) => sum + p.recAmt, 0)}</span></div></div></div>)}
-          {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && (<div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Total Paid Amount <span className="text-red-500">*</span></label><input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" placeholder="Auto-calculated total amount" readOnly /></div>)}
-          <SearchableDropdown label="Payment Mode" value={formData.paymentModeId} onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })} options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))} required />
-          <SearchableDropdown label="Type of Payment Mode" value={formData.typeOfPaymentId} onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })} options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))} />
-          <SearchableDropdown label="Type of Collection" value={formData.serviceTypeOfCollectionId} onChange={(value) => { const selectedType = serviceTypeOfCollections.find(type => type.id === parseInt(value)); setFormData({ ...formData, serviceTypeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId }); }} options={serviceTypeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))} />
-          
-       <SearchableDropdown
-  label="Type of Service"
-  value={formData.serviceTypeId}
-  onChange={(value) => {
-    const selectedType = serviceTypes.find(type => type.id.toString() === value);
-    console.log("Selected service type:", selectedType);
-    setFormData({ 
-      ...formData, 
-      serviceTypeId: value,
-      serviceType: selectedType?.name || ""
-    });
-    // Auto-fill Type of Collection based on selected service type
-    if (selectedType?.name && serviceTypeOfCollections.length > 0) {
-      const matchedTypeOfCollection = serviceTypeOfCollections.find(
-        (type) => type.typeOfCollect?.toLowerCase() === selectedType.name.toLowerCase()
-      );
-      if (matchedTypeOfCollection) {
-        setFormData(prev => ({
-          ...prev,
-          serviceTypeOfCollectionId: matchedTypeOfCollection.id.toString()
-        }));
-      }
-    }
-  }}
-  options={serviceTypes.map(type => ({ 
-    value: type.id.toString(), 
-    label: type.name 
-  }))}
-  required
-  placeholder="Select service type"
-  disabled={serviceTypes.length === 0}
-/>
-          {(() => { const selectedTypeOfCollection = serviceTypeOfCollections.find(type => type.id === parseInt(formData.serviceTypeOfCollectionId)); return !selectedTypeOfCollection?.disableVehicleModel && (<SearchableDropdown label="Vehicle Model" value={formData.vehicleModelId} onChange={(value) => setFormData({ ...formData, vehicleModelId: value })} options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))} />); })()}
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.jobCardNumber} onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter job card number" required={formData.paymentType === "full payment"} /></div>
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
-          <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Remarks</label><textarea value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" rows={2}></textarea></div>
-          <div className="flex justify-end gap-4 pt-4"><button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Cancel</button><button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">{isSubmitting ? (<> <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>{isEditMode ? "Updating..." : "Submitting..."}</> ) : (isEditMode ? "Update" : "Submit")}</button></div>
+      <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            {/* Row 1: Basic Info */}
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label><select value={formData.paymentType} onChange={(e) => { const newPaymentType = e.target.value; setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); if (loadedCustomer) fetchPendingPayments(loadedCustomer.id); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required><option value="full payment">Full Payment</option><option value="part payment">Part Payment</option></select></div>
+
+            {/* Row 2: Vehicle Info (User Requested) */}
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={formData.paymentType === "part payment"} /></div>
+            <div>
+              {(() => { 
+                const selectedTypeOfCollection = serviceTypeOfCollections.find(type => type.id === parseInt(formData.serviceTypeOfCollectionId)); 
+                return !selectedTypeOfCollection?.disableVehicleModel ? (
+                  <SearchableDropdown label="Vehicle Model" value={formData.vehicleModelId} onChange={(value) => setFormData({ ...formData, vehicleModelId: value })} options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))} />
+                ) : (
+                  <div className="hidden md:block"></div>
+                ); 
+              })()}
+            </div>
+
+            {/* Row 3: Service Info (User Requested Job Card Number) */}
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.jobCardNumber} onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter job card number" required={formData.paymentType === "full payment"} /></div>
+            <SearchableDropdown
+              label="Type of Service"
+              value={formData.serviceTypeId}
+              onChange={(value) => {
+                const selectedType = serviceTypes.find(type => type.id.toString() === value);
+                setFormData({ 
+                  ...formData, 
+                  serviceTypeId: value,
+                  serviceType: selectedType?.name || ""
+                });
+                if (selectedType?.name && serviceTypeOfCollections.length > 0) {
+                  const matchedTypeOfCollection = serviceTypeOfCollections.find(
+                    (type) => type.typeOfCollect?.toLowerCase() === selectedType.name.toLowerCase()
+                  );
+                  if (matchedTypeOfCollection) {
+                    setFormData(prev => ({
+                      ...prev,
+                      serviceTypeOfCollectionId: matchedTypeOfCollection.id.toString()
+                    }));
+                  }
+                }
+              }}
+              options={getFilteredServiceTypes().map(type => ({ 
+                value: type.id.toString(), 
+                label: type.name 
+              }))}
+              required
+              placeholder="Select service type"
+              disabled={serviceTypes.length === 0}
+            />
+
+            {/* Row 4: Collection & Amount */}
+            <SearchableDropdown label="Type of Collection" value={formData.serviceTypeOfCollectionId} onChange={(value) => { const selectedType = serviceTypeOfCollections.find(type => type.id === parseInt(value)); setFormData({ ...formData, serviceTypeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId }); }} options={serviceTypeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))} />
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Amount <span className="text-red-500">*</span></label><input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({ ...formData, recAmt: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required /></div>
+
+            {/* Row 5: Payment Method */}
+            <SearchableDropdown label="Payment Mode" value={formData.paymentModeId} onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })} options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))} required />
+            <SearchableDropdown label="Type of Payment Mode" value={formData.typeOfPaymentId} onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })} options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))} />
+
+            {/* Row 6: Misc */}
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
+            <div>
+              {formData.paymentType === "part payment" && (
+                <div>
+                  <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label>
+                  <select value={formData.paymentStatus} onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Row 7 - Full Width Remarks */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">Remarks</label>
+              <textarea value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" rows={2}></textarea>
+            </div>
+
+            {/* Previous Payments Info - Full Width */}
+            {formData.paymentType === "part payment" && pendingPayments.length > 0 && (
+              <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <label className="block text-sm font-medium text-blue-900 mb-2">Previous Received Part Payments for this customer</label>
+                <div className="space-y-2">
+                  {pendingPayments.map((payment) => (
+                    <div key={payment.id} className="flex justify-between text-sm">
+                      <span className="text-blue-800">{payment.receiptNo} - {new Date(payment.date).toLocaleDateString('en-GB')} - {payment.vehicleNumber}</span>
+                      <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold">
+                    <span className="text-blue-900">Total Received:</span>
+                    <span className="text-blue-900">₹{pendingPayments.reduce((sum, p) => sum + p.recAmt, 0)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Total Paid Amount Info - Full Width */}
+            {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Total Paid Amount <span className="text-red-500">*</span></label>
+                <input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" placeholder="Auto-calculated total amount" readOnly />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <button type="button" onClick={() => setIsPaymentModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {isEditMode ? "Updating..." : "Submitting..."}
+                </>
+              ) : (
+                isEditMode ? "Update" : "Submit"
+              )}
+            </button>
+          </div>
         </form>
       </Modal>
 
