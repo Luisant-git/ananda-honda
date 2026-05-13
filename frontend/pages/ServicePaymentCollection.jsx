@@ -91,6 +91,16 @@ const ServicePaymentCollection = ({ user }) => {
 const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 const [selectedPayment, setSelectedPayment] = useState(null);
 
+const [isManualJobCard, setIsManualJobCard] = useState(false);
+const [manualJobCardData, setManualJobCardData] = useState({
+  jobCardNumber: '',
+  registrationNumber: '',
+  customerName: '',
+  mobileNumber: '',
+  vehicleDetails: '',
+  serviceType: ''
+});
+
   useEffect(() => {
     fetchCustomers();
     fetchPaymentModes();
@@ -103,6 +113,11 @@ const [selectedPayment, setSelectedPayment] = useState(null);
     fetchServiceTypes();
     fetchAvailableParts();
   }, []);
+
+  // Add this useEffect to fetch vehicle models when component mounts
+useEffect(() => {
+  fetchVehicleModels();
+}, []);
 
   // View payment details
 const handleView = (payment) => {
@@ -165,38 +180,47 @@ const handleView = (payment) => {
     }
   };
 
-  // Effect to set service type from job card info
   useEffect(() => {
-    if (serviceJobCardInfo && !isEditMode) {
-      console.log("Processing job card info:", serviceJobCardInfo);
+  if (serviceJobCardInfo && !isEditMode) {
+    console.log("Processing job card info:", serviceJobCardInfo);
 
-      let serviceTypeId = "";
-      let serviceTypeName = "";
+    let serviceTypeId = "";
+    let serviceTypeName = "";
 
-      if (serviceJobCardInfo.serviceType) {
-        if (typeof serviceJobCardInfo.serviceType === 'object') {
-          serviceTypeId = serviceJobCardInfo.serviceType.id?.toString() || "";
-          serviceTypeName = serviceJobCardInfo.serviceType.name || "";
-        } else if (typeof serviceJobCardInfo.serviceType === 'string') {
-          serviceTypeName = serviceJobCardInfo.serviceType;
-        }
-      }
-
-      if (!serviceTypeName && serviceJobCardInfo.service_type) {
-        serviceTypeName = serviceJobCardInfo.service_type;
-      }
-
-      console.log("Setting service type - ID:", serviceTypeId, "Name:", serviceTypeName);
-
-      if (serviceTypeName) {
-        setFormData(prev => ({
-          ...prev,
-          serviceTypeId: serviceTypeId,
-          serviceType: serviceTypeName
-        }));
+    if (serviceJobCardInfo.serviceType) {
+      if (typeof serviceJobCardInfo.serviceType === 'object') {
+        serviceTypeId = serviceJobCardInfo.serviceType.id?.toString() || "";
+        serviceTypeName = serviceJobCardInfo.serviceType.name || "";
+      } else if (typeof serviceJobCardInfo.serviceType === 'string') {
+        serviceTypeName = serviceJobCardInfo.serviceType;
       }
     }
-  }, [serviceJobCardInfo, isEditMode]);
+
+    if (!serviceTypeName && serviceJobCardInfo.service_type) {
+      serviceTypeName = serviceJobCardInfo.service_type;
+    }
+
+    console.log("Setting service type - ID:", serviceTypeId, "Name:", serviceTypeName);
+
+    // Find matching service type from serviceTypes list
+    if (serviceTypeName && serviceTypes.length > 0) {
+      const matchedServiceType = serviceTypes.find(
+        st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+      );
+      if (matchedServiceType) {
+        serviceTypeId = matchedServiceType.id.toString();
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      serviceTypeId: serviceTypeId,
+      serviceType: serviceTypeName || prev.serviceType,
+      jobCardNumber: serviceJobCardInfo.jobCardNumber || prev.jobCardNumber,
+      vehicleNumber: serviceJobCardInfo.registrationNumber || prev.vehicleNumber,
+    }));
+  }
+}, [serviceJobCardInfo, isEditMode, serviceTypes]);
 
   const fetchPermissions = async () => {
     try {
@@ -218,54 +242,61 @@ const handleView = (payment) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (serviceJobCardInfo && !isEditMode && serviceTypeOfCollections.length > 0) {
-      const jc = serviceJobCardInfo;
+ useEffect(() => {
+  if (serviceJobCardInfo && !isEditMode && serviceTypeOfCollections.length > 0) {
+    const jc = serviceJobCardInfo;
+    console.log('Processing job card for vehicle model:', jc);
 
-      let serviceTypeId = "";
-      let serviceTypeName = "";
+    let serviceTypeId = "";
+    let serviceTypeName = "";
 
-      if (jc.serviceType) {
-        if (typeof jc.serviceType === 'object') {
-          serviceTypeId = jc.serviceType.id?.toString() || "";
-          serviceTypeName = jc.serviceType.name || "";
-        } else if (typeof jc.serviceType === 'string') {
-          serviceTypeName = jc.serviceType;
-        }
+    if (jc.serviceType) {
+      if (typeof jc.serviceType === 'object') {
+        serviceTypeId = jc.serviceType.id?.toString() || "";
+        serviceTypeName = jc.serviceType.name || "";
+      } else if (typeof jc.serviceType === 'string') {
+        serviceTypeName = jc.serviceType;
       }
+    }
 
-      if (!serviceTypeName && jc.service_type) {
-        serviceTypeName = jc.service_type;
-      }
+    if (!serviceTypeName && jc.service_type) {
+      serviceTypeName = jc.service_type;
+    }
 
-      const modelName = jc.vehicleDetails ? jc.vehicleDetails.toLowerCase() : "";
+    // Match vehicle model
+    const modelName = jc.vehicleDetails ? jc.vehicleDetails.toLowerCase() : "";
+    let matchedModelId = "";
+    
+    if (modelName && vehicleModels.length > 0) {
       const matchedModel = vehicleModels.find((m) => {
         const mm = m.model.toLowerCase();
-        return (
-          modelName &&
-          (mm === modelName || mm.includes(modelName) || modelName.includes(mm))
-        );
+        return modelName && (mm === modelName || mm.includes(modelName) || modelName.includes(mm));
       });
-
-      let matchedCollectionId = "";
-      if (serviceTypeName) {
-        const matchedTypeOfCollection = serviceTypeOfCollections.find(
-          (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
-        );
-        matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
+      if (matchedModel) {
+        matchedModelId = matchedModel.id.toString();
+        console.log('Vehicle model matched:', matchedModel.model);
       }
-
-      setFormData((prev) => ({
-        ...prev,
-        jobCardNumber: jc.jobCardNumber || prev.jobCardNumber,
-        vehicleNumber: jc.registrationNumber || prev.vehicleNumber,
-        serviceTypeId: serviceTypeId || prev.serviceTypeId,
-        serviceType: serviceTypeName || prev.serviceType,
-        serviceTypeOfCollectionId: matchedCollectionId || prev.serviceTypeOfCollectionId,
-        vehicleModelId: matchedModel ? matchedModel.id.toString() : prev.vehicleModelId,
-      }));
     }
-  }, [serviceJobCardInfo, vehicleModels, serviceTypeOfCollections, isEditMode]);
+
+    let matchedCollectionId = "";
+    if (serviceTypeName && serviceTypeOfCollections.length > 0) {
+      const matchedTypeOfCollection = serviceTypeOfCollections.find(
+        (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
+      );
+      matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      jobCardNumber: jc.jobCardNumber || prev.jobCardNumber,
+      vehicleNumber: jc.registrationNumber || prev.vehicleNumber,
+      serviceTypeId: serviceTypeId || prev.serviceTypeId,
+      serviceType: serviceTypeName || prev.serviceType,
+      serviceTypeOfCollectionId: matchedCollectionId || prev.serviceTypeOfCollectionId,
+      vehicleModelId: matchedModelId || prev.vehicleModelId,
+    }));
+  }
+}, [serviceJobCardInfo, vehicleModels, serviceTypeOfCollections, isEditMode]);
 
   useEffect(() => {
     if (serviceTypeOfCollections.length > 0 && serviceJobCardInfo) {
@@ -299,61 +330,127 @@ const handleView = (payment) => {
     }
   }, [serviceTypeOfCollections, serviceJobCardInfo]);
 
-  const fetchCustomers = async () => {
+const fetchCustomers = async () => {
+  try {
+    // Fetch all customers
+    const customerData = await customerApi.getAll();
+    console.log('Customer Data:', customerData);
+    
+    // Fetch all invoices
+    const invoiceData = await salesInvoiceApi.getAll();
+    console.log('Invoice Data:', invoiceData);
+    
+    // Fetch ALL job cards (including Closed)
+    let allJobCards = [];
     try {
-      const [customerData, invoiceData, jobCardData] = await Promise.all([
-        customerApi.getAll(),
-        salesInvoiceApi.getAll(),
-        serviceJobCardApi.getAll(),
-      ]);
-
-      const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
-      const jobCardContacts = new Set(jobCardData.map(jc => jc.mobileNumber));
-
-      const enrichedCustomerData = customerData.map(c => ({
-        ...c,
-        hasInvoice: invoiceContacts.has(c.contactNo),
-        hasJobCard: jobCardContacts.has(c.contactNo),
-      }));
-
-      const customerContacts = new Set(customerData.map(c => c.contactNo));
-      const external = [];
-      const seenContacts = new Set();
-
-      invoiceData.forEach(inv => {
-        if (!customerContacts.has(inv.contactInfo) && !seenContacts.has(inv.contactInfo)) {
-          external.push({
-            id: `inv-${inv.id}`,
-            name: inv.customerName,
-            contactNo: inv.contactInfo,
-            address: inv.address || "N/A",
-            isInvoice: true,
-            invoiceData: inv,
-          });
-          seenContacts.add(inv.contactInfo);
-        }
-      });
-
-      jobCardData.forEach(jc => {
-        if (!customerContacts.has(jc.mobileNumber) && !seenContacts.has(jc.mobileNumber)) {
-          external.push({
-            id: `jc-${jc.id}`,
-            name: jc.customerName || "Unknown",
-            contactNo: jc.mobileNumber,
-            address: "Imported from Service Master",
-            isJobCard: true,
-            jobCardData: jc,
-          });
-          seenContacts.add(jc.mobileNumber);
-        }
-      });
-
-      setCustomers([...enrichedCustomerData, ...external]);
+      allJobCards = await serviceJobCardApi.getAll();
+      console.log('All Job Cards:', allJobCards);
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error('Error fetching job cards:', error);
     }
-  };
 
+    const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
+    const jobCardContacts = new Set(allJobCards.map(jc => jc.mobileNumber));
+    
+    // Track which customers have active job cards (Pending)
+    const activeJobCardContacts = new Set(
+      allJobCards.filter(jc => jc.status === 'Pending').map(jc => jc.mobileNumber)
+    );
+
+    const enrichedCustomerData = customerData.map(c => ({
+      ...c,
+      hasInvoice: invoiceContacts.has(c.contactNo),
+      hasJobCard: jobCardContacts.has(c.contactNo),
+      hasActiveJobCard: activeJobCardContacts.has(c.contactNo), // Track if has active job card
+      activeJobCard: allJobCards.find(jc => jc.mobileNumber === c.contactNo && jc.status === 'Pending')
+    }));
+
+    const customerContacts = new Set(customerData.map(c => c.contactNo));
+    const external = [];
+    const seenContacts = new Set();
+
+    // Add invoice customers not in main customer list
+    invoiceData.forEach(inv => {
+      if (!customerContacts.has(inv.contactInfo) && !seenContacts.has(inv.contactInfo)) {
+        external.push({
+          id: `inv-${inv.id}`,
+          name: inv.customerName,
+          contactNo: inv.contactInfo,
+          address: inv.address || "N/A",
+          isInvoice: true,
+          invoiceData: inv,
+          hasActiveJobCard: activeJobCardContacts.has(inv.contactInfo),
+          activeJobCard: allJobCards.find(jc => jc.mobileNumber === inv.contactInfo && jc.status === 'Pending')
+        });
+        seenContacts.add(inv.contactInfo);
+      }
+    });
+
+    // Add job card customers not in main customer list
+    allJobCards.forEach(jc => {
+      if (!customerContacts.has(jc.mobileNumber) && !seenContacts.has(jc.mobileNumber)) {
+        external.push({
+          id: `jc-${jc.id}`,
+          name: jc.customerName || "Unknown",
+          contactNo: jc.mobileNumber,
+          address: "Imported from Service Master",
+          isJobCard: true,
+          jobCardData: jc,
+          hasActiveJobCard: jc.status === 'Pending',
+          activeJobCard: jc.status === 'Pending' ? jc : null
+        });
+        seenContacts.add(jc.mobileNumber);
+      }
+    });
+
+    const allCustomers = [...enrichedCustomerData, ...external];
+    console.log('All Customers:', allCustomers);
+    setCustomers(allCustomers);
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    toast.error('Failed to load customers');
+  }
+};
+
+
+// Create new job card
+const handleCreateJobCard = async () => {
+  if (!manualJobCardData.jobCardNumber) {
+    toast.error('Job Card Number is required');
+    return;
+  }
+
+  try {
+    const newJobCard = await serviceJobCardApi.create({
+      jobCardNumber: manualJobCardData.jobCardNumber,
+      registrationNumber: manualJobCardData.registrationNumber,
+      customerName: manualJobCardData.customerName || loadedCustomer?.name,
+      mobileNumber: manualJobCardData.mobileNumber || loadedCustomer?.contactNo,
+      vehicleDetails: manualJobCardData.vehicleDetails,
+      serviceType: manualJobCardData.serviceType,
+      status: 'Pending'
+    });
+    
+    toast.success('New Job Card created successfully!');
+    setServiceJobCardInfo(newJobCard);
+    setFormData(prev => ({ ...prev, jobCardNumber: newJobCard.jobCardNumber }));
+    setIsManualJobCard(false);
+    setManualJobCardData({
+      jobCardNumber: '',
+      registrationNumber: '',
+      customerName: '',
+      mobileNumber: '',
+      vehicleDetails: '',
+      serviceType: ''
+    });
+    
+    // Refresh customers to update the badge
+    fetchCustomers();
+  } catch (error) {
+    toast.error(error.message || 'Error creating job card');
+    console.error('Error creating job card:', error);
+  }
+};
   const fetchServiceTypes = async () => {
     try {
       const data = await serviceTypeApi.getAll();
@@ -407,14 +504,16 @@ const handleView = (payment) => {
     }
   };
 
-  const fetchVehicleModels = async () => {
-    try {
-      const data = await vehicleModelApi.getAll();
-      setVehicleModels(data.filter((model) => model.status === "Enable"));
-    } catch (error) {
-      console.error("Error fetching vehicle models:", error);
-    }
-  };
+ const fetchVehicleModels = async () => {
+  try {
+    const data = await vehicleModelApi.getAll();
+    const enabledModels = data.filter((model) => model.status === "Enable");
+    setVehicleModels(enabledModels);
+    console.log('Vehicle Models loaded:', enabledModels);
+  } catch (error) {
+    console.error("Error fetching vehicle models:", error);
+  }
+};
 
   const fetchPayments = async (page = currentPage) => {
   try {
@@ -557,112 +656,178 @@ const handleView = (payment) => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
-      toast.error("Mobile number must be exactly 10 digits");
-      return;
+  // Validate new customer mobile number
+  if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
+    toast.error("Mobile number must be exactly 10 digits");
+    return;
+  }
+
+  // Validate vehicle number for part payment
+  if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
+    toast.error("Vehicle number is mandatory for part payment");
+    return;
+  }
+
+  // Validate job card number for full payment
+  if (formData.paymentType === "full payment" && !formData.jobCardNumber) {
+    toast.error("Job card number is mandatory for full payment");
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    let customerId = loadedCustomer?.id;
+
+    // Create new customer if needed
+    if (isNewCustomer) {
+      const newCustomer = await customerApi.create(newCustomerData);
+      customerId = newCustomer.id;
+      await fetchCustomers();
     }
 
-    if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
-      toast.error("Vehicle number is mandatory for part payment");
-      return;
-    }
+    // Handle job card creation for customers without active job card
+    let finalJobCardNumber = formData.jobCardNumber;
+    let createdJobCardId = null;
 
-    setIsSubmitting(true);
-    try {
-      let customerId = loadedCustomer?.id;
-
-      if (isNewCustomer) {
-        const newCustomer = await customerApi.create(newCustomerData);
-        customerId = newCustomer.id;
-        await fetchCustomers();
+    if (formData.paymentType === "full payment" && isManualJobCard && formData.jobCardNumber) {
+      try {
+        // First check if a job card with this number already exists
+        const existingJobCards = await serviceJobCardApi.getAll(formData.jobCardNumber);
+        const existingJobCard = existingJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
+        
+        if (existingJobCard) {
+          // Job card exists - use it (even if it's closed, we can still use it)
+          finalJobCardNumber = existingJobCard.jobCardNumber;
+          createdJobCardId = existingJobCard.id;
+          toast.info('Using existing job card');
+        } else {
+          // Create new job card with Pending status
+          const newJobCard = await serviceJobCardApi.create({
+            jobCardNumber: formData.jobCardNumber,
+            registrationNumber: formData.vehicleNumber || '',
+            customerName: loadedCustomer?.name || newCustomerData.name,
+            mobileNumber: loadedCustomer?.contactNo || newCustomerData.contactNo,
+            vehicleDetails: vehicleModels.find(v => v.id.toString() === formData.vehicleModelId)?.model || '',
+            serviceType: serviceTypes.find(s => s.id.toString() === formData.serviceTypeId)?.name || '',
+            status: 'Pending'
+          });
+          finalJobCardNumber = newJobCard.jobCardNumber;
+          createdJobCardId = newJobCard.id;
+          toast.success('New job card created successfully!');
+          
+          // Refresh customers to update the badge
+          fetchCustomers();
+        }
+      } catch (error) {
+        toast.error('Failed to create job card: ' + error.message);
+        setIsSubmitting(false);
+        return;
       }
-
-      const totalAmt = formData.paymentStatus === 'completed'
-        ? pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
-        : undefined;
-
-      const submitData = {
-        date: formData.date,
-        customerId: customerId,
-        totalAmt: totalAmt,
-        recAmt: parseFloat(formData.recAmt),
-        paymentType: formData.paymentType,
-        paymentStatus: formData.paymentStatus,
-        vehicleNumber: formData.vehicleNumber || undefined,
-        paymentModeId: parseInt(formData.paymentModeId),
-        typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
-        serviceTypeOfCollectionId: formData.serviceTypeOfCollectionId ? parseInt(formData.serviceTypeOfCollectionId) : undefined,
-        vehicleModelId: formData.vehicleModelId ? parseInt(formData.vehicleModelId) : undefined,
-        enteredBy: user?.id,
-        refNo: formData.refNo,
-        remarks: formData.remarks,
-        jobCardNumber: formData.jobCardNumber,
-        serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
-        selectedParts: selectedParts,
-      };
-
-      if (isEditMode) {
-        await servicePaymentCollectionApi.update(editingPayment.id, submitData);
-        toast.success("Service payment updated successfully!");
-      } else {
-        await servicePaymentCollectionApi.create(submitData);
-        toast.success("Service payment created successfully!");
-      }
-
-      setIsPaymentModalOpen(false);
-      setIsEditMode(false);
-      setEditingPayment(null);
-      setIsNewCustomer(false);
-      setCustomerHistory([]);
-      setPendingPayments([]);
-      setSelectedParts([]);
-
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        totalAmt: "",
-        recAmt: "",
-        paymentType: "full payment",
-        paymentStatus: "pending",
-        vehicleNumber: "",
-        paymentModeId: "",
-        typeOfPaymentId: "",
-        serviceTypeOfCollectionId: "",
-        vehicleModelId: "",
-        refNo: "",
-        remarks: "",
-        jobCardNumber: "",
-        serviceType: "",
-        serviceTypeId: "",
-      });
-
-      setNewCustomerData({
-        name: "",
-        contactNo: "",
-        address: "",
-        status: "Walk in Customer",
-      });
-
-      setLoadedCustomer(null);
-      setSelectedCustomerId("");
-      setSalesInvoiceInfo(null);
-      setServiceJobCardInfo(null);
-      setSearchTerm("");
-      setPartSearchTerm("");
-      setSelectedParts([]);
-
-      fetchPayments(1);
-      setCurrentPage(1);
-      if (showDeleted) fetchDeletedPayments();
-    } catch (error) {
-      toast.error("Error saving service payment");
-      console.error("Error saving service payment:", error);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    // Calculate total amount for part payment completion
+    const totalAmt = formData.paymentStatus === 'completed'
+      ? pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
+      : undefined;
+
+    // Prepare submit data
+    const submitData = {
+      date: formData.date,
+      customerId: customerId,
+      totalAmt: totalAmt,
+      recAmt: parseFloat(formData.recAmt),
+      paymentType: formData.paymentType,
+      paymentStatus: formData.paymentStatus,
+      vehicleNumber: formData.vehicleNumber || undefined,
+      paymentModeId: parseInt(formData.paymentModeId),
+      typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
+      serviceTypeOfCollectionId: formData.serviceTypeOfCollectionId ? parseInt(formData.serviceTypeOfCollectionId) : undefined,
+      vehicleModelId: formData.vehicleModelId ? parseInt(formData.vehicleModelId) : undefined,
+      enteredBy: user?.id,
+      refNo: formData.refNo,
+      remarks: formData.remarks,
+      jobCardNumber: finalJobCardNumber,
+      serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
+      selectedParts: selectedParts,
+    };
+
+    // Create or update payment
+    if (isEditMode) {
+      await servicePaymentCollectionApi.update(editingPayment.id, submitData);
+      toast.success("Service payment updated successfully!");
+    } else {
+      await servicePaymentCollectionApi.create(submitData);
+      toast.success("Service payment created successfully!");
+    }
+
+    // Reset all form states
+    setIsPaymentModalOpen(false);
+    setIsEditMode(false);
+    setEditingPayment(null);
+    setIsNewCustomer(false);
+    setCustomerHistory([]);
+    setPendingPayments([]);
+    setSelectedParts([]);
+    setIsManualJobCard(false);
+    setManualJobCardData({
+      jobCardNumber: '',
+      registrationNumber: '',
+      customerName: '',
+      mobileNumber: '',
+      vehicleDetails: '',
+      serviceType: ''
+    });
+
+    // Reset form data
+    setFormData({
+      date: new Date().toISOString().split("T")[0],
+      totalAmt: "",
+      recAmt: "",
+      paymentType: "full payment",
+      paymentStatus: "pending",
+      vehicleNumber: "",
+      paymentModeId: "",
+      typeOfPaymentId: "",
+      serviceTypeOfCollectionId: "",
+      vehicleModelId: "",
+      refNo: "",
+      remarks: "",
+      jobCardNumber: "",
+      serviceType: "",
+      serviceTypeId: "",
+    });
+
+    // Reset customer data
+    setNewCustomerData({
+      name: "",
+      contactNo: "",
+      address: "",
+      status: "Walk in Customer",
+    });
+
+    // Reset selections
+    setLoadedCustomer(null);
+    setSelectedCustomerId("");
+    setSalesInvoiceInfo(null);
+    setServiceJobCardInfo(null);
+    setSearchTerm("");
+    setPartSearchTerm("");
+
+    // Refresh payments list
+    fetchPayments(1);
+    setCurrentPage(1);
+    if (showDeleted) fetchDeletedPayments();
+    
+  } catch (error) {
+    toast.error("Error saving service payment");
+    console.error("Error saving service payment:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   
   const fetchPendingPayments = (customerId) => {
     if (!customerId) {
@@ -777,83 +942,313 @@ const handleView = (payment) => {
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.contactNo.includes(searchTerm)
   );
+const handleCustomerSelect = async (customer) => {
+  if (customer === "new") {
+    setSelectedCustomerId("new");
+    setSearchTerm("+ Add New Customer");
+    setIsNewCustomer(true);
+    setLoadedCustomer(null);
+    setFilteredPayments(payments);
+    setSalesInvoiceInfo(null);
+    setServiceJobCardInfo(null);
+    setIsManualJobCard(false);
+    setFormData(prev => ({
+      ...prev,
+      vehicleNumber: "",
+      refNo: "",
+      jobCardNumber: "",
+      serviceType: "",
+      serviceTypeId: "",
+      serviceTypeOfCollectionId: "",
+      vehicleModelId: "",
+      recAmt: "",
+    }));
+  } else if (customer.isInvoice) {
+    setSelectedCustomerId("new");
+    setSearchTerm(customer.name);
+    setIsNewCustomer(true);
+    setLoadedCustomer(null);
+    setNewCustomerData({
+      name: customer.name,
+      contactNo: customer.contactNo,
+      address: customer.address || "N/A",
+      status: "Imported from Invoice",
+    });
+    setSalesInvoiceInfo(customer.invoiceData);
+    setServiceJobCardInfo(null);
+    setIsManualJobCard(false);
 
-  const handleCustomerSelect = async (customer) => {
-    if (customer === "new") {
-      setSelectedCustomerId("new");
-      setSearchTerm("+ Add New Customer");
-      setIsNewCustomer(true);
-      setLoadedCustomer(null);
-      setFilteredPayments(payments);
-      setSalesInvoiceInfo(null);
-      setServiceJobCardInfo(null);
-      setFormData(prev => ({
-        ...prev,
-        vehicleNumber: "",
-        refNo: "",
-        jobCardNumber: "",
-        serviceType: "",
-        serviceTypeId: "",
-        serviceTypeOfCollectionId: "",
-        vehicleModelId: "",
-        recAmt: "",
-      }));
-    } else if (customer.isInvoice) {
-      setSelectedCustomerId("new");
-      setSearchTerm(customer.name);
-      setIsNewCustomer(true);
-      setLoadedCustomer(null);
-      setNewCustomerData({
-        name: customer.name,
-        contactNo: customer.contactNo,
-        address: customer.address || "N/A",
-        status: "Imported from Invoice",
+    // Match vehicle model from invoice
+    let matchedModelId = "";
+    if (customer.invoiceData.vehicleModel && vehicleModels.length > 0) {
+      const invModel = customer.invoiceData.vehicleModel.toLowerCase().trim();
+      const matchedModel = vehicleModels.find((m) => {
+        const mm = m.model.toLowerCase().trim();
+        return invModel && (mm === invModel || invModel.includes(mm) || mm.includes(invModel));
       });
-      setSalesInvoiceInfo(customer.invoiceData);
-      setServiceJobCardInfo(null);
+      if (matchedModel) {
+        matchedModelId = matchedModel.id.toString();
+        console.log('Matched vehicle model from invoice:', matchedModel.model);
+      }
+    }
 
-      setFormData((prev) => ({
-        ...prev,
-        vehicleNumber: customer.invoiceData.vehicleRegNo || prev.vehicleNumber,
-        vehicleModelId: vehicleModels.find((m) => {
-          const model = m.model.toLowerCase();
-          const invModel = customer.invoiceData.vehicleModel?.toLowerCase() || "";
-          return invModel && (model === invModel || invModel.includes(model) || model.includes(invModel));
-        })?.id.toString() || prev.vehicleModelId,
-      }));
-      setFilteredPayments(payments);
-    } else if (customer.isJobCard) {
-      setSelectedCustomerId("new");
-      setSearchTerm(customer.name);
-      setIsNewCustomer(true);
-      setLoadedCustomer(null);
-      setNewCustomerData({
-        name: customer.name,
-        contactNo: customer.contactNo,
-        address: "NA",
-        status: "Service Dealer Customer",
-      });
-      setSalesInvoiceInfo(null);
-      setServiceJobCardInfo(customer.jobCardData);
-
-      const jc = customer.jobCardData;
+    setFormData((prev) => ({
+      ...prev,
+      vehicleNumber: customer.invoiceData.vehicleRegNo || prev.vehicleNumber,
+      vehicleModelId: matchedModelId || prev.vehicleModelId,
+    }));
+    setFilteredPayments(payments);
+  } else if (customer.isJobCard) {
+    setSelectedCustomerId("new");
+    setSearchTerm(customer.name);
+    setIsNewCustomer(true);
+    setLoadedCustomer(null);
+    setNewCustomerData({
+      name: customer.name,
+      contactNo: customer.contactNo,
+      address: "NA",
+      status: "Service Dealer Customer",
+    });
+    setSalesInvoiceInfo(null);
+    
+    // Check if customer has active job card
+    if (customer.hasActiveJobCard && customer.activeJobCard) {
+      const jobCard = customer.activeJobCard;
+      setServiceJobCardInfo(jobCard);
+      setIsManualJobCard(false);
+      
       let serviceTypeId = "";
       let serviceTypeName = "";
-      if (jc.serviceType) {
-        if (typeof jc.serviceType === 'object') {
-          serviceTypeId = jc.serviceType.id?.toString() || "";
-          serviceTypeName = jc.serviceType.name || "";
-        } else if (typeof jc.serviceType === 'string') {
-          serviceTypeName = jc.serviceType;
+      if (jobCard.serviceType) {
+        if (typeof jobCard.serviceType === 'object') {
+          serviceTypeId = jobCard.serviceType.id?.toString() || "";
+          serviceTypeName = jobCard.serviceType.name || "";
+        } else if (typeof jobCard.serviceType === 'string') {
+          serviceTypeName = jobCard.serviceType;
         }
       }
+      
+      // Find matching service type from serviceTypes list
+      let matchedServiceTypeId = serviceTypeId;
+      if (serviceTypeName && serviceTypes.length > 0) {
+        const matchedServiceType = serviceTypes.find(
+          st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+        );
+        if (matchedServiceType) {
+          matchedServiceTypeId = matchedServiceType.id.toString();
+        }
+      }
+      
+      // Match vehicle model from job card
+      let matchedModelId = "";
+      if (jobCard.vehicleDetails && vehicleModels.length > 0) {
+        const modelName = jobCard.vehicleDetails.toLowerCase().trim();
+        const matchedModel = vehicleModels.find((m) => {
+          const mm = m.model.toLowerCase().trim();
+          return modelName && (mm === modelName || modelName.includes(mm) || mm.includes(modelName));
+        });
+        if (matchedModel) {
+          matchedModelId = matchedModel.id.toString();
+          console.log('Matched vehicle model from job card:', matchedModel.model);
+        }
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        jobCardNumber: jobCard.jobCardNumber || "",
+        vehicleNumber: jobCard.registrationNumber || prev.vehicleNumber,
+        serviceTypeId: matchedServiceTypeId,
+        serviceType: serviceTypeName,
+        vehicleModelId: matchedModelId || prev.vehicleModelId,
+      }));
+    } else {
+      // No active job card - show manual entry
+      setServiceJobCardInfo(null);
+      setIsManualJobCard(true);
+      setFormData(prev => ({
+        ...prev,
+        jobCardNumber: "",
+        vehicleNumber: "",
+        serviceType: "",
+        serviceTypeId: "",
+        vehicleModelId: "",
+      }));
+    }
+    
+    setFilteredPayments(payments);
+  } else {
+    setSelectedCustomerId(customer.id.toString());
+    setSearchTerm(customer.name);
+    setLoadedCustomer(customer);
+    setIsNewCustomer(false);
+    setIsManualJobCard(false);
 
-      const modelName = jc.vehicleDetails ? jc.vehicleDetails.toLowerCase() : "";
-      const matchedModel = vehicleModels.find((m) => {
-        const mm = m.model.toLowerCase();
-        return modelName && (mm === modelName || mm.includes(modelName) || modelName.includes(mm));
-      });
+    const customerPayments = payments.filter(
+      (payment) => payment.customerId === customer.id
+    );
+    setFilteredPayments(
+      customerPayments.map((payment, index) => ({
+        ...payment,
+        sNo: index + 1,
+      }))
+    );
 
+    // Reset form data first
+    setFormData(prev => ({
+      ...prev,
+      vehicleNumber: "",
+      refNo: "",
+      jobCardNumber: "",
+      serviceType: "",
+      serviceTypeId: "",
+      serviceTypeOfCollectionId: "",
+      vehicleModelId: "",
+      recAmt: "",
+    }));
+
+    setServiceJobCardInfo(null);
+    setSalesInvoiceInfo(null);
+
+    const fetchData = async () => {
+      let invoiceInfo = null;
+      let jobCardInfo = null;
+      let allJobCards = [];
+      let history = [];
+
+      // Fetch invoice info
+      try {
+        const invoiceResults = await salesInvoiceApi.getAll(customer.contactNo);
+        invoiceInfo = invoiceResults.length > 0 ? invoiceResults[0] : null;
+        setSalesInvoiceInfo(invoiceInfo);
+        console.log('Invoice Info fetched:', invoiceInfo);
+      } catch (error) {
+        console.error("Error fetching invoice:", error);
+      }
+
+      // Fetch customer payment history
+      try {
+        const historyResponse = await servicePaymentCollectionApi.getAll(1, 1000, customer.id);
+        history = historyResponse.data || [];
+        setCustomerHistory(history);
+        console.log('Customer History fetched:', history.length);
+      } catch (error) {
+        console.error("Error fetching history:", error);
+      }
+
+      // Fetch ALL job cards for this customer (including closed ones)
+     try {
+  // Fetch ALL job cards for this customer (including closed ones)
+  const allJobCards = await serviceJobCardApi.getAll(customer.contactNo);
+  console.log('All Job Cards for customer:', allJobCards);
+  
+  // First, try to find an active job card (Pending status)
+  const activeJobCard = allJobCards.find(jc => jc.status === 'Pending');
+  
+  if (activeJobCard) {
+    // Customer has an active job card - use it
+    jobCardInfo = activeJobCard;
+    console.log('Active job card found:', jobCardInfo);
+    
+    setServiceJobCardInfo(jobCardInfo);
+    setIsManualJobCard(false);
+    
+    // Extract service type from job card
+    let serviceTypeId = "";
+    let serviceTypeName = "";
+    if (jobCardInfo.serviceType) {
+      if (typeof jobCardInfo.serviceType === 'object') {
+        serviceTypeId = jobCardInfo.serviceType.id?.toString() || "";
+        serviceTypeName = jobCardInfo.serviceType.name || "";
+      } else if (typeof jobCardInfo.serviceType === 'string') {
+        serviceTypeName = jobCardInfo.serviceType;
+      }
+    }
+    
+    // Find matching service type from serviceTypes list
+    if (serviceTypeName && serviceTypes.length > 0) {
+      const matchedServiceType = serviceTypes.find(
+        st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+      );
+      if (matchedServiceType) {
+        serviceTypeId = matchedServiceType.id.toString();
+      }
+    }
+    
+    // Find matching collection type
+    let matchedCollectionId = "";
+    if (serviceTypeOfCollections.length > 0 && serviceTypeName) {
+      const matchedTypeOfCollection = serviceTypeOfCollections.find(
+        (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
+      );
+      matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
+    }
+    
+    // Get vehicle model from job card - IMPORTANT: This comes from job card master
+    let matchedModelId = "";
+    if (jobCardInfo.vehicleDetails) {
+      console.log('Job card vehicle details:', jobCardInfo.vehicleDetails);
+      // First try to find exact match
+      const exactMatch = vehicleModels.find(v => 
+        v.model.toLowerCase() === jobCardInfo.vehicleDetails.toLowerCase()
+      );
+      if (exactMatch) {
+        matchedModelId = exactMatch.id.toString();
+        console.log('Exact vehicle model match:', exactMatch.model);
+      } else {
+        // Try partial match
+        const partialMatch = vehicleModels.find(v => 
+          jobCardInfo.vehicleDetails.toLowerCase().includes(v.model.toLowerCase()) ||
+          v.model.toLowerCase().includes(jobCardInfo.vehicleDetails.toLowerCase())
+        );
+        if (partialMatch) {
+          matchedModelId = partialMatch.id.toString();
+          console.log('Partial vehicle model match:', partialMatch.model);
+        } else {
+          console.log('No vehicle model match found for:', jobCardInfo.vehicleDetails);
+        }
+      }
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      jobCardNumber: jobCardInfo.jobCardNumber || '',
+      vehicleNumber: jobCardInfo.registrationNumber || prev.vehicleNumber,
+      serviceTypeId: serviceTypeId,
+      serviceType: serviceTypeName,
+      serviceTypeOfCollectionId: matchedCollectionId,
+      vehicleModelId: matchedModelId || prev.vehicleModelId,
+    }));
+  } else {
+    // No active job card found - check for closed job card
+    const closedJobCard = allJobCards.find(jc => jc.status === 'Closed');
+    
+    if (closedJobCard) {
+      console.log('Closed job card found:', closedJobCard);
+      setServiceJobCardInfo(null);
+      setIsManualJobCard(true);
+      
+      let serviceTypeId = "";
+      let serviceTypeName = "";
+      if (closedJobCard.serviceType) {
+        if (typeof closedJobCard.serviceType === 'object') {
+          serviceTypeId = closedJobCard.serviceType.id?.toString() || "";
+          serviceTypeName = closedJobCard.serviceType.name || "";
+        } else if (typeof closedJobCard.serviceType === 'string') {
+          serviceTypeName = closedJobCard.serviceType;
+        }
+      }
+      
+      // Find matching service type
+      if (serviceTypeName && serviceTypes.length > 0) {
+        const matchedServiceType = serviceTypes.find(
+          st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+        );
+        if (matchedServiceType) {
+          serviceTypeId = matchedServiceType.id.toString();
+        }
+      }
+      
+      // Find matching collection type
       let matchedCollectionId = "";
       if (serviceTypeOfCollections.length > 0 && serviceTypeName) {
         const matchedTypeOfCollection = serviceTypeOfCollections.find(
@@ -861,146 +1256,75 @@ const handleView = (payment) => {
         );
         matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
       }
-
+      
+      // Get vehicle model from closed job card
+      let matchedModelId = "";
+      if (closedJobCard.vehicleDetails) {
+        const exactMatch = vehicleModels.find(v => 
+          v.model.toLowerCase() === closedJobCard.vehicleDetails.toLowerCase()
+        );
+        if (exactMatch) {
+          matchedModelId = exactMatch.id.toString();
+        } else {
+          const partialMatch = vehicleModels.find(v => 
+            closedJobCard.vehicleDetails.toLowerCase().includes(v.model.toLowerCase()) ||
+            v.model.toLowerCase().includes(closedJobCard.vehicleDetails.toLowerCase())
+          );
+          if (partialMatch) {
+            matchedModelId = partialMatch.id.toString();
+          }
+        }
+      }
+      
       setFormData(prev => ({
         ...prev,
-        jobCardNumber: jc.jobCardNumber || prev.jobCardNumber,
-        vehicleNumber: jc.registrationNumber || prev.vehicleNumber,
+        jobCardNumber: "",
+        vehicleNumber: closedJobCard.registrationNumber || prev.vehicleNumber,
         serviceTypeId: serviceTypeId,
         serviceType: serviceTypeName,
-        serviceTypeOfCollectionId: matchedCollectionId || prev.serviceTypeOfCollectionId,
-        vehicleModelId: matchedModel ? matchedModel.id.toString() : prev.vehicleModelId,
+        serviceTypeOfCollectionId: matchedCollectionId,
+        vehicleModelId: matchedModelId || prev.vehicleModelId,
       }));
-
-      setFilteredPayments(payments);
-    } else {
-      setSelectedCustomerId(customer.id.toString());
-      setSearchTerm(customer.name);
-      setLoadedCustomer(customer);
-      setIsNewCustomer(false);
-
-      const customerPayments = payments.filter(
-        (payment) => payment.customerId === customer.id
-      );
-      setFilteredPayments(
-        customerPayments.map((payment, index) => ({
-          ...payment,
-          sNo: index + 1,
-        }))
-      );
-
-      setFormData(prev => ({
-        ...prev,
-        vehicleNumber: "",
-        refNo: "",
-        jobCardNumber: "",
-        serviceType: "",
-        serviceTypeId: "",
-        serviceTypeOfCollectionId: "",
-        vehicleModelId: "",
-        recAmt: "",
-      }));
-
-      setServiceJobCardInfo(null);
-      setSalesInvoiceInfo(null);
-
-      const fetchData = async () => {
-        let invoiceInfo = null;
-        let jobCardInfo = null;
-        let history = [];
-
-        try {
-          const invoiceResults = await salesInvoiceApi.getAll(customer.contactNo);
-          invoiceInfo = invoiceResults.length > 0 ? invoiceResults[0] : null;
-          setSalesInvoiceInfo(invoiceInfo);
-        } catch (error) {
-          console.error("Error fetching invoice:", error);
-        }
-
-        try {
-          const historyResponse = await servicePaymentCollectionApi.getAll(1, 1000, customer.id);
-          history = historyResponse.data || [];
-          setCustomerHistory(history);
-        } catch (error) {
-          console.error("Error fetching history:", error);
-        }
-
-        try {
-          const jobCardResults = await serviceJobCardApi.getAll(customer.contactNo);
-          jobCardInfo = jobCardResults && jobCardResults.length > 0 ? jobCardResults[0] : null;
-          if (jobCardInfo) {
-            setServiceJobCardInfo(jobCardInfo);
-          }
-        } catch (error) {
-          console.error("Error fetching job card:", error);
-        }
-
-        setFormData(prev => {
-          const updated = { ...prev };
-
-          if (invoiceInfo) {
-            updated.vehicleNumber = invoiceInfo.vehicleRegNo || prev.vehicleNumber;
-            updated.vehicleModelId = vehicleModels.find((m) => {
-              const mm = m.model.toLowerCase();
-              const im = invoiceInfo.vehicleModel?.toLowerCase() || "";
-              return im && (mm === im || im.includes(mm) || mm.includes(im));
-            })?.id.toString() || prev.vehicleModelId;
-          }
-
-          if (jobCardInfo) {
-            let serviceTypeId = "";
-            let serviceTypeName = "";
-            if (jobCardInfo.serviceType) {
-              if (typeof jobCardInfo.serviceType === 'object') {
-                serviceTypeId = jobCardInfo.serviceType.id?.toString() || "";
-                serviceTypeName = jobCardInfo.serviceType.name || "";
-              } else if (typeof jobCardInfo.serviceType === 'string') {
-                serviceTypeName = jobCardInfo.serviceType;
-              }
-            }
-
-            let matchedCollectionId = "";
-            if (serviceTypeOfCollections.length > 0 && serviceTypeName) {
-              const matchedTypeOfCollection = serviceTypeOfCollections.find(
-                (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
-              );
-              matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
-            }
-
-            updated.jobCardNumber = jobCardInfo.jobCardNumber || prev.jobCardNumber;
-
-            if (isServiceTypeAllowed(serviceTypeName, history)) {
-              updated.serviceTypeId = serviceTypeId;
-              updated.serviceType = serviceTypeName || prev.serviceType;
-              updated.serviceTypeOfCollectionId = matchedCollectionId || prev.serviceTypeOfCollectionId;
-            } else {
-              console.log("Service type from job card is not allowed/already done:", serviceTypeName);
-            }
-
-            if (!updated.vehicleModelId && jobCardInfo.vehicleDetails) {
-              const modelName = jobCardInfo.vehicleDetails.toLowerCase();
-              const matchedModel = vehicleModels.find((m) => {
-                const mm = m.model.toLowerCase();
-                return modelName && (mm === modelName || mm.includes(modelName) || modelName.includes(mm));
-              });
-              updated.vehicleModelId = matchedModel ? matchedModel.id.toString() : prev.vehicleModelId;
-            }
-
-            if (!updated.vehicleNumber && jobCardInfo.registrationNumber) {
-              updated.vehicleNumber = jobCardInfo.registrationNumber;
-            }
-          }
-
-          return updated;
-        });
-      };
-
-      await fetchData();
     }
+  }
+} catch (error) {
+  console.error("Error fetching job card:", error);
+}
 
-    setShowDropdown(false);
-  };
+      // Update form data with additional info from invoice
+      setFormData(prev => {
+        const updated = { ...prev };
 
+        // Update from invoice info
+        if (invoiceInfo) {
+          if (invoiceInfo.vehicleRegNo && !updated.vehicleNumber) {
+            updated.vehicleNumber = invoiceInfo.vehicleRegNo;
+          }
+          if (invoiceInfo.vehicleModel && !updated.vehicleModelId) {
+            const invModel = invoiceInfo.vehicleModel.toLowerCase().trim();
+            const matchedModel = vehicleModels.find((m) => {
+              const mm = m.model.toLowerCase().trim();
+              return invModel && (mm === invModel || invModel.includes(mm) || mm.includes(invModel));
+            });
+            if (matchedModel) {
+              updated.vehicleModelId = matchedModel.id.toString();
+              console.log('Matched vehicle model from invoice:', matchedModel.model);
+            } else {
+              console.log('No match found for vehicle model from invoice:', invoiceInfo.vehicleModel);
+            }
+          }
+        }
+
+        console.log('Final updated form data:', updated);
+        return updated;
+      });
+    };
+
+    await fetchData();
+  }
+
+  setShowDropdown(false);
+};
   const numberToWords = (num) => {
     const ones = [
       "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
@@ -1285,17 +1609,24 @@ const handleView = (payment) => {
                       <div onClick={() => handleCustomerSelect("new")} className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600">+ Add New Customer</div>
                     )}
                     {filteredCustomers.map((customer) => (
-                      <div key={customer.id} onClick={() => handleCustomerSelect(customer)} className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0">
-                        <div className="flex justify-between items-center">
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="flex gap-1">
-                            {(customer.isInvoice || customer.hasInvoice) && <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Invoice</span>}
-                            {(customer.isJobCard || customer.hasJobCard) && <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">Service Dealership</span>}
-                          </div>
-                        </div>
-                        <div className="text-sm text-brand-text-secondary">{customer.contactNo}</div>
-                      </div>
-                    ))}
+  <div key={customer.id} onClick={() => handleCustomerSelect(customer)} className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0">
+    <div className="flex justify-between items-center">
+      <div className="font-medium">{customer.name}</div>
+      <div className="flex gap-1">
+        {(customer.isInvoice || customer.hasInvoice) && (
+          <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Invoice</span>
+        )}
+        {(customer.isJobCard || customer.hasJobCard) && (
+          <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">Service Dealership</span>
+        )}
+        {customer.hasJobCard && !customer.hasActiveJobCard && (
+          <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase">Job Card Closed</span>
+        )}
+      </div>
+    </div>
+    <div className="text-sm text-brand-text-secondary">{customer.contactNo}</div>
+  </div>
+))}
                     {filteredCustomers.length === 0 && searchTerm && searchTerm !== "+ Add New Customer" && (
                       <div className="p-2 text-brand-text-secondary text-center">No customers found</div>
                     )}
@@ -1392,22 +1723,41 @@ const handleView = (payment) => {
               })()}
             </div>
 
-            {/* Row 3: Service Info */}
-            {formData.paymentType === "full payment" && (
-              <div>
-                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-                  Job Card Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.jobCardNumber}
-                  onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })}
-                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-                  placeholder="Enter job card number"
-                  required
-                />
-              </div>
-            )}
+{/* Row 3: Service Info - Job Card Number */}
+{formData.paymentType === "full payment" && (
+  <div>
+    <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+      Job Card Number <span className="text-red-500">*</span>
+    </label>
+    
+    {/* Show manual entry for customers with closed job cards (no active job card) */}
+    {isManualJobCard ? (
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={formData.jobCardNumber}
+          onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })}
+          className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+          placeholder="Enter Job Card Number *"
+          required
+        />
+        <p className="text-xs text-amber-600">
+          ⚡ This will create a new job card with Pending status
+        </p>
+      </div>
+    ) : (
+      // Show existing active job card (read-only)
+      <input
+        type="text"
+        value={formData.jobCardNumber}
+        className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed"
+        placeholder="Job card number will be auto-filled"
+        readOnly
+        disabled
+      />
+    )}
+  </div>
+)}
 
             <SearchableDropdown
               label="Type of Service"

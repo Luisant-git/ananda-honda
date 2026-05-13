@@ -173,4 +173,11 @@ export const serviceJobCardApi = {
 
     return response.json();
   },
+
+getActiveJobCards: async (search = '') => {
+  let url = `${API_URL}/active`;
+  if (search) url += `?search=${encodeURIComponent(search)}`;
+  const response = await fetch(url, { credentials: 'include' });
+  return response.json();
+},
 };

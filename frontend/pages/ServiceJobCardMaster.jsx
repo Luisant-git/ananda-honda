@@ -163,15 +163,15 @@ const ServiceJobCardMaster = ({ user }) => {
     { header: 'Vehicle Reg No', accessor: 'vehicleRegNo', render: (v) => v || 'N/A' },
     { header: 'Vehicle Model', accessor: 'vehicleModel', render: (v) => v || 'N/A' },
     { header: 'Service Type', accessor: 'serviceType', render: (v) => v || 'N/A' },
-    // { 
-    //   header: 'Status', 
-    //   accessor: 'status',
-    //   render: (v) => (
-    //     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(v)}`}>
-    //       {v || 'N/A'}
-    //     </span>
-    //   )
-    // },
+    { 
+      header: 'Status', 
+      accessor: 'status',
+      render: (v) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(v)}`}>
+          {v || 'N/A'}
+        </span>
+      )
+    },
     {
       header: 'Created Date',
       accessor: 'createdAt',
