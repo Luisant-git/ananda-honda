@@ -141,6 +141,7 @@ model ServicePaymentCollection {
   jobCardNumber   String?
   serviceTypeId   Int?   
   paymentSessions Json     @default("[]")
+  selectedParts             Json?                        @default("[]") 
   deletedAt       DateTime?
   deletedBy       Int?
   cancelledAt     DateTime?
@@ -251,4 +252,13 @@ model ServiceType{
   updatedAt DateTime @updatedAt
   serviceJobCard  ServiceJobCard[]
   servicePayments ServicePaymentCollection[] 
+}
+
+model ServiceTypeOfPart {
+  id        Int      @id @default(autoincrement())
+  partNo    String   @unique
+  partName  String
+  status    String   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -20,9 +20,10 @@ import { ServiceTypeOfCollectionModule } from './service-type-of-collection/serv
 import { SalesInvoiceModule } from './sales-invoice/sales-invoice.module';
 import { ServiceJobCardModule } from './service-job-card/service-job-card.module';
 import { ServiceTypeModule } from './service-type/service-type.module';
+import { ServiceTypeOfPartModule } from './service-type-of-part/service-type-of-part.module';
 
 @Module({
-  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule],
+  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule],
   controllers: [AppController],
   providers: [AppService],
 })

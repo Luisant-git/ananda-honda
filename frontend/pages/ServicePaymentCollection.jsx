@@ -14,13 +14,14 @@ import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda-logo.svg";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
+import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
 
 const ServicePaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   console.log('service payment modes', paymentModes);
-  
+
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -45,6 +46,19 @@ const ServicePaymentCollection = ({ user }) => {
   const [itemsPerPage] = useState(10);
   const [serviceTypeOfCollections, setServiceTypeOfCollections] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
+  
+  // Part selection states
+  const [isPartDropdownOpen, setIsPartDropdownOpen] = useState(false);
+  const [partSearchTerm, setPartSearchTerm] = useState('');
+  const [selectedParts, setSelectedParts] = useState([]);
+  const [availableParts, setAvailableParts] = useState([]);
+  const [isNewPartModalOpen, setIsNewPartModalOpen] = useState(false);
+  const [newPartData, setNewPartData] = useState({
+    partNo: '',
+    partName: '',
+    status: 'Enable'
+  });
+  
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     totalAmt: "",
@@ -73,6 +87,9 @@ const ServicePaymentCollection = ({ user }) => {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
   const [serviceJobCardInfo, setServiceJobCardInfo] = useState(null);
+ 
+const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+const [selectedPayment, setSelectedPayment] = useState(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -84,16 +101,78 @@ const ServicePaymentCollection = ({ user }) => {
     fetchPermissions();
     fetchDeletedPayments();
     fetchServiceTypes();
+    fetchAvailableParts();
   }, []);
+
+  // View payment details
+const handleView = (payment) => {
+  setSelectedPayment(payment);
+  setIsViewModalOpen(true);
+};
+
+  // Fetch available parts from master
+  const fetchAvailableParts = async () => {
+    try {
+      const data = await serviceTypeOfPartApi.getEnabledParts();
+      setAvailableParts(data);
+    } catch (error) {
+      console.error('Error fetching parts:', error);
+    }
+  };
+
+  // Filter parts based on search
+  const filteredParts = availableParts.filter(part =>
+    part.partNo.toLowerCase().includes(partSearchTerm.toLowerCase()) ||
+    part.partName.toLowerCase().includes(partSearchTerm.toLowerCase())
+  );
+
+  // Add part to payment
+  const handleAddPartToPayment = (part) => {
+    if (selectedParts.find(p => p.id === part.id)) {
+      toast.error('Part already added');
+      return;
+    }
+    setSelectedParts([...selectedParts, part]);
+    toast.success(`${part.partName} added`);
+    setIsPartDropdownOpen(false);
+    setPartSearchTerm('');
+  };
+
+  // Remove part from payment
+  const removePartFromPayment = (partId) => {
+    setSelectedParts(prevParts => prevParts.filter(part => part.id !== partId));
+    toast.success('Part removed');
+  };
+
+  // Add new part to master
+  const handleAddNewPart = async () => {
+    if (!newPartData.partNo || !newPartData.partName) {
+      toast.error('Part No and Part Name are required');
+      return;
+    }
+
+    try {
+      const newPart = await serviceTypeOfPartApi.create(newPartData);
+      toast.success('Part added to master successfully!');
+      setIsNewPartModalOpen(false);
+      setNewPartData({ partNo: '', partName: '', status: 'Enable' });
+      await fetchAvailableParts();
+      // Auto-add the new part to payment
+      setSelectedParts([...selectedParts, newPart]);
+    } catch (error) {
+      toast.error(error.message || 'Error adding part');
+      console.error('Error adding part:', error);
+    }
+  };
 
   // Effect to set service type from job card info
   useEffect(() => {
     if (serviceJobCardInfo && !isEditMode) {
       console.log("Processing job card info:", serviceJobCardInfo);
-      
+
       let serviceTypeId = "";
       let serviceTypeName = "";
-      
+
       if (serviceJobCardInfo.serviceType) {
         if (typeof serviceJobCardInfo.serviceType === 'object') {
           serviceTypeId = serviceJobCardInfo.serviceType.id?.toString() || "";
@@ -102,13 +181,13 @@ const ServicePaymentCollection = ({ user }) => {
           serviceTypeName = serviceJobCardInfo.serviceType;
         }
       }
-      
+
       if (!serviceTypeName && serviceJobCardInfo.service_type) {
         serviceTypeName = serviceJobCardInfo.service_type;
       }
-      
+
       console.log("Setting service type - ID:", serviceTypeId, "Name:", serviceTypeName);
-      
+
       if (serviceTypeName) {
         setFormData(prev => ({
           ...prev,
@@ -130,7 +209,8 @@ const ServicePaymentCollection = ({ user }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".customer-dropdown")) {
+      if (!event.target.closest(".customer-dropdown") && !event.target.closest(".part-dropdown")) {
+        setIsPartDropdownOpen(false);
         setShowDropdown(false);
       }
     };
@@ -141,10 +221,10 @@ const ServicePaymentCollection = ({ user }) => {
   useEffect(() => {
     if (serviceJobCardInfo && !isEditMode && serviceTypeOfCollections.length > 0) {
       const jc = serviceJobCardInfo;
-      
+
       let serviceTypeId = "";
       let serviceTypeName = "";
-      
+
       if (jc.serviceType) {
         if (typeof jc.serviceType === 'object') {
           serviceTypeId = jc.serviceType.id?.toString() || "";
@@ -153,11 +233,11 @@ const ServicePaymentCollection = ({ user }) => {
           serviceTypeName = jc.serviceType;
         }
       }
-      
+
       if (!serviceTypeName && jc.service_type) {
         serviceTypeName = jc.service_type;
       }
-      
+
       const modelName = jc.vehicleDetails ? jc.vehicleDetails.toLowerCase() : "";
       const matchedModel = vehicleModels.find((m) => {
         const mm = m.model.toLowerCase();
@@ -166,7 +246,7 @@ const ServicePaymentCollection = ({ user }) => {
           (mm === modelName || mm.includes(modelName) || modelName.includes(mm))
         );
       });
-      
+
       let matchedCollectionId = "";
       if (serviceTypeName) {
         const matchedTypeOfCollection = serviceTypeOfCollections.find(
@@ -174,7 +254,7 @@ const ServicePaymentCollection = ({ user }) => {
         );
         matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
       }
-      
+
       setFormData((prev) => ({
         ...prev,
         jobCardNumber: jc.jobCardNumber || prev.jobCardNumber,
@@ -197,12 +277,12 @@ const ServicePaymentCollection = ({ user }) => {
           jobCardServiceType = serviceJobCardInfo.serviceType.name;
         }
       }
-      
+
       if (jobCardServiceType) {
         const matchedTypeOfCollection = serviceTypeOfCollections.find(
           (type) => type.typeOfCollect?.toLowerCase() === jobCardServiceType.toLowerCase()
         );
-        
+
         if (matchedTypeOfCollection) {
           setFormData((prev) => ({
             ...prev,
@@ -274,35 +354,31 @@ const ServicePaymentCollection = ({ user }) => {
     }
   };
 
-const fetchServiceTypes = async () => {
-  try {
-    const data = await serviceTypeApi.getAll();
-    console.log("Fetched service types raw data:", data);
-    
-    // Handle both array response or response with data property
-    const typesArray = Array.isArray(data) ? data : data.data || [];
-    console.log("Types array:", typesArray);
-    
-    // Filter by status - note: your backend uses "ACTIVE" not "Enable"
-    const enabledTypes = typesArray.filter((type) => {
-      // Convert status to lowercase for case-insensitive comparison
-      const status = type.status?.toLowerCase();
-      return status === 'active' || status === 'enable';
-    });
-    
-    console.log("Enabled service types:", enabledTypes);
-    setServiceTypes(enabledTypes);
-    
-    // If no enabled types, show all types as fallback
-    if (enabledTypes.length === 0 && typesArray.length > 0) {
-      console.log("No enabled types found, showing all types as fallback");
-      setServiceTypes(typesArray);
+  const fetchServiceTypes = async () => {
+    try {
+      const data = await serviceTypeApi.getAll();
+      console.log("Fetched service types raw data:", data);
+
+      const typesArray = Array.isArray(data) ? data : data.data || [];
+      console.log("Types array:", typesArray);
+
+      const enabledTypes = typesArray.filter((type) => {
+        const status = type.status?.toLowerCase();
+        return status === 'active' || status === 'enable';
+      });
+
+      console.log("Enabled service types:", enabledTypes);
+      setServiceTypes(enabledTypes);
+
+      if (enabledTypes.length === 0 && typesArray.length > 0) {
+        console.log("No enabled types found, showing all types as fallback");
+        setServiceTypes(typesArray);
+      }
+    } catch (error) {
+      console.error("Error fetching service types:", error);
+      setServiceTypes([]);
     }
-  } catch (error) {
-    console.error("Error fetching service types:", error);
-    setServiceTypes([]);
-  }
-};
+  };
 
   const fetchPaymentModes = async () => {
     try {
@@ -341,59 +417,60 @@ const fetchServiceTypes = async () => {
   };
 
   const fetchPayments = async (page = currentPage) => {
-    try {
-      const response = await servicePaymentCollectionApi.getAll(page, itemsPerPage);
-      if (!response || !Array.isArray(response.data)) {
-        console.error('Invalid response format:', response);
-        setPayments([]);
-        setFilteredPayments([]);
-        return;
-      }
-      const startIndex = (page - 1) * itemsPerPage;
-      const formattedData = response.data.map((payment, index) => ({
-        sNo: startIndex + index + 1,
-        id: payment.id,
-        date: payment.date,
-        receiptNo: payment.receiptNo,
-        custId: payment.customer.custId,
-        name: payment.customer.name,
-        contactNo: payment.customer.contactNo,
-        address: payment.customer.address,
-        totalAmt: payment.totalAmt || "N/A",
-        recAmt: payment.recAmt,
-        paymentType: payment.paymentType,
-        paymentStatus: payment.paymentStatus,
-        vehicleNumber: payment.vehicleNumber || "N/A",
-        paymentMode: payment.paymentMode.paymentMode,
-        typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
-        typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || "N/A",
-        vehicleModel: payment.vehicleModel?.model || "N/A",
-        enteredBy: payment.user?.username || "N/A",
-        refNo: payment.refNo || "N/A",
-        remarks: payment.remarks || "N/A",
-        jobCardNumber: payment.jobCardNumber || "N/A",
-        serviceType: payment.serviceTypeRelation?.name || "N/A",
-        paymentSessions: payment.paymentSessions || [],
-        customerId: payment.customerId,
-        paymentModeId: payment.paymentModeId,
-        typeOfPaymentId: payment.typeOfPaymentId,
-        serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
-        vehicleModelId: payment.vehicleModelId,
-        serviceTypeId: payment.serviceTypeId,
-        cancelledAt: payment.cancelledAt,
-        cancelledBy: payment.cancelledByUser?.username || null,
-      }));
-      setPayments(formattedData);
-      setFilteredPayments(formattedData);
-      setTotalPages(response.totalPages);
-      setCurrentPage(response.page);
-      setTotalEntries(response.total);
-    } catch (error) {
-      console.error("Error fetching payments:", error);
+  try {
+    const response = await servicePaymentCollectionApi.getAll(page, itemsPerPage);
+    if (!response || !Array.isArray(response.data)) {
+      console.error('Invalid response format:', response);
       setPayments([]);
       setFilteredPayments([]);
+      return;
     }
-  };
+    const startIndex = (page - 1) * itemsPerPage;
+    const formattedData = response.data.map((payment, index) => ({
+      sNo: startIndex + index + 1,
+      id: payment.id,
+      date: payment.date,
+      receiptNo: payment.receiptNo,
+      custId: payment.customer.custId,
+      name: payment.customer.name,
+      contactNo: payment.customer.contactNo,
+      address: payment.customer.address,
+      totalAmt: payment.totalAmt || "N/A",
+      recAmt: payment.recAmt,
+      paymentType: payment.paymentType,
+      paymentStatus: payment.paymentStatus,
+      vehicleNumber: payment.vehicleNumber || "N/A",
+      paymentMode: payment.paymentMode.paymentMode,
+      typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
+      typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || "N/A",
+      vehicleModel: payment.vehicleModel?.model || "N/A",
+      enteredBy: payment.user?.username || "N/A",
+      refNo: payment.refNo || "N/A",
+      remarks: payment.remarks || "N/A",
+      jobCardNumber: payment.jobCardNumber || "N/A",
+      serviceType: payment.serviceTypeRelation?.name || "N/A",
+      paymentSessions: payment.paymentSessions || [],
+      selectedParts: payment.selectedParts || [], // Add this line
+      customerId: payment.customerId,
+      paymentModeId: payment.paymentModeId,
+      typeOfPaymentId: payment.typeOfPaymentId,
+      serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
+      vehicleModelId: payment.vehicleModelId,
+      serviceTypeId: payment.serviceTypeId,
+      cancelledAt: payment.cancelledAt,
+      cancelledBy: payment.cancelledByUser?.username || null,
+    }));
+    setPayments(formattedData);
+    setFilteredPayments(formattedData);
+    setTotalPages(response.totalPages);
+    setCurrentPage(response.page);
+    setTotalEntries(response.total);
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    setPayments([]);
+    setFilteredPayments([]);
+  }
+};
 
   const fetchDeletedPayments = async () => {
     try {
@@ -464,118 +541,138 @@ const fetchServiceTypes = async () => {
     }
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handlePaymentStatusChange = (e) => {
+    const newStatus = e.target.value;
+    let newPaymentType = formData.paymentType;
+    
+    if (formData.paymentType === "part payment" && newStatus === "completed") {
+      newPaymentType = "full payment";
+      toast.success("Payment type will be changed to Full Payment", { duration: 3000 });
+    }
+    
+    setFormData({ 
+      ...formData, 
+      paymentStatus: newStatus,
+      paymentType: newPaymentType
+    });
+  };
 
-  if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
-    toast.error("Mobile number must be exactly 10 digits");
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
-    toast.error("Vehicle number is mandatory for part payment");
-    return;
-  }
-
-  setIsSubmitting(true);
-  try {
-    let customerId = loadedCustomer?.id;
-
-    if (isNewCustomer) {
-      const newCustomer = await customerApi.create(newCustomerData);
-      customerId = newCustomer.id;
-      await fetchCustomers();
+    if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
+      toast.error("Mobile number must be exactly 10 digits");
+      return;
     }
 
-    const totalAmt = formData.paymentStatus === 'completed' 
-      ? pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
-      : undefined;
-
-    const submitData = {
-      date: formData.date,
-      customerId: customerId,
-      totalAmt: totalAmt,
-      recAmt: parseFloat(formData.recAmt),
-      paymentType: formData.paymentType,
-      paymentStatus: formData.paymentStatus,
-      vehicleNumber: formData.vehicleNumber || undefined,
-      paymentModeId: parseInt(formData.paymentModeId),
-      typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
-      serviceTypeOfCollectionId: formData.serviceTypeOfCollectionId ? parseInt(formData.serviceTypeOfCollectionId) : undefined,
-      vehicleModelId: formData.vehicleModelId ? parseInt(formData.vehicleModelId) : undefined,
-      enteredBy: user?.id,
-      refNo: formData.refNo,
-      remarks: formData.remarks,
-      jobCardNumber: formData.jobCardNumber,
-      serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
-      
-    };
-
-    if (isEditMode) {
-      await servicePaymentCollectionApi.update(editingPayment.id, submitData);
-      toast.success("Service payment updated successfully!");
-    } else {
-      await servicePaymentCollectionApi.create(submitData);
-      toast.success("Service payment created successfully!");
+    if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
+      toast.error("Vehicle number is mandatory for part payment");
+      return;
     }
 
-    setIsPaymentModalOpen(false);
-    setIsEditMode(false);
-    setEditingPayment(null);
-    setIsNewCustomer(false);
-    setCustomerHistory([]);
-    setPendingPayments([]);
-    
-    setFormData({
-      date: new Date().toISOString().split("T")[0],
-      totalAmt: "",
-      recAmt: "",
-      paymentType: "full payment",
-      paymentStatus: "pending",
-      vehicleNumber: "",
-      paymentModeId: "",
-      typeOfPaymentId: "",
-      serviceTypeOfCollectionId: "",
-      vehicleModelId: "",
-      refNo: "",
-      remarks: "",
-      jobCardNumber: "",
-      serviceType: "",
-      serviceTypeId: "",
-    });
-    
-    setNewCustomerData({
-      name: "",
-      contactNo: "",
-      address: "",
-      status: "Walk in Customer",
-    });
-    
-    setLoadedCustomer(null);
-    setSelectedCustomerId("");
-    setSalesInvoiceInfo(null);
-    setServiceJobCardInfo(null);
-    setSearchTerm("");
-    
-    fetchPayments(1);
-    setCurrentPage(1);
-    if (showDeleted) fetchDeletedPayments();
-  } catch (error) {
-    toast.error("Error saving service payment");
-    console.error("Error saving service payment:", error);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    setIsSubmitting(true);
+    try {
+      let customerId = loadedCustomer?.id;
+
+      if (isNewCustomer) {
+        const newCustomer = await customerApi.create(newCustomerData);
+        customerId = newCustomer.id;
+        await fetchCustomers();
+      }
+
+      const totalAmt = formData.paymentStatus === 'completed'
+        ? pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
+        : undefined;
+
+      const submitData = {
+        date: formData.date,
+        customerId: customerId,
+        totalAmt: totalAmt,
+        recAmt: parseFloat(formData.recAmt),
+        paymentType: formData.paymentType,
+        paymentStatus: formData.paymentStatus,
+        vehicleNumber: formData.vehicleNumber || undefined,
+        paymentModeId: parseInt(formData.paymentModeId),
+        typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
+        serviceTypeOfCollectionId: formData.serviceTypeOfCollectionId ? parseInt(formData.serviceTypeOfCollectionId) : undefined,
+        vehicleModelId: formData.vehicleModelId ? parseInt(formData.vehicleModelId) : undefined,
+        enteredBy: user?.id,
+        refNo: formData.refNo,
+        remarks: formData.remarks,
+        jobCardNumber: formData.jobCardNumber,
+        serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
+        selectedParts: selectedParts,
+      };
+
+      if (isEditMode) {
+        await servicePaymentCollectionApi.update(editingPayment.id, submitData);
+        toast.success("Service payment updated successfully!");
+      } else {
+        await servicePaymentCollectionApi.create(submitData);
+        toast.success("Service payment created successfully!");
+      }
+
+      setIsPaymentModalOpen(false);
+      setIsEditMode(false);
+      setEditingPayment(null);
+      setIsNewCustomer(false);
+      setCustomerHistory([]);
+      setPendingPayments([]);
+      setSelectedParts([]);
+
+      setFormData({
+        date: new Date().toISOString().split("T")[0],
+        totalAmt: "",
+        recAmt: "",
+        paymentType: "full payment",
+        paymentStatus: "pending",
+        vehicleNumber: "",
+        paymentModeId: "",
+        typeOfPaymentId: "",
+        serviceTypeOfCollectionId: "",
+        vehicleModelId: "",
+        refNo: "",
+        remarks: "",
+        jobCardNumber: "",
+        serviceType: "",
+        serviceTypeId: "",
+      });
+
+      setNewCustomerData({
+        name: "",
+        contactNo: "",
+        address: "",
+        status: "Walk in Customer",
+      });
+
+      setLoadedCustomer(null);
+      setSelectedCustomerId("");
+      setSalesInvoiceInfo(null);
+      setServiceJobCardInfo(null);
+      setSearchTerm("");
+      setPartSearchTerm("");
+      setSelectedParts([]);
+
+      fetchPayments(1);
+      setCurrentPage(1);
+      if (showDeleted) fetchDeletedPayments();
+    } catch (error) {
+      toast.error("Error saving service payment");
+      console.error("Error saving service payment:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   const fetchPendingPayments = (customerId) => {
     if (!customerId) {
       setPendingPayments([]);
       return;
     }
     const pending = payments.filter(
-      (p) => p.customerId === customerId && 
-             p.paymentStatus === "pending" &&
-             p.paymentType === "part payment"
+      (p) => p.customerId === customerId &&
+        p.paymentStatus === "pending" &&
+        p.paymentType === "part payment"
     );
     setPendingPayments(pending);
   };
@@ -738,7 +835,7 @@ const fetchServiceTypes = async () => {
       });
       setSalesInvoiceInfo(null);
       setServiceJobCardInfo(customer.jobCardData);
-      
+
       const jc = customer.jobCardData;
       let serviceTypeId = "";
       let serviceTypeName = "";
@@ -750,13 +847,13 @@ const fetchServiceTypes = async () => {
           serviceTypeName = jc.serviceType;
         }
       }
-      
+
       const modelName = jc.vehicleDetails ? jc.vehicleDetails.toLowerCase() : "";
       const matchedModel = vehicleModels.find((m) => {
         const mm = m.model.toLowerCase();
         return modelName && (mm === modelName || mm.includes(modelName) || modelName.includes(mm));
       });
-      
+
       let matchedCollectionId = "";
       if (serviceTypeOfCollections.length > 0 && serviceTypeName) {
         const matchedTypeOfCollection = serviceTypeOfCollections.find(
@@ -764,7 +861,7 @@ const fetchServiceTypes = async () => {
         );
         matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
       }
-      
+
       setFormData(prev => ({
         ...prev,
         jobCardNumber: jc.jobCardNumber || prev.jobCardNumber,
@@ -774,7 +871,7 @@ const fetchServiceTypes = async () => {
         serviceTypeOfCollectionId: matchedCollectionId || prev.serviceTypeOfCollectionId,
         vehicleModelId: matchedModel ? matchedModel.id.toString() : prev.vehicleModelId,
       }));
-      
+
       setFilteredPayments(payments);
     } else {
       setSelectedCustomerId(customer.id.toString());
@@ -811,7 +908,7 @@ const fetchServiceTypes = async () => {
         let invoiceInfo = null;
         let jobCardInfo = null;
         let history = [];
-        
+
         try {
           const invoiceResults = await salesInvoiceApi.getAll(customer.contactNo);
           invoiceInfo = invoiceResults.length > 0 ? invoiceResults[0] : null;
@@ -819,7 +916,7 @@ const fetchServiceTypes = async () => {
         } catch (error) {
           console.error("Error fetching invoice:", error);
         }
-        
+
         try {
           const historyResponse = await servicePaymentCollectionApi.getAll(1, 1000, customer.id);
           history = historyResponse.data || [];
@@ -837,10 +934,10 @@ const fetchServiceTypes = async () => {
         } catch (error) {
           console.error("Error fetching job card:", error);
         }
-        
+
         setFormData(prev => {
           const updated = { ...prev };
-          
+
           if (invoiceInfo) {
             updated.vehicleNumber = invoiceInfo.vehicleRegNo || prev.vehicleNumber;
             updated.vehicleModelId = vehicleModels.find((m) => {
@@ -849,7 +946,7 @@ const fetchServiceTypes = async () => {
               return im && (mm === im || im.includes(mm) || mm.includes(im));
             })?.id.toString() || prev.vehicleModelId;
           }
-          
+
           if (jobCardInfo) {
             let serviceTypeId = "";
             let serviceTypeName = "";
@@ -861,7 +958,7 @@ const fetchServiceTypes = async () => {
                 serviceTypeName = jobCardInfo.serviceType;
               }
             }
-            
+
             let matchedCollectionId = "";
             if (serviceTypeOfCollections.length > 0 && serviceTypeName) {
               const matchedTypeOfCollection = serviceTypeOfCollections.find(
@@ -869,10 +966,9 @@ const fetchServiceTypes = async () => {
               );
               matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
             }
-            
+
             updated.jobCardNumber = jobCardInfo.jobCardNumber || prev.jobCardNumber;
-            
-            // Only auto-fill service type if it's allowed based on history
+
             if (isServiceTypeAllowed(serviceTypeName, history)) {
               updated.serviceTypeId = serviceTypeId;
               updated.serviceType = serviceTypeName || prev.serviceType;
@@ -880,7 +976,7 @@ const fetchServiceTypes = async () => {
             } else {
               console.log("Service type from job card is not allowed/already done:", serviceTypeName);
             }
-            
+
             if (!updated.vehicleModelId && jobCardInfo.vehicleDetails) {
               const modelName = jobCardInfo.vehicleDetails.toLowerCase();
               const matchedModel = vehicleModels.find((m) => {
@@ -889,16 +985,16 @@ const fetchServiceTypes = async () => {
               });
               updated.vehicleModelId = matchedModel ? matchedModel.id.toString() : prev.vehicleModelId;
             }
-            
+
             if (!updated.vehicleNumber && jobCardInfo.registrationNumber) {
               updated.vehicleNumber = jobCardInfo.registrationNumber;
             }
           }
-          
+
           return updated;
         });
       };
-      
+
       await fetchData();
     }
 
@@ -1077,88 +1173,86 @@ const fetchServiceTypes = async () => {
     { header: "Remarks", accessor: "remarks" },
   ];
 
-  // Helper to normalize names (e.g., "FREE 02" -> "FREE2", "Free 1" -> "FREE1")
   const normalizeServiceName = (name) => {
     if (!name) return "";
     return name.toUpperCase()
-      .replace(/\s+/g, '')               // Remove all spaces
-      .replace(/FREE0?([1-9])/g, 'FREE$1'); // Normalize FREE01/FREE 01 to FREE1
+      .replace(/\s+/g, '')
+      .replace(/FREE0?([1-9])/g, 'FREE$1');
   };
 
   const isServiceTypeAllowed = (typeName, history) => {
     if (!typeName) return true;
     const normalizedName = normalizeServiceName(typeName);
-    
-    // If it's not a FREE service, always allow it (e.g., PAID)
+
     if (!normalizedName.includes("FREE")) return true;
 
-    // Filter out cancelled payments from history
     const activeHistory = (history || []).filter(p => !p.cancelledAt);
-    
-    // Get used service names
+
     const usedNames = activeHistory.map(p => {
       const name = p.serviceTypeRelation?.name || p.serviceType || "";
       return normalizeServiceName(name);
     });
-    
-    // Check if services are already in history
+
     const hasFree1 = usedNames.includes("FREE1");
     const hasFree2 = usedNames.includes("FREE2");
     const hasFree3 = usedNames.includes("FREE3");
 
-    // FREE1 logic: Show if not already done
     if (normalizedName === "FREE1") {
       return !hasFree1;
     }
-    
-    // FREE2 logic: Show only AFTER FREE1 is done, and if FREE2 itself is not done
+
     if (normalizedName === "FREE2") {
       return hasFree1 && !hasFree2;
     }
-    
-    // FREE3 logic: Show only AFTER FREE1 is done, and if FREE3 itself is not done
+
     if (normalizedName === "FREE3") {
       return hasFree1 && !hasFree3;
     }
-    
-    return true; // Show other services (PAID, etc.) always
+
+    return true;
   };
 
   const getFilteredServiceTypes = () => {
     if (!loadedCustomer) return serviceTypes;
 
     return serviceTypes.filter(type => {
-      // If we're editing, always include the currently selected type
       if (isEditMode && type.id.toString() === formData.serviceTypeId) return true;
-
       return isServiceTypeAllowed(type.name, customerHistory);
     });
   };
 
-  const renderActions = (payment) => {
-    if (showDeleted) {
-      return permissions?.payment_collection?.service?.restore ? (
-        <button onClick={() => handleRestore(payment)} className="text-green-600 hover:underline">Restore</button>
-      ) : null;
-    }
-    if (payment.cancelledAt) {
-      return <span className="text-red-600 font-semibold">CANCELLED</span>;
-    }
-    return (
-      <div className="flex gap-2">
-        {permissions?.payment_collection?.service?.edit && (
-          <button onClick={() => handleEdit(payment)} className="text-blue-600 hover:underline">Edit</button>
-        )}
-        {permissions?.payment_collection?.service?.delete && (
-          <button onClick={() => { setPaymentToDelete(payment); setIsDeleteModalOpen(true); }} className="text-red-600 hover:underline">Delete</button>
-        )}
-        {permissions?.payment_collection?.service?.cancel && (
-          <button onClick={() => { setPaymentToCancel(payment); setIsCancelModalOpen(true); }} className="text-orange-600 hover:underline">Cancel</button>
-        )}
-        <button onClick={() => handlePrint(payment)} className="text-green-600 hover:underline">Print</button>
-      </div>
-    );
-  };
+ const renderActions = (payment) => {
+  if (showDeleted) {
+    return permissions?.payment_collection?.service?.restore ? (
+      <button onClick={() => handleRestore(payment)} className="text-green-600 hover:underline">Restore</button>
+    ) : null;
+  }
+  if (payment.cancelledAt) {
+    return <span className="text-red-600 font-semibold">CANCELLED</span>;
+  }
+  return (
+    <div className="flex gap-2">
+      {/* View Button */}
+      <button 
+        onClick={() => handleView(payment)} 
+        className="text-green-600 hover:text-gray-800 hover:underline"
+        title="View Details"
+      >
+       View
+      </button>
+      {permissions?.payment_collection?.service?.edit && (
+        <button onClick={() => handleEdit(payment)} className="text-blue-600 hover:underline">Edit</button>
+      )}
+      {permissions?.payment_collection?.service?.delete && (
+        <button onClick={() => { setPaymentToDelete(payment); setIsDeleteModalOpen(true); }} className="text-red-600 hover:underline">Delete</button>
+      )}
+      {permissions?.payment_collection?.service?.cancel && (
+        <button onClick={() => { setPaymentToCancel(payment); setIsCancelModalOpen(true); }} className="text-orange-600 hover:underline">Cancel</button>
+      )}
+      <button onClick={() => handlePrint(payment)} className="text-green-600 hover:underline">Print</button>
+    </div>
+  );
+};
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
@@ -1278,35 +1372,50 @@ const fetchServiceTypes = async () => {
         pagination={!showDeleted ? { page: currentPage, limit: itemsPerPage, total: totalEntries, totalPages: totalPages, onPageChange: (page) => { setCurrentPage(page); fetchPayments(page); } } : undefined}
       />
 
-      <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
+      <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); setSelectedParts([]); setPartSearchTerm(''); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Row 1: Basic Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label><select value={formData.paymentType} onChange={(e) => { const newPaymentType = e.target.value; setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); if (loadedCustomer) fetchPendingPayments(loadedCustomer.id); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required><option value="full payment">Full Payment</option><option value="part payment">Part Payment</option></select></div>
 
-            {/* Row 2: Vehicle Info (User Requested) */}
+            {/* Row 2: Vehicle Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={formData.paymentType === "part payment"} /></div>
             <div>
-              {(() => { 
-                const selectedTypeOfCollection = serviceTypeOfCollections.find(type => type.id === parseInt(formData.serviceTypeOfCollectionId)); 
+              {(() => {
+                const selectedTypeOfCollection = serviceTypeOfCollections.find(type => type.id === parseInt(formData.serviceTypeOfCollectionId));
                 return !selectedTypeOfCollection?.disableVehicleModel ? (
                   <SearchableDropdown label="Vehicle Model" value={formData.vehicleModelId} onChange={(value) => setFormData({ ...formData, vehicleModelId: value })} options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))} />
                 ) : (
                   <div className="hidden md:block"></div>
-                ); 
+                );
               })()}
             </div>
 
-            {/* Row 3: Service Info (User Requested Job Card Number) */}
-            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.jobCardNumber} onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter job card number" required={formData.paymentType === "full payment"} /></div>
+            {/* Row 3: Service Info */}
+            {formData.paymentType === "full payment" && (
+              <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                  Job Card Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.jobCardNumber}
+                  onChange={(e) => setFormData({ ...formData, jobCardNumber: e.target.value })}
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+                  placeholder="Enter job card number"
+                  required
+                />
+              </div>
+            )}
+
             <SearchableDropdown
               label="Type of Service"
               value={formData.serviceTypeId}
               onChange={(value) => {
                 const selectedType = serviceTypes.find(type => type.id.toString() === value);
-                setFormData({ 
-                  ...formData, 
+                setFormData({
+                  ...formData,
                   serviceTypeId: value,
                   serviceType: selectedType?.name || ""
                 });
@@ -1322,9 +1431,9 @@ const fetchServiceTypes = async () => {
                   }
                 }
               }}
-              options={getFilteredServiceTypes().map(type => ({ 
-                value: type.id.toString(), 
-                label: type.name 
+              options={getFilteredServiceTypes().map(type => ({
+                value: type.id.toString(),
+                label: type.name
               }))}
               required
               placeholder="Select service type"
@@ -1339,19 +1448,105 @@ const fetchServiceTypes = async () => {
             <SearchableDropdown label="Payment Mode" value={formData.paymentModeId} onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })} options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))} required />
             <SearchableDropdown label="Type of Payment Mode" value={formData.typeOfPaymentId} onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })} options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))} />
 
-            {/* Row 6: Misc */}
+            {/* Row 6: Reference Number */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
-            <div>
-              {formData.paymentType === "part payment" && (
-                <div>
-                  <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label>
-                  <select value={formData.paymentStatus} onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required>
-                    <option value="pending">Pending</option>
-                    <option value="completed">Completed</option>
-                  </select>
+            
+            {/* Part Selection for Part Payment */}
+            {formData.paymentType === "part payment" && (
+              <div className="relative part-dropdown">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Select Part</label>
+                <input
+                  type="text"
+                  value={partSearchTerm}
+                  onChange={(e) => {
+                    setPartSearchTerm(e.target.value);
+                    setIsPartDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsPartDropdownOpen(true)}
+                  placeholder="Search by part no or name..."
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                />
+                {isPartDropdownOpen && (
+                  <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
+                    {/* Add New Part Option */}
+                    <div
+                      onClick={() => {
+                        setIsPartDropdownOpen(false);
+                        setIsNewPartModalOpen(true);
+                      }}
+                      className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
+                    >
+                      + Add New Part
+                    </div>
+                    {filteredParts.length === 0 ? (
+                      <div className="p-2 text-brand-text-secondary text-center">No parts found</div>
+                    ) : (
+                      filteredParts.map((part) => (
+                        <div
+                          key={part.id}
+                          onClick={() => handleAddPartToPayment(part)}
+                          className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
+                        >
+                          <div className="font-medium">{part.partNo}</div>
+                          <div className="text-sm text-brand-text-secondary">{part.partName}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Selected Parts List */}
+            {formData.paymentType === "part payment" && selectedParts.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-2">Added Parts</label>
+                <div className="bg-gray-50 border border-brand-border rounded-lg max-h-40 overflow-y-auto">
+                  {selectedParts.map((part, index) => (
+                    <div key={part.id} className="flex justify-between items-center p-2 border-b border-brand-border last:border-b-0">
+                      <div>
+                        <span className="font-medium text-sm">{index + 1}. {part.partNo}</span>
+                        <span className="text-gray-500 mx-2">-</span>
+                        <span className="text-sm text-brand-text-secondary">{part.partName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePartFromPayment(part.id)}
+                        className="text-red-600 hover:text-red-800 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Payment Status */}
+            {formData.paymentType === "part payment" && (
+              <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label>
+                <select 
+                  value={formData.paymentStatus} 
+                  onChange={handlePaymentStatusChange} 
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" 
+                  required
+                >
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
+                {formData.paymentStatus === "completed" && formData.paymentType === "part payment" && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    ⚡ Note: This will change Payment Type to "Full Payment"
+                  </p>
+                )}
+                {formData.paymentStatus === "completed" && formData.paymentType === "full payment" && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    ✓ Payment will be processed as Full Payment
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Row 7 - Full Width Remarks */}
             <div className="md:col-span-2">
@@ -1382,7 +1577,7 @@ const fetchServiceTypes = async () => {
             {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Total Paid Amount <span className="text-red-500">*</span></label>
-                <input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" placeholder="Auto-calculated total amount" readOnly />
+                <input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" readOnly />
               </div>
             )}
           </div>
@@ -1406,6 +1601,245 @@ const fetchServiceTypes = async () => {
         </form>
       </Modal>
 
+      {/* Add New Part Modal */}
+      <Modal isOpen={isNewPartModalOpen} onClose={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partName: '', status: 'Enable' }); }} title="Add New Part to Master" maxWidth="max-w-md">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part No <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={newPartData.partNo}
+              onChange={(e) => setNewPartData({ ...newPartData, partNo: e.target.value.toUpperCase() })}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+              placeholder="Enter part number"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={newPartData.partName}
+              onChange={(e) => setNewPartData({ ...newPartData, partName: e.target.value })}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+              placeholder="Enter part name"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Status</label>
+            <select
+              value={newPartData.status}
+              onChange={(e) => setNewPartData({ ...newPartData, status: e.target.value })}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+            >
+              <option value="Enable">Enable</option>
+              <option value="Disable">Disable</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partName: '', status: 'Enable' }); }}
+              className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAddNewPart}
+              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold"
+            >
+              Add Part
+            </button>
+          </div>
+        </div>
+      </Modal>
+{/* View Payment Details Modal */}
+<Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Payment Details" maxWidth="max-w-4xl">
+  {selectedPayment && (
+    <div className="space-y-6">
+      {/* Customer Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Customer Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Customer ID</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.custId}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Customer Name</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.name}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Contact Number</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.contactNo}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Address</label>
+            <div className="text-brand-text-primary">{selectedPayment.address}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Payment Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Receipt No</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.receiptNo}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Date</label>
+            <div className="text-brand-text-primary font-medium">
+              {new Date(selectedPayment.date).toLocaleDateString('en-GB')}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Payment Type</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.paymentType}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
+            <div className="text-brand-text-primary font-medium">
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                selectedPayment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {selectedPayment.paymentStatus}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Received Amount</label>
+            <div className="text-brand-text-primary font-medium text-lg">₹{selectedPayment.recAmt}</div>
+          </div>
+          {selectedPayment.totalAmt !== 'N/A' && (
+            <div>
+              <label className="text-xs text-brand-text-secondary uppercase">Total Amount</label>
+              <div className="text-brand-text-primary font-medium">₹{selectedPayment.totalAmt}</div>
+            </div>
+          )}
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Payment Mode</label>
+            <div className="text-brand-text-primary">{selectedPayment.paymentMode}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Type of Payment</label>
+            <div className="text-brand-text-primary">{selectedPayment.typeOfPayment}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Vehicle Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Vehicle Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Vehicle Number</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.vehicleNumber}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Vehicle Model</label>
+            <div className="text-brand-text-primary">{selectedPayment.vehicleModel}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Job Card Number</label>
+            <div className="text-brand-text-primary">{selectedPayment.jobCardNumber}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Service Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Service Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Service Type</label>
+            <div className="text-brand-text-primary">{selectedPayment.serviceType}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Collection Type</label>
+            <div className="text-brand-text-primary">{selectedPayment.typeOfCollection}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Service Parts Information */}
+      {selectedPayment.selectedParts && selectedPayment.selectedParts.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Service Parts</h3>
+          <div className="bg-gray-50 border border-brand-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-3 py-2 text-left">SNo</th>
+                  <th className="px-3 py-2 text-left">Part No</th>
+                  <th className="px-3 py-2 text-left">Part Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPayment.selectedParts.map((part, idx) => (
+                  <tr key={idx} className="border-t border-brand-border">
+                    <td className="px-3 py-2">{idx + 1}</td>
+                    <td className="px-3 py-2">{part.partNo}</td>
+                    <td className="px-3 py-2">{part.partName}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Previous Payment Sessions (for completed part payments) */}
+      {selectedPayment.paymentSessions && selectedPayment.paymentSessions.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Previous Payment Sessions</h3>
+          <div className="bg-gray-50 border border-brand-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-3 py-2 text-left">Receipt No</th>
+                  <th className="px-3 py-2 text-left">Date</th>
+                  <th className="px-3 py-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPayment.paymentSessions.map((session, idx) => (
+                  <tr key={idx} className="border-t border-brand-border">
+                    <td className="px-3 py-2">{session.receiptNo}</td>
+                    <td className="px-3 py-2">{new Date(session.date).toLocaleDateString('en-GB')}</td>
+                    <td className="px-3 py-2 text-right">₹{session.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Information */}
+      <div>
+        <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Additional Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Reference Number</label>
+            <div className="text-brand-text-primary">{selectedPayment.refNo || 'N/A'}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Entered By</label>
+            <div className="text-brand-text-primary">{selectedPayment.enteredBy}</div>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs text-brand-text-secondary uppercase">Remarks</label>
+            <div className="text-brand-text-primary">{selectedPayment.remarks || 'N/A'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</Modal>
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Delete">
         <div className="space-y-4"><p className="text-brand-text-primary">Are you sure you want to delete service payment <strong>{paymentToDelete?.receiptNo}</strong>?</p><div className="flex justify-end gap-4"><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Cancel</button><button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold">Delete</button></div></div>
       </Modal>

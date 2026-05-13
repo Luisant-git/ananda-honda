@@ -3,9 +3,11 @@ import config from '../config.js';
 const API_URL = `${config.API_BASE_URL}/service-payment-collections`;
 
 export const servicePaymentCollectionApi = {
-  getAll: async (page = 1, limit = 10, customerId = null) => {
+  getAll: async (page = 1, limit = 10, customerId = null, paymentType = null, paymentStatus = null) => {
     let url = `${API_URL}?page=${page}&limit=${limit}`;
     if (customerId) url += `&customerId=${customerId}`;
+    if (paymentType && paymentType !== 'all') url += `&paymentType=${encodeURIComponent(paymentType)}`;
+    if (paymentStatus && paymentStatus !== 'all') url += `&paymentStatus=${encodeURIComponent(paymentStatus)}`;
     const response = await fetch(url, { credentials: 'include' });
     return response.json();
   },
@@ -70,5 +72,21 @@ export const servicePaymentCollectionApi = {
   getDeleted: async () => {
     const response = await fetch(`${API_URL}/deleted/all`, { credentials: 'include' });
     return response.json();
+  },
+
+  completePartPayment: async (id, data) => {
+  const response = await fetch(`${API_URL}/${id}/complete-part-payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to complete part payment');
   }
+  
+  return response.json();
+},
 };

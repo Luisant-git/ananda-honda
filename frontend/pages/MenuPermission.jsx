@@ -33,8 +33,13 @@ const MenuPermission = () => {
         sales: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false },
         service: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false }
       },
-      reports: { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false },
-
+      reports: { 
+        payment_collection_report: false, 
+        service_payment_collection_report: false, 
+        enquiry_report: false,
+        full_payment_report: false,
+        part_payment_report: false
+      },
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
   };
@@ -97,12 +102,14 @@ const MenuPermission = () => {
       p?.permissions?.dashboard?.sales === true ||
       p?.permissions?.dashboard?.service === true
   );
+  
   const getModuleLabel = (module) => {
     const customLabels = {
       'service_type': 'S - Type of Service',
       'service_payment_mode': 'S - Payment Mode',
       'service_type_of_payment': 'S - Type of Payment',
       'service_type_of_collection': 'S - Type of Collection',
+      'service_type_of_part': 'S - Type of Part',  // Added this
     };
     return customLabels[module] || module.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
@@ -207,10 +214,10 @@ const MenuPermission = () => {
             <h2 className="text-lg sm:text-xl font-bold mb-4 pr-8">Edit Permissions - {selectedRole}</h2>
 
             <div className="space-y-4">
+              {/* Dashboard Section */}
               <label className="flex items-center space-x-2">
                 <div>
                   <div className="font-medium mb-2">Dashboard</div>
-
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -224,7 +231,6 @@ const MenuPermission = () => {
                     />
                     <span>Sales Dashboard</span>
                   </label>
-
                   <label className="flex items-center gap-2 mt-2">
                     <input
                       type="checkbox"
@@ -241,6 +247,7 @@ const MenuPermission = () => {
                 </div>
               </label>
 
+              {/* Master Section - Added service_type_of_part */}
               <div>
                 <label className="flex items-center space-x-2 mb-2">
                   <input type="checkbox" checked={!!editData.master} onChange={() => setEditData(prev => ({ ...prev, master: prev.master ? false : {} }))} className="rounded" />
@@ -248,7 +255,7 @@ const MenuPermission = () => {
                 </label>
                 {editData.master && typeof editData.master === 'object' && (
                   <div className="ml-4 sm:ml-6 space-y-3">
-                    {['customer_details', 'sales_invoice_master', 'jobcard_master','payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment',  'service_type_of_collection', 'service_type','create_enquiry'].map(module => (
+                    {['customer_details', 'sales_invoice_master', 'jobcard_master','payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment', 'service_type_of_collection', 'service_type', 'service_type_of_part', 'create_enquiry'].map(module => (
                       <div key={module}>
                         <label className="flex items-center space-x-2 mb-1">
                           <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : { add: false, edit: false, delete: false } } }))} className="rounded" />
@@ -280,6 +287,7 @@ const MenuPermission = () => {
                 )}
               </div>
 
+              {/* Payment Collection Section */}
               <div>
                 <label className="flex items-center space-x-2 mb-2">
                   <input type="checkbox" checked={!!editData.payment_collection} onChange={() => setEditData(prev => ({ ...prev, payment_collection: prev.payment_collection ? false : { sales: {}, service: {} } }))} className="rounded" />
@@ -309,9 +317,10 @@ const MenuPermission = () => {
                 )}
               </div>
 
+              {/* Reports Section */}
               <div>
                 <label className="flex items-center space-x-2 mb-2">
-                  <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false } }))} className="rounded" />
+                  <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false, full_payment_report: false, part_payment_report: false } }))} className="rounded" />
                   <span className="font-medium">Reports</span>
                 </label>
                 {editData.reports && typeof editData.reports === 'object' && (
@@ -320,10 +329,24 @@ const MenuPermission = () => {
                       <input type="checkbox" checked={editData.reports.payment_collection_report} onChange={() => togglePermission('reports.payment_collection_report')} className="rounded" />
                       <span className="text-sm">Sales Payment Collection Report</span>
                     </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" checked={editData.reports.service_payment_collection_report} onChange={() => togglePermission('reports.service_payment_collection_report')} className="rounded" />
-                      <span className="text-sm">Service Payment Collection Report</span>
-                    </label>
+                    <div className="ml-4 space-y-1">
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" checked={editData.reports.service_payment_collection_report} onChange={() => togglePermission('reports.service_payment_collection_report')} className="rounded" />
+                        <span className="text-sm font-medium">Service Report (Parent)</span>
+                      </label>
+                      {editData.reports.service_payment_collection_report && (
+                        <div className="ml-6 space-y-1">
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" checked={editData.reports.full_payment_report} onChange={() => togglePermission('reports.full_payment_report')} className="rounded" />
+                            <span className="text-sm">- Full Payment Report</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input type="checkbox" checked={editData.reports.part_payment_report} onChange={() => togglePermission('reports.part_payment_report')} className="rounded" />
+                            <span className="text-sm">- Part Payment Report</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.reports.enquiry_report} onChange={() => togglePermission('reports.enquiry_report')} className="rounded" />
                       <span className="text-sm">Enquiry Report</span>
@@ -332,6 +355,7 @@ const MenuPermission = () => {
                 )}
               </div>
 
+              {/* Settings Section */}
               <div>
                 <label className="flex items-center space-x-2 mb-2">
                   <input type="checkbox" checked={!!editData.settings} onChange={() => setEditData(prev => ({ ...prev, settings: prev.settings ? false : {} }))} className="rounded" />

@@ -23,6 +23,9 @@ import ServiceTypeOfCollection from '../pages/ServiceTypeOfCollection';
 import SalesInvoiceMaster from '../pages/SalesInvoiceMaster';
 import ServiceJobCardMaster from '../pages/ServiceJobCardMaster';
 import ServiceType from '../pages/ServiceType';
+import FullPaymentReport from '../pages/FullPaymentReport';
+import PartPaymentReport from '../pages/PartPaymentReport';
+import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -56,6 +59,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ServiceTypeOfPayment user={user} />;
       case 'service_type_of_collection':               
         return <ServiceTypeOfCollection user={user} />;
+      case 'service_type_of_part':
+        return <ServiceTypeOfPart user={user} />;
       case 'sales_invoice_master':
         return <SalesInvoiceMaster user={user} />;
       case 'service_jobcard_master':
@@ -68,6 +73,10 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <Reports />;
       case 'service_reports':
         return <ServiceReports />;
+      case 'full_payment_report':
+        return <FullPaymentReport />;
+      case 'part_payment_report':
+       return <PartPaymentReport />;
       case 'change_password':
         return <ChangePassword />;
       case 'user_management':
