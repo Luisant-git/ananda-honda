@@ -47,7 +47,11 @@ export const serviceTypeOfPartApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        partNo: data.partNo,
+        partDescription: data.partDescription,
+        status: data.status
+      })
     });
     if (!response.ok) {
       const error = await response.json();
@@ -62,7 +66,11 @@ export const serviceTypeOfPartApi = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        partNo: data.partNo,
+        partDescription: data.partDescription,
+        status: data.status
+      })
     });
     if (!response.ok) {
       const error = await response.json();
@@ -80,6 +88,45 @@ export const serviceTypeOfPartApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to delete service part');
+    }
+    return response.json();
+  },
+
+  // Bulk create service parts
+  bulkCreate: async (parts) => {
+    const response = await fetch(`${API_URL}/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ parts })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to bulk create service parts');
+    }
+    return response.json();
+  },
+
+  // Get parts by status
+  getPartsByStatus: async (status) => {
+    const response = await fetch(`${API_URL}/by-status?status=${status}`, { 
+      credentials: 'include' 
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch parts by status');
+    }
+    return response.json();
+  },
+
+  // Get part by part number
+  getByPartNo: async (partNo) => {
+    const response = await fetch(`${API_URL}/by-part-no/${partNo}`, { 
+      credentials: 'include' 
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch part by number');
     }
     return response.json();
   }

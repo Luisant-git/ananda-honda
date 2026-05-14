@@ -38,7 +38,8 @@ const MenuPermission = () => {
         service_payment_collection_report: false, 
         enquiry_report: false,
         full_payment_report: false,
-        part_payment_report: false
+        part_payment_report: false,
+         service_reminder_report: false 
       },
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
@@ -318,42 +319,48 @@ const MenuPermission = () => {
               </div>
 
               {/* Reports Section */}
-              <div>
-                <label className="flex items-center space-x-2 mb-2">
-                  <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false, full_payment_report: false, part_payment_report: false } }))} className="rounded" />
-                  <span className="font-medium">Reports</span>
-                </label>
-                {editData.reports && typeof editData.reports === 'object' && (
-                  <div className="ml-4 sm:ml-6 space-y-1">
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" checked={editData.reports.payment_collection_report} onChange={() => togglePermission('reports.payment_collection_report')} className="rounded" />
-                      <span className="text-sm">Sales Payment Collection Report</span>
-                    </label>
-                    <div className="ml-4 space-y-1">
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" checked={editData.reports.service_payment_collection_report} onChange={() => togglePermission('reports.service_payment_collection_report')} className="rounded" />
-                        <span className="text-sm font-medium">Service Report (Parent)</span>
-                      </label>
-                      {editData.reports.service_payment_collection_report && (
-                        <div className="ml-6 space-y-1">
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" checked={editData.reports.full_payment_report} onChange={() => togglePermission('reports.full_payment_report')} className="rounded" />
-                            <span className="text-sm">- Full Payment Report</span>
-                          </label>
-                          <label className="flex items-center space-x-2">
-                            <input type="checkbox" checked={editData.reports.part_payment_report} onChange={() => togglePermission('reports.part_payment_report')} className="rounded" />
-                            <span className="text-sm">- Part Payment Report</span>
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" checked={editData.reports.enquiry_report} onChange={() => togglePermission('reports.enquiry_report')} className="rounded" />
-                      <span className="text-sm">Enquiry Report</span>
-                    </label>
-                  </div>
-                )}
-              </div>
+              {/* Reports Section */}
+<div>
+  <label className="flex items-center space-x-2 mb-2">
+    <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false, full_payment_report: false, part_payment_report: false, service_reminder_report: false } }))} className="rounded" />
+    <span className="font-medium">Reports</span>
+  </label>
+  {editData.reports && typeof editData.reports === 'object' && (
+    <div className="ml-4 sm:ml-6 space-y-1">
+      <label className="flex items-center space-x-2">
+        <input type="checkbox" checked={editData.reports.payment_collection_report} onChange={() => togglePermission('reports.payment_collection_report')} className="rounded" />
+        <span className="text-sm">Sales Payment Collection Report</span>
+      </label>
+      <div className="ml-4 space-y-1">
+        <label className="flex items-center space-x-2">
+          <input type="checkbox" checked={editData.reports.service_payment_collection_report} onChange={() => togglePermission('reports.service_payment_collection_report')} className="rounded" />
+          <span className="text-sm font-medium">Service Report (Parent)</span>
+        </label>
+        {editData.reports.service_payment_collection_report && (
+          <div className="ml-6 space-y-1">
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={editData.reports.full_payment_report} onChange={() => togglePermission('reports.full_payment_report')} className="rounded" />
+              <span className="text-sm">- Full Payment Report</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={editData.reports.part_payment_report} onChange={() => togglePermission('reports.part_payment_report')} className="rounded" />
+              <span className="text-sm">- Part Payment Report</span>
+            </label>
+            {/* Add Service Reminder Report here */}
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={editData.reports.service_reminder_report} onChange={() => togglePermission('reports.service_reminder_report')} className="rounded" />
+              <span className="text-sm">- Service Reminder Report</span>
+            </label>
+          </div>
+        )}
+      </div>
+      <label className="flex items-center space-x-2">
+        <input type="checkbox" checked={editData.reports.enquiry_report} onChange={() => togglePermission('reports.enquiry_report')} className="rounded" />
+        <span className="text-sm">Enquiry Report</span>
+      </label>
+    </div>
+  )}
+</div>
 
               {/* Settings Section */}
               <div>

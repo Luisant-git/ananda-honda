@@ -439,7 +439,7 @@ const PartPaymentReport = () => {
                       <tr>
                         <th className="px-3 py-2 text-left">SNo</th>
                         <th className="px-3 py-2 text-left">Part No</th>
-                        <th className="px-3 py-2 text-left">Part Name</th>
+                        <th className="px-3 py-2 text-left">Part Description</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -447,7 +447,7 @@ const PartPaymentReport = () => {
                         <tr key={idx} className="border-t border-gray-200">
                           <td className="px-3 py-2">{idx + 1}</td>
                           <td className="px-3 py-2 font-medium">{part.partNo}</td>
-                          <td className="px-3 py-2">{part.partName}</td>
+                          <td className="px-3 py-2">{part.partDescription || part.partName}</td>
                         </tr>
                       ))}
                     </tbody>

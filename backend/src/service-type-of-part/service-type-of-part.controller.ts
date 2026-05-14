@@ -19,13 +19,13 @@ export class ServiceTypeOfPartController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() body: { partNo: string; partName: string; status?: string }) {
+  create(@Body() body: { partNo: string; partDescription: string; status?: string }) {
     return this.serviceTypeOfPartService.create(body);
   }
 
   @Post('bulk')
   @HttpCode(HttpStatus.CREATED)
-  bulkCreate(@Body() body: { parts: Array<{ partNo: string; partName: string; status?: string }> }) {
+  bulkCreate(@Body() body: { parts: Array<{ partNo: string; partDescription: string; status?: string }> }) {
     return this.serviceTypeOfPartService.bulkCreate(body.parts);
   }
 
@@ -57,7 +57,7 @@ export class ServiceTypeOfPartController {
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { partNo?: string; partName?: string; status?: string }
+    @Body() body: { partNo?: string; partDescription?: string; status?: string }
   ) {
     return this.serviceTypeOfPartService.update(id, body);
   }

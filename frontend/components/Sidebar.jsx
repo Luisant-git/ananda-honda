@@ -175,63 +175,70 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             )}
 
             {/* Reports - Main Parent */}
-            {(permissions?.reports?.payment_collection_report || 
-              permissions?.reports?.service_payment_collection_report || 
-              permissions?.reports?.enquiry_report ||
-              permissions?.reports?.full_payment_report ||
-              permissions?.reports?.part_payment_report) && (
-              <NavGroup menuKey="reports" label="Reports" icon={<ReportIcon />}>
-                
-                {/* Sales Report */}
-                {permissions?.reports?.payment_collection_report && (
-                  <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>
-                )}
-                
-                {/* Service Report */}
-                {permissions?.reports?.service_payment_collection_report && (
-                  <li>
-                    <div>
-                      <div
-                        onClick={() => toggleMenu('service_report')}
-                        className={`flex items-center w-full p-2 text-base font-normal rounded-lg transition-colors duration-150 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary`}
-                        style={{ paddingLeft: '2.75rem' }}
-                      >
-                        <span className="flex-1 text-left">Service Report</span>
-                        <ChevronDownIcon
-                          className={`w-4 h-4 transform transition-transform duration-200 ${
-                            openMenus.service_report ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </div>
-                      <div
-                        className={`transition-all duration-300 ease-in-out ${
-                          openMenus.service_report ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                        } overflow-hidden`}
-                      >
-                        <ul className="space-y-1 mt-1">
-                          {permissions?.reports?.full_payment_report && (
-                            <li>
-                              <NavLink view="full_payment_report" label="Full Payment Report" isSubmenu />
-                            </li>
-                          )}
-                          {permissions?.reports?.part_payment_report && (
-                            <li>
-                              <NavLink view="part_payment_report" label="Part Payment Report" isSubmenu />
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    </div>
-                  </li>
-                )}
-                
-                {/* Enquiry Report */}
-                {permissions?.reports?.enquiry_report && (
-                  <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>
-                )}
-                
-              </NavGroup>
-            )}
+          {/* Reports - Main Parent */}
+{(permissions?.reports?.payment_collection_report || 
+  permissions?.reports?.service_payment_collection_report || 
+  permissions?.reports?.enquiry_report ||
+  permissions?.reports?.full_payment_report ||
+  permissions?.reports?.part_payment_report ||
+  permissions?.reports?.service_reminder_report) && (
+  <NavGroup menuKey="reports" label="Reports" icon={<ReportIcon />}>
+    
+    {/* Sales Report */}
+    {permissions?.reports?.payment_collection_report && (
+      <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>
+    )}
+    
+    {/* Service Report */}
+    {permissions?.reports?.service_payment_collection_report && (
+      <li>
+        <div>
+          <div
+            onClick={() => toggleMenu('service_report')}
+            className={`flex items-center w-full p-2 text-base font-normal rounded-lg transition-colors duration-150 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary`}
+            style={{ paddingLeft: '2.75rem' }}
+          >
+            <span className="flex-1 text-left">Service Report</span>
+            <ChevronDownIcon
+              className={`w-4 h-4 transform transition-transform duration-200 ${
+                openMenus.service_report ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
+          <div
+            className={`transition-all duration-300 ease-in-out ${
+              openMenus.service_report ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+            } overflow-hidden`}
+          >
+            <ul className="space-y-1 mt-1">
+              {permissions?.reports?.full_payment_report && (
+                <li>
+                  <NavLink view="full_payment_report" label="Full Payment Report" isSubmenu />
+                </li>
+              )}
+              {permissions?.reports?.part_payment_report && (
+                <li>
+                  <NavLink view="part_payment_report" label="Part Payment Report" isSubmenu />
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </li>
+    )}
+    
+    {/* Service Reminder Report - New */}
+    {permissions?.reports?.service_reminder_report && (
+      <li><NavLink view="service_reminder_report" label="Service Reminder Report" isSubmenu /></li>
+    )}
+    
+    {/* Enquiry Report */}
+    {permissions?.reports?.enquiry_report && (
+      <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>
+    )}
+    
+  </NavGroup>
+)}
 
             {permissions?.settings && (
               <NavGroup menuKey="settings" label="Settings" icon={<SettingsIcon />}>

@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ServiceTypeOfPartService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { partNo: string; partName: string; status?: string }) {
+  async create(data: { partNo: string; partDescription: string; status?: string }) {
     // Check if part number already exists
     const existingPart = await this.prisma.serviceTypeOfPart.findUnique({
       where: { partNo: data.partNo }
@@ -18,16 +18,26 @@ export class ServiceTypeOfPartService {
     return this.prisma.serviceTypeOfPart.create({
       data: {
         partNo: data.partNo,
-        partName: data.partName,
+        partName: data.partDescription, // Map partDescription to partName in DB
         status: data.status || 'Enable'
       }
     });
   }
 
   async findAll() {
-    return this.prisma.serviceTypeOfPart.findMany({
+    const parts = await this.prisma.serviceTypeOfPart.findMany({
       orderBy: { createdAt: 'desc' }
     });
+    
+    // Transform partName to partDescription for response
+    return parts.map(part => ({
+      id: part.id,
+      partNo: part.partNo,
+      partDescription: part.partName,
+      status: part.status,
+      createdAt: part.createdAt,
+      updatedAt: part.updatedAt
+    }));
   }
 
   async findOne(id: number) {
@@ -39,7 +49,14 @@ export class ServiceTypeOfPartService {
       throw new NotFoundException(`Service part with ID ${id} not found`);
     }
 
-    return part;
+    return {
+      id: part.id,
+      partNo: part.partNo,
+      partDescription: part.partName,
+      status: part.status,
+      createdAt: part.createdAt,
+      updatedAt: part.updatedAt
+    };
   }
 
   async findByPartNo(partNo: string) {
@@ -51,10 +68,17 @@ export class ServiceTypeOfPartService {
       throw new NotFoundException(`Service part with number ${partNo} not found`);
     }
 
-    return part;
+    return {
+      id: part.id,
+      partNo: part.partNo,
+      partDescription: part.partName,
+      status: part.status,
+      createdAt: part.createdAt,
+      updatedAt: part.updatedAt
+    };
   }
 
-  async update(id: number, data: { partNo?: string; partName?: string; status?: string }) {
+  async update(id: number, data: { partNo?: string; partDescription?: string; status?: string }) {
     // Check if part exists
     await this.findOne(id);
 
@@ -69,10 +93,24 @@ export class ServiceTypeOfPartService {
       }
     }
 
-    return this.prisma.serviceTypeOfPart.update({
+    const updateData: any = {};
+    if (data.partNo) updateData.partNo = data.partNo;
+    if (data.partDescription) updateData.partName = data.partDescription;
+    if (data.status) updateData.status = data.status;
+
+    const updatedPart = await this.prisma.serviceTypeOfPart.update({
       where: { id },
-      data
+      data: updateData
     });
+
+    return {
+      id: updatedPart.id,
+      partNo: updatedPart.partNo,
+      partDescription: updatedPart.partName,
+      status: updatedPart.status,
+      createdAt: updatedPart.createdAt,
+      updatedAt: updatedPart.updatedAt
+    };
   }
 
   async remove(id: number) {
@@ -84,7 +122,7 @@ export class ServiceTypeOfPartService {
     });
   }
 
-  async bulkCreate(parts: Array<{ partNo: string; partName: string; status?: string }>) {
+  async bulkCreate(parts: Array<{ partNo: string; partDescription: string; status?: string }>) {
     const results = {
       success: [] as any[],
       failed: [] as any[],
@@ -106,11 +144,16 @@ export class ServiceTypeOfPartService {
         const created = await this.prisma.serviceTypeOfPart.create({
           data: {
             partNo: part.partNo,
-            partName: part.partName,
+            partName: part.partDescription,
             status: part.status || 'Enable'
           }
         });
-        results.success.push(created);
+        results.success.push({
+          id: created.id,
+          partNo: created.partNo,
+          partDescription: created.partName,
+          status: created.status
+        });
       } catch (error) {
         results.failed.push({ ...part, error: error.message });
       }
@@ -120,16 +163,30 @@ export class ServiceTypeOfPartService {
   }
 
   async getEnabledParts() {
-    return this.prisma.serviceTypeOfPart.findMany({
+    const parts = await this.prisma.serviceTypeOfPart.findMany({
       where: { status: 'Enable' },
       orderBy: { partName: 'asc' }
     });
+    
+    return parts.map(part => ({
+      id: part.id,
+      partNo: part.partNo,
+      partDescription: part.partName,
+      status: part.status
+    }));
   }
 
   async getPartsByStatus(status: string) {
-    return this.prisma.serviceTypeOfPart.findMany({
+    const parts = await this.prisma.serviceTypeOfPart.findMany({
       where: { status },
       orderBy: { partName: 'asc' }
     });
+    
+    return parts.map(part => ({
+      id: part.id,
+      partNo: part.partNo,
+      partDescription: part.partName,
+      status: part.status
+    }));
   }
 }

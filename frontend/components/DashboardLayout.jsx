@@ -26,6 +26,7 @@ import ServiceType from '../pages/ServiceType';
 import FullPaymentReport from '../pages/FullPaymentReport';
 import PartPaymentReport from '../pages/PartPaymentReport';
 import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
+import ServiceReminderReport from '../pages/ServiceReminderReport';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -77,6 +78,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <FullPaymentReport />;
       case 'part_payment_report':
        return <PartPaymentReport />;
+      case 'service_reminder_report':  
+        return <ServiceReminderReport user={user} />;
       case 'change_password':
         return <ChangePassword />;
       case 'user_management':

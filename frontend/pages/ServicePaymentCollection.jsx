@@ -55,7 +55,7 @@ const ServicePaymentCollection = ({ user }) => {
   const [isNewPartModalOpen, setIsNewPartModalOpen] = useState(false);
   const [newPartData, setNewPartData] = useState({
     partNo: '',
-    partName: '',
+    partDescription: '',
     status: 'Enable'
   });
   
@@ -138,7 +138,7 @@ const handleView = (payment) => {
   // Filter parts based on search
   const filteredParts = availableParts.filter(part =>
     part.partNo.toLowerCase().includes(partSearchTerm.toLowerCase()) ||
-    part.partName.toLowerCase().includes(partSearchTerm.toLowerCase())
+    (part.partDescription || part.partName || '').toLowerCase().includes(partSearchTerm.toLowerCase())
   );
 
   // Add part to payment
@@ -148,7 +148,7 @@ const handleView = (payment) => {
       return;
     }
     setSelectedParts([...selectedParts, part]);
-    toast.success(`${part.partName} added`);
+    toast.success(`${part.partDescription || part.partName} added`);
     setIsPartDropdownOpen(false);
     setPartSearchTerm('');
   };
@@ -161,8 +161,8 @@ const handleView = (payment) => {
 
   // Add new part to master
   const handleAddNewPart = async () => {
-    if (!newPartData.partNo || !newPartData.partName) {
-      toast.error('Part No and Part Name are required');
+    if (!newPartData.partNo || !newPartData.partDescription) {
+      toast.error('Part No and Part Description are required');
       return;
     }
 
@@ -170,7 +170,7 @@ const handleView = (payment) => {
       const newPart = await serviceTypeOfPartApi.create(newPartData);
       toast.success('Part added to master successfully!');
       setIsNewPartModalOpen(false);
-      setNewPartData({ partNo: '', partName: '', status: 'Enable' });
+      setNewPartData({ partNo: '', partDescription: '', status: 'Enable' });
       await fetchAvailableParts();
       // Auto-add the new part to payment
       setSelectedParts([...selectedParts, newPart]);
@@ -1838,7 +1838,7 @@ const handleCustomerSelect = async (customer) => {
                           className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
                         >
                           <div className="font-medium">{part.partNo}</div>
-                          <div className="text-sm text-brand-text-secondary">{part.partName}</div>
+                          <div className="text-sm text-brand-text-secondary">{part.partDescription || part.partName}</div>
                         </div>
                       ))
                     )}
@@ -1857,7 +1857,7 @@ const handleCustomerSelect = async (customer) => {
                       <div>
                         <span className="font-medium text-sm">{index + 1}. {part.partNo}</span>
                         <span className="text-gray-500 mx-2">-</span>
-                        <span className="text-sm text-brand-text-secondary">{part.partName}</span>
+                        <span className="text-sm text-brand-text-secondary">{part.partDescription || part.partName}</span>
                       </div>
                       <button
                         type="button"
@@ -1952,7 +1952,7 @@ const handleCustomerSelect = async (customer) => {
       </Modal>
 
       {/* Add New Part Modal */}
-      <Modal isOpen={isNewPartModalOpen} onClose={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partName: '', status: 'Enable' }); }} title="Add New Part to Master" maxWidth="max-w-md">
+      <Modal isOpen={isNewPartModalOpen} onClose={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', status: 'Enable' }); }} title="Add New Part to Master" maxWidth="max-w-md">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part No <span className="text-red-500">*</span></label>
@@ -1966,13 +1966,13 @@ const handleCustomerSelect = async (customer) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part Description <span className="text-red-500">*</span></label>
             <input
               type="text"
-              value={newPartData.partName}
-              onChange={(e) => setNewPartData({ ...newPartData, partName: e.target.value })}
+              value={newPartData.partDescription}
+              onChange={(e) => setNewPartData({ ...newPartData, partDescription: e.target.value })}
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-              placeholder="Enter part name"
+              placeholder="Enter part description"
               required
             />
           </div>
@@ -1990,7 +1990,7 @@ const handleCustomerSelect = async (customer) => {
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partName: '', status: 'Enable' }); }}
+              onClick={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', status: 'Enable' }); }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
               Cancel
@@ -2125,7 +2125,7 @@ const handleCustomerSelect = async (customer) => {
                 <tr>
                   <th className="px-3 py-2 text-left">SNo</th>
                   <th className="px-3 py-2 text-left">Part No</th>
-                  <th className="px-3 py-2 text-left">Part Name</th>
+                  <th className="px-3 py-2 text-left">Part Description</th>
                 </tr>
               </thead>
               <tbody>
@@ -2133,7 +2133,7 @@ const handleCustomerSelect = async (customer) => {
                   <tr key={idx} className="border-t border-brand-border">
                     <td className="px-3 py-2">{idx + 1}</td>
                     <td className="px-3 py-2">{part.partNo}</td>
-                    <td className="px-3 py-2">{part.partName}</td>
+                    <td className="px-3 py-2">{part.partDescription || part.partName}</td>
                   </tr>
                 ))}
               </tbody>

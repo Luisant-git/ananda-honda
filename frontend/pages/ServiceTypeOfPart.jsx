@@ -16,11 +16,12 @@ const ServiceTypeOfPart = ({ user }) => {
   const [partToDelete, setPartToDelete] = useState(null);
   const [formData, setFormData] = useState({ 
     partNo: '', 
-    partName: '', 
+    partDescription: '', 
     status: 'Enable' 
   });
   const [permissions, setPermissions] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const fileInputRef = useRef(null);
 
@@ -39,12 +40,13 @@ const ServiceTypeOfPart = ({ user }) => {
   };
 
   const fetchServiceParts = async (searchTerm = search) => {
+    setLoading(true);
     try {
       const data = await serviceTypeOfPartApi.getAll();
       const filteredData = searchTerm 
         ? data.filter(part => 
             part.partNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            part.partName.toLowerCase().includes(searchTerm.toLowerCase())
+            (part.partDescription || '').toLowerCase().includes(searchTerm.toLowerCase())
           )
         : data;
       
@@ -52,7 +54,7 @@ const ServiceTypeOfPart = ({ user }) => {
         sNo: index + 1,
         id: part.id,
         partNo: part.partNo,
-        partName: part.partName,
+        partDescription: part.partDescription || part.partName,
         status: part.status,
         createdAt: part.createdAt,
         updatedAt: part.updatedAt
@@ -61,6 +63,8 @@ const ServiceTypeOfPart = ({ user }) => {
     } catch (error) {
       console.error('Error fetching service parts:', error);
       toast.error('Failed to fetch records');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,27 +79,38 @@ const ServiceTypeOfPart = ({ user }) => {
       toast.error('Part No is required');
       return;
     }
-    if (!formData.partName.trim()) {
-      toast.error('Part Name is required');
+    if (!formData.partDescription.trim()) {
+      toast.error('Part Description is required');
       return;
     }
 
+    setLoading(true);
     try {
       if (isEditMode) {
-        await serviceTypeOfPartApi.update(editingPart.id, formData);
+        await serviceTypeOfPartApi.update(editingPart.id, {
+          partNo: formData.partNo,
+          partDescription: formData.partDescription,
+          status: formData.status
+        });
         toast.success('Service part updated successfully!');
       } else {
-        await serviceTypeOfPartApi.create(formData);
+        await serviceTypeOfPartApi.create({
+          partNo: formData.partNo,
+          partDescription: formData.partDescription,
+          status: formData.status
+        });
         toast.success('Service part created successfully!');
       }
       setIsModalOpen(false);
       setIsEditMode(false);
       setEditingPart(null);
-      setFormData({ partNo: '', partName: '', status: 'Enable' });
+      setFormData({ partNo: '', partDescription: '', status: 'Enable' });
       fetchServiceParts(search);
     } catch (error) {
       toast.error(error.message || 'Error saving service part');
       console.error('Error saving service part:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,7 +119,7 @@ const ServiceTypeOfPart = ({ user }) => {
     setEditingPart(part);
     setFormData({
       partNo: part.partNo,
-      partName: part.partName,
+      partDescription: part.partDescription,
       status: part.status
     });
     setIsModalOpen(true);
@@ -116,6 +131,7 @@ const ServiceTypeOfPart = ({ user }) => {
   };
 
   const confirmDelete = async () => {
+    setLoading(true);
     try {
       await serviceTypeOfPartApi.delete(partToDelete.id);
       toast.success('Service part deleted successfully!');
@@ -125,12 +141,14 @@ const ServiceTypeOfPart = ({ user }) => {
     } catch (error) {
       toast.error(error.message || 'Error deleting service part');
       console.error('Error deleting service part:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleClearAll = async () => {
+    setLoading(true);
     try {
-      // Fetch all parts and delete one by one (or use bulk delete API if available)
       const allParts = await serviceTypeOfPartApi.getAll();
       for (const part of allParts) {
         await serviceTypeOfPartApi.delete(part.id);
@@ -142,21 +160,23 @@ const ServiceTypeOfPart = ({ user }) => {
     } catch (error) {
       toast.error('Error clearing records');
       console.error('Error clearing records:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Export to CSV
   const exportToCSV = () => {
     try {
-      const headers = columns.map(col => col.header).join(',');
-      const rows = serviceParts.map(row => columns.map(col => {
-        const val = row[col.accessor];
-        if (col.accessor === 'createdAt' && val) {
-          return `"${new Date(val).toLocaleDateString('en-GB')}"`;
-        }
-        return `"${(val || '').toString().replace(/"/g, '""')}"`;
-      }).join(',')).join('\n');
-      const content = headers + '\n' + rows;
+      const headers = ['SNo', 'Part No', 'Part Description', 'Status', 'Created Date'];
+      const rows = serviceParts.map(row => [
+        row.sNo,
+        row.partNo,
+        row.partDescription,
+        row.status,
+        row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB') : ''
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+      const content = headers.join(',') + '\n' + rows.join('\n');
       const blob = new Blob([content], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -176,7 +196,7 @@ const ServiceTypeOfPart = ({ user }) => {
     try {
       const exportData = serviceParts.map(part => ({
         'Part No': part.partNo,
-        'Part Name': part.partName,
+        'Part Description': part.partDescription,
         'Status': part.status,
         'Created Date': part.createdAt ? new Date(part.createdAt).toLocaleDateString('en-GB') : '',
       }));
@@ -186,8 +206,8 @@ const ServiceTypeOfPart = ({ user }) => {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'ServiceParts');
       
       worksheet['!cols'] = [
-        { wch: 15 },
-        { wch: 30 },
+        { wch: 20 },
+        { wch: 40 },
         { wch: 10 },
         { wch: 15 }
       ];
@@ -204,9 +224,9 @@ const ServiceTypeOfPart = ({ user }) => {
   const downloadTemplate = () => {
     try {
       const templateData = [
-        { 'Part No': 'PART001', 'Part Name': 'Brake Pad', 'Status': 'Enable' },
-        { 'Part No': 'PART002', 'Part Name': 'Oil Filter', 'Status': 'Enable' },
-        { 'Part No': 'PART003', 'Part Name': 'Air Filter', 'Status': 'Disable' },
+        { 'Part Number': '04053-K0Z-901', 'Part Description': 'CHAIN SPROCKET KIT - CB350', 'Status': 'Enable' },
+        { 'Part Number': '05030-KSP-861', 'Part Description': 'RACE CONE GREASE KIT-MOTORCYCL', 'Status': 'Enable' },
+        { 'Part Number': 'PART003', 'Part Description': 'BRAKE PAD SET', 'Status': 'Disable' },
       ];
 
       const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -214,8 +234,8 @@ const ServiceTypeOfPart = ({ user }) => {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
       
       worksheet['!cols'] = [
-        { wch: 15 },
-        { wch: 30 },
+        { wch: 20 },
+        { wch: 40 },
         { wch: 10 }
       ];
 
@@ -263,16 +283,21 @@ const ServiceTypeOfPart = ({ user }) => {
         const errors = [];
 
         for (const row of jsonData) {
-          const partNo = row['Part No'] || row['partNo'] || row['PART_NO'] || row['Part_No'];
-          const partName = row['Part Name'] || row['partName'] || row['PART_NAME'] || row['Part_Name'];
+          // Map "Part Number" to partNo
+          let partNo = row['Part Number'] || row['Part No'] || row['partNo'] || row['PART_NO'];
+          
+          // Map "Part Description" to partDescription
+          let partDescription = row['Part Description'] || row['Part Name'] || row['partName'] || row['PART_NAME'];
+          
           const status = row['Status'] || row['status'] || 'Enable';
 
-          if (!partNo || !partName) {
+          if (!partNo || !partDescription) {
             errorCount++;
             errors.push(`Missing required fields: ${JSON.stringify(row)}`);
             continue;
           }
 
+          // Check if part already exists
           const existingPart = serviceParts.find(p => p.partNo === partNo);
           if (existingPart) {
             duplicateCount++;
@@ -282,7 +307,7 @@ const ServiceTypeOfPart = ({ user }) => {
           try {
             await serviceTypeOfPartApi.create({
               partNo: partNo.toString().trim(),
-              partName: partName.toString().trim(),
+              partDescription: partDescription.toString().trim(),
               status: status === 'Enable' || status === 'enable' ? 'Enable' : 'Disable'
             });
             successCount++;
@@ -325,7 +350,7 @@ const ServiceTypeOfPart = ({ user }) => {
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Part No', accessor: 'partNo' },
-    { header: 'Part Name', accessor: 'partName' },
+    { header: 'Part Description', accessor: 'partDescription' },
     { header: 'Status', accessor: 'status' },
     {
       header: 'Created Date',
@@ -334,9 +359,20 @@ const ServiceTypeOfPart = ({ user }) => {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent mx-auto"></div>
+          <p className="mt-2 text-brand-text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header with buttons at top right */}
+      {/* Header with buttons */}
       <div className="flex justify-between items-center flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-brand-text-primary">Service Type of Part</h1>
         <div className="flex gap-2 flex-wrap">
@@ -344,7 +380,7 @@ const ServiceTypeOfPart = ({ user }) => {
             onClick={downloadTemplate}
             className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
           >
-            Download Template
+            📥 Download Template
           </button>
           {serviceParts.length > 0 && (
             <>
@@ -360,7 +396,12 @@ const ServiceTypeOfPart = ({ user }) => {
               >
                 Export Excel
               </button>
-             
+              <button
+                onClick={() => setIsClearModalOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+              >
+                Clear All
+              </button>
             </>
           )}
           {permissions?.master?.service_type_of_part?.add && (
@@ -413,7 +454,7 @@ const ServiceTypeOfPart = ({ user }) => {
               </label>
             </div>
             <p className="text-xs text-brand-text-secondary mt-1">
-              Expected columns: Part No, Part Name, Status (Enable/Disable)
+              Expected columns: Part Number, Part Description, Status (Enable/Disable)
             </p>
           </div>
 
@@ -428,7 +469,7 @@ const ServiceTypeOfPart = ({ user }) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by Part No or Part Name..."
+                placeholder="Search by Part No or Part Description..."
                 className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               />
               <button
@@ -463,7 +504,7 @@ const ServiceTypeOfPart = ({ user }) => {
             {permissions?.master?.service_type_of_part?.edit && (
               <button
                 onClick={() => handleEdit(part)}
-                className="text-brand-accent hover:underline text-sm font-medium"
+                className="text-blue-600 hover:underline text-sm font-medium"
               >
                 Edit
               </button>
@@ -499,14 +540,14 @@ const ServiceTypeOfPart = ({ user }) => {
 
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Part Name <span className="text-red-500">*</span>
+              Part Description <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={formData.partName}
-              onChange={(e) => setFormData({...formData, partName: e.target.value})}
+              value={formData.partDescription}
+              onChange={(e) => setFormData({...formData, partDescription: e.target.value})}
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              placeholder="Enter part name"
+              placeholder="Enter part description"
               required
             />
           </div>
@@ -533,7 +574,7 @@ const ServiceTypeOfPart = ({ user }) => {
                 setIsModalOpen(false);
                 setIsEditMode(false);
                 setEditingPart(null);
-                setFormData({ partNo: '', partName: '', status: 'Enable' });
+                setFormData({ partNo: '', partDescription: '', status: 'Enable' });
               }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
@@ -541,7 +582,8 @@ const ServiceTypeOfPart = ({ user }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50"
             >
               {isEditMode ? 'Update' : 'Create'}
             </button>
@@ -553,7 +595,7 @@ const ServiceTypeOfPart = ({ user }) => {
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Delete">
         <div className="space-y-4">
           <p className="text-brand-text-primary">
-            Are you sure you want to delete service part <strong>{partToDelete?.partNo} - {partToDelete?.partName}</strong>?
+            Are you sure you want to delete service part <strong>{partToDelete?.partNo} - {partToDelete?.partDescription}</strong>?
           </p>
           <div className="flex justify-end gap-4">
             <button
@@ -564,7 +606,8 @@ const ServiceTypeOfPart = ({ user }) => {
             </button>
             <button
               onClick={confirmDelete}
-              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
             >
               Delete
             </button>
@@ -589,7 +632,8 @@ const ServiceTypeOfPart = ({ user }) => {
               </button>
               <button
                 onClick={handleClearAll}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
+                disabled={loading}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50"
               >
                 Clear All
               </button>
