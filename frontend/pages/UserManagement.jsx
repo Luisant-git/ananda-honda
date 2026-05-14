@@ -134,6 +134,7 @@ const UserManagement = () => {
               <option value="SUPER_ADMIN">Super Admin</option>
               <option value="ADMIN">Admin</option>
               <option value="ENQUIRY">Enquiry</option>
+              <option value="PART_EXECUTIVE">Part Executive</option>
               <option value="ACCOUNT">Account</option>
               <option value="SERVICE">Service</option>
             </select>
