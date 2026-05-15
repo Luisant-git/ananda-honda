@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ServiceTypeOfPartService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { partNo: string; partDescription: string; status?: string }) {
+  async create(data: { partNo: string; partDescription: string; Model?: string; status?: string }) {
     // Check if part number already exists
     const existingPart = await this.prisma.serviceTypeOfPart.findUnique({
       where: { partNo: data.partNo }
@@ -18,7 +18,8 @@ export class ServiceTypeOfPartService {
     return this.prisma.serviceTypeOfPart.create({
       data: {
         partNo: data.partNo,
-        partName: data.partDescription, // Map partDescription to partName in DB
+        partName: data.partDescription,
+        Model: data.Model || null,
         status: data.status || 'Enable'
       }
     });
@@ -29,11 +30,11 @@ export class ServiceTypeOfPartService {
       orderBy: { createdAt: 'desc' }
     });
     
-    // Transform partName to partDescription for response
     return parts.map(part => ({
       id: part.id,
       partNo: part.partNo,
       partDescription: part.partName,
+      Model: part.Model || 'N/A',
       status: part.status,
       createdAt: part.createdAt,
       updatedAt: part.updatedAt
@@ -53,6 +54,7 @@ export class ServiceTypeOfPartService {
       id: part.id,
       partNo: part.partNo,
       partDescription: part.partName,
+      Model: part.Model || 'N/A',
       status: part.status,
       createdAt: part.createdAt,
       updatedAt: part.updatedAt
@@ -72,13 +74,14 @@ export class ServiceTypeOfPartService {
       id: part.id,
       partNo: part.partNo,
       partDescription: part.partName,
+      Model: part.Model || 'N/A',
       status: part.status,
       createdAt: part.createdAt,
       updatedAt: part.updatedAt
     };
   }
 
-  async update(id: number, data: { partNo?: string; partDescription?: string; status?: string }) {
+  async update(id: number, data: { partNo?: string; partDescription?: string; Model?: string; status?: string }) {
     // Check if part exists
     await this.findOne(id);
 
@@ -96,6 +99,7 @@ export class ServiceTypeOfPartService {
     const updateData: any = {};
     if (data.partNo) updateData.partNo = data.partNo;
     if (data.partDescription) updateData.partName = data.partDescription;
+    if (data.Model !== undefined) updateData.Model = data.Model || null;
     if (data.status) updateData.status = data.status;
 
     const updatedPart = await this.prisma.serviceTypeOfPart.update({
@@ -107,6 +111,7 @@ export class ServiceTypeOfPartService {
       id: updatedPart.id,
       partNo: updatedPart.partNo,
       partDescription: updatedPart.partName,
+      Model: updatedPart.Model || 'N/A',
       status: updatedPart.status,
       createdAt: updatedPart.createdAt,
       updatedAt: updatedPart.updatedAt
@@ -122,7 +127,7 @@ export class ServiceTypeOfPartService {
     });
   }
 
-  async bulkCreate(parts: Array<{ partNo: string; partDescription: string; status?: string }>) {
+  async bulkCreate(parts: Array<{ partNo: string; partDescription: string; Model?: string; status?: string }>) {
     const results = {
       success: [] as any[],
       failed: [] as any[],
@@ -145,6 +150,7 @@ export class ServiceTypeOfPartService {
           data: {
             partNo: part.partNo,
             partName: part.partDescription,
+            Model: part.Model || null,
             status: part.status || 'Enable'
           }
         });
@@ -152,6 +158,7 @@ export class ServiceTypeOfPartService {
           id: created.id,
           partNo: created.partNo,
           partDescription: created.partName,
+          Model: created.Model || 'N/A',
           status: created.status
         });
       } catch (error) {
@@ -172,6 +179,7 @@ export class ServiceTypeOfPartService {
       id: part.id,
       partNo: part.partNo,
       partDescription: part.partName,
+      Model: part.Model || 'N/A',
       status: part.status
     }));
   }
@@ -186,6 +194,7 @@ export class ServiceTypeOfPartService {
       id: part.id,
       partNo: part.partNo,
       partDescription: part.partName,
+      Model: part.Model || 'N/A',
       status: part.status
     }));
   }

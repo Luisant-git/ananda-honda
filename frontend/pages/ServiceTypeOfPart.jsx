@@ -16,7 +16,8 @@ const ServiceTypeOfPart = ({ user }) => {
   const [partToDelete, setPartToDelete] = useState(null);
   const [formData, setFormData] = useState({ 
     partNo: '', 
-    partDescription: '', 
+    partDescription: '',
+    Model: '',  // Changed from partModel to Model
     status: 'Enable' 
   });
   const [permissions, setPermissions] = useState(null);
@@ -46,7 +47,8 @@ const ServiceTypeOfPart = ({ user }) => {
       const filteredData = searchTerm 
         ? data.filter(part => 
             part.partNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (part.partDescription || '').toLowerCase().includes(searchTerm.toLowerCase())
+            (part.partDescription || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (part.Model || '').toLowerCase().includes(searchTerm.toLowerCase())  // Changed from partModel to Model
           )
         : data;
       
@@ -55,6 +57,7 @@ const ServiceTypeOfPart = ({ user }) => {
         id: part.id,
         partNo: part.partNo,
         partDescription: part.partDescription || part.partName,
+        Model: part.Model || 'N/A',  // Changed from partModel to Model
         status: part.status,
         createdAt: part.createdAt,
         updatedAt: part.updatedAt
@@ -86,25 +89,24 @@ const ServiceTypeOfPart = ({ user }) => {
 
     setLoading(true);
     try {
+      const submitData = {
+        partNo: formData.partNo,
+        partDescription: formData.partDescription,
+        Model: formData.Model || null,  // Changed from partModel to Model
+        status: formData.status
+      };
+
       if (isEditMode) {
-        await serviceTypeOfPartApi.update(editingPart.id, {
-          partNo: formData.partNo,
-          partDescription: formData.partDescription,
-          status: formData.status
-        });
+        await serviceTypeOfPartApi.update(editingPart.id, submitData);
         toast.success('Service part updated successfully!');
       } else {
-        await serviceTypeOfPartApi.create({
-          partNo: formData.partNo,
-          partDescription: formData.partDescription,
-          status: formData.status
-        });
+        await serviceTypeOfPartApi.create(submitData);
         toast.success('Service part created successfully!');
       }
       setIsModalOpen(false);
       setIsEditMode(false);
       setEditingPart(null);
-      setFormData({ partNo: '', partDescription: '', status: 'Enable' });
+      setFormData({ partNo: '', partDescription: '', Model: '', status: 'Enable' });  // Changed from partModel to Model
       fetchServiceParts(search);
     } catch (error) {
       toast.error(error.message || 'Error saving service part');
@@ -120,6 +122,7 @@ const ServiceTypeOfPart = ({ user }) => {
     setFormData({
       partNo: part.partNo,
       partDescription: part.partDescription,
+      Model: part.Model !== 'N/A' ? part.Model : '',  // Changed from partModel to Model
       status: part.status
     });
     setIsModalOpen(true);
@@ -168,11 +171,12 @@ const ServiceTypeOfPart = ({ user }) => {
   // Export to CSV
   const exportToCSV = () => {
     try {
-      const headers = ['SNo', 'Part No', 'Part Description', 'Status', 'Created Date'];
+      const headers = ['SNo', 'Part No', 'Part Description', 'Model', 'Status', 'Created Date'];  // Changed header
       const rows = serviceParts.map(row => [
         row.sNo,
         row.partNo,
         row.partDescription,
+        row.Model || 'N/A',  // Changed from partModel to Model
         row.status,
         row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB') : ''
       ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
@@ -197,6 +201,7 @@ const ServiceTypeOfPart = ({ user }) => {
       const exportData = serviceParts.map(part => ({
         'Part No': part.partNo,
         'Part Description': part.partDescription,
+        'Model': part.Model || 'N/A',  // Changed from partModel to Model
         'Status': part.status,
         'Created Date': part.createdAt ? new Date(part.createdAt).toLocaleDateString('en-GB') : '',
       }));
@@ -208,6 +213,7 @@ const ServiceTypeOfPart = ({ user }) => {
       worksheet['!cols'] = [
         { wch: 20 },
         { wch: 40 },
+        { wch: 20 },
         { wch: 10 },
         { wch: 15 }
       ];
@@ -224,9 +230,9 @@ const ServiceTypeOfPart = ({ user }) => {
   const downloadTemplate = () => {
     try {
       const templateData = [
-        { 'Part Number': '04053-K0Z-901', 'Part Description': 'CHAIN SPROCKET KIT - CB350', 'Status': 'Enable' },
-        { 'Part Number': '05030-KSP-861', 'Part Description': 'RACE CONE GREASE KIT-MOTORCYCL', 'Status': 'Enable' },
-        { 'Part Number': 'PART003', 'Part Description': 'BRAKE PAD SET', 'Status': 'Disable' },
+        { 'Part Number': '04053-K0Z-901', 'Part Description': 'CHAIN SPROCKET KIT - CB350', 'Model': 'CB350', 'Status': 'Enable' },
+        { 'Part Number': '05030-KSP-861', 'Part Description': 'RACE CONE GREASE KIT-MOTORCYCL', 'Model': 'N/A', 'Status': 'Enable' },
+        { 'Part Number': 'PART003', 'Part Description': 'BRAKE PAD SET', 'Model': 'N/A', 'Status': 'Disable' },
       ];
 
       const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -236,6 +242,7 @@ const ServiceTypeOfPart = ({ user }) => {
       worksheet['!cols'] = [
         { wch: 20 },
         { wch: 40 },
+        { wch: 15 },
         { wch: 10 }
       ];
 
@@ -289,6 +296,9 @@ const ServiceTypeOfPart = ({ user }) => {
           // Map "Part Description" to partDescription
           let partDescription = row['Part Description'] || row['Part Name'] || row['partName'] || row['PART_NAME'];
           
+          // Map "Model" - default to 'N/A' if not provided
+          let Model = row['Model'] || row['model'] || row['MODEL'] || 'N/A';  // Changed from partModel to Model
+          
           const status = row['Status'] || row['status'] || 'Enable';
 
           if (!partNo || !partDescription) {
@@ -308,6 +318,7 @@ const ServiceTypeOfPart = ({ user }) => {
             await serviceTypeOfPartApi.create({
               partNo: partNo.toString().trim(),
               partDescription: partDescription.toString().trim(),
+              Model: Model !== 'N/A' ? Model.toString().trim() : null,  // Changed from partModel to Model
               status: status === 'Enable' || status === 'enable' ? 'Enable' : 'Disable'
             });
             successCount++;
@@ -351,6 +362,7 @@ const ServiceTypeOfPart = ({ user }) => {
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Part No', accessor: 'partNo' },
     { header: 'Part Description', accessor: 'partDescription' },
+    { header: 'Model', accessor: 'Model' },  // Changed header
     { header: 'Status', accessor: 'status' },
     {
       header: 'Created Date',
@@ -454,7 +466,7 @@ const ServiceTypeOfPart = ({ user }) => {
               </label>
             </div>
             <p className="text-xs text-brand-text-secondary mt-1">
-              Expected columns: Part Number, Part Description, Status (Enable/Disable)
+              Expected columns: Part Number, Part Description, Model, Status (Enable/Disable)
             </p>
           </div>
 
@@ -469,7 +481,7 @@ const ServiceTypeOfPart = ({ user }) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by Part No or Part Description..."
+                placeholder="Search by Part No, Part Description or Model..."
                 className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               />
               <button
@@ -554,6 +566,19 @@ const ServiceTypeOfPart = ({ user }) => {
 
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Model
+            </label>
+            <input
+              type="text"
+              value={formData.Model}
+              onChange={(e) => setFormData({...formData, Model: e.target.value})}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              placeholder="Enter model (optional)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
               Status <span className="text-red-500">*</span>
             </label>
             <select
@@ -574,7 +599,7 @@ const ServiceTypeOfPart = ({ user }) => {
                 setIsModalOpen(false);
                 setIsEditMode(false);
                 setEditingPart(null);
-                setFormData({ partNo: '', partDescription: '', status: 'Enable' });
+                setFormData({ partNo: '', partDescription: '', Model: '', status: 'Enable' });
               }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >

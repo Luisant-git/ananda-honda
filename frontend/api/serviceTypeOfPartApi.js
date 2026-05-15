@@ -50,6 +50,7 @@ export const serviceTypeOfPartApi = {
       body: JSON.stringify({
         partNo: data.partNo,
         partDescription: data.partDescription,
+        Model: data.Model,
         status: data.status
       })
     });
@@ -69,6 +70,7 @@ export const serviceTypeOfPartApi = {
       body: JSON.stringify({
         partNo: data.partNo,
         partDescription: data.partDescription,
+        Model: data.Model,
         status: data.status
       })
     });
