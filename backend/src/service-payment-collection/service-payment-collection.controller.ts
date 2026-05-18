@@ -10,6 +10,21 @@ export class ServicePaymentCollectionController {
     return this.servicePaymentCollectionService.create(createServicePaymentCollectionDto);
   }
 
+
+    @Post(':id/complete-part-payment')
+  completePartPayment(
+    @Param('id') id: string,
+    @Body() body: { 
+      recAmt?: number; 
+      paymentModeId?: number; 
+      typeOfPaymentId?: number; 
+      remarks?: string; 
+      enteredBy?: number 
+    }
+  ) {
+    return this.servicePaymentCollectionService.completePartPayment(+id, body);
+  }
+  
   @Get('deleted/all')
   findDeleted() {
     return this.servicePaymentCollectionService.findDeleted();
@@ -25,18 +40,23 @@ export class ServicePaymentCollectionController {
     return this.servicePaymentCollectionService.getBusinessDashboardStats(fromDate, toDate);
   }
 
-  @Get()
+@Get()
   findAll(
     @Query('page') page?: string, 
     @Query('limit') limit?: string,
-    @Query('customerId') customerId?: string
+    @Query('customerId') customerId?: string,
+    @Query('paymentType') paymentType?: string,
+    @Query('paymentStatus') paymentStatus?: string
   ) {
     return this.servicePaymentCollectionService.findAll(
       page ? +page : 1, 
       limit ? +limit : 10,
-      customerId ? +customerId : undefined
+      customerId ? +customerId : undefined,
+      paymentType || 'all',
+      paymentStatus || 'all'
     );
   }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

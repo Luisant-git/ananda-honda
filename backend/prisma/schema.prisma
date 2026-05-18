@@ -141,6 +141,7 @@ model ServicePaymentCollection {
   jobCardNumber   String?
   serviceTypeId   Int?   
   paymentSessions Json     @default("[]")
+  selectedParts             Json?                        @default("[]") 
   deletedAt       DateTime?
   deletedBy       Int?
   cancelledAt     DateTime?
@@ -190,6 +191,7 @@ enum Role {
   ACCOUNT
   SERVICE
   DEVELOPER
+  PART_EXECUTIVE
 }
 
 model Enquiry {
@@ -220,7 +222,7 @@ model SalesInvoice {
   actualDeliverDate DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+  reminderLogs     ServiceReminderLog[]
   @@index([contactInfo])
   @@index([vehicleRegNo])
 }
@@ -265,4 +267,34 @@ model ServiceType{
   updatedAt DateTime @updatedAt
   serviceJobCard  ServiceJobCard[]
   servicePayments ServicePaymentCollection[] 
+}
+
+model ServiceTypeOfPart {
+  id        Int      @id @default(autoincrement())
+  partNo    String   @unique
+  partName  String // for part description
+  Model String ?
+  status    String   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceReminderLog {
+  id              Int      @id @default(autoincrement())
+  salesInvoiceId  Int
+  serviceType     String   // 'FREE_SERVICE_1', 'FREE_SERVICE_2', 'FREE_SERVICE_3'
+  reminderNumber  Int      // 1 or 2 (first reminder or second reminder)
+  reminderDate    DateTime
+  scheduledDate   DateTime
+  sentAt          DateTime @default(now())
+  status          String   // 'PENDING', 'SENT', 'FAILED'
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  
+  salesInvoice    SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
+  
+  @@index([salesInvoiceId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@unique([salesInvoiceId, serviceType, reminderNumber])
 }

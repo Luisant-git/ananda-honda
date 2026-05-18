@@ -9,21 +9,38 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
   
   const isBackendPagination = pagination && pagination.total !== undefined;
 
+  // Helper function to get nested value
+  const getNestedValue = (obj, path) => {
+    if (!obj) return '';
+    if (typeof path === 'function') return path(obj);
+    const parts = path.split('.');
+    let value = obj;
+    for (const part of parts) {
+      if (value === null || value === undefined) return '';
+      value = value[part];
+    }
+    return value;
+  };
+
   const sortedAndFilteredData = useMemo(() => {
     if (isBackendPagination) return data;
     
     let filteredData = data.filter(item =>
-      Object.values(item).some(value =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      columns.some(col => {
+        const value = getNestedValue(item, col.accessor);
+        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
 
     if (sortConfig !== null) {
       filteredData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aVal = getNestedValue(a, sortConfig.key);
+        const bVal = getNestedValue(b, sortConfig.key);
+        
+        if (aVal < bVal) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aVal > bVal) {
           return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
@@ -31,7 +48,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
     }
 
     return filteredData;
-  }, [data, searchTerm, sortConfig, isBackendPagination]);
+  }, [data, searchTerm, sortConfig, isBackendPagination, columns]);
 
   const totalEntries = isBackendPagination ? pagination.total : sortedAndFilteredData.length;
   const totalPages = isBackendPagination ? pagination.totalPages : Math.ceil(totalEntries / entriesPerPage);
@@ -50,6 +67,21 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
   const SortIndicator = ({ columnKey }) => {
     if (!sortConfig || sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ascending' ? <SortAscIcon /> : <SortDescIcon />;
+  };
+
+  // Get cell value for display
+  const getCellValue = (item, col) => {
+    let value;
+    if (typeof col.accessor === 'function') {
+      value = col.accessor(item);
+    } else {
+      value = getNestedValue(item, col.accessor);
+    }
+    if (col.render) {
+      return col.render(value, item);
+    }
+    if (value === null || value === undefined) return '-';
+    return String(value);
   };
 
   return (
@@ -95,14 +127,14 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
           <thead className="text-xs text-brand-text-secondary uppercase bg-brand-hover">
             <tr>
               {columns.map((col, index) => (
-                <th key={index} scope="col" className="px-6 py-3 cursor-pointer" onClick={() => requestSort(col.accessor)}>
+                <th key={index} scope="col" className="px-6 py-3 cursor-pointer" onClick={() => requestSort(typeof col.accessor === 'function' ? col.accessor.name : col.accessor)}>
                   <div className="flex items-center gap-2">
                     {col.header}
-                    <SortIndicator columnKey={col.accessor} />
+                    <SortIndicator columnKey={typeof col.accessor === 'function' ? col.accessor.name : col.accessor} />
                   </div>
                 </th>
               ))}
-               {actionButtons && <th scope="col" className="px-6 py-3">Action</th>}
+              {actionButtons && <th scope="col" className="px-6 py-3">Action</th>}
             </tr>
           </thead>
           <tbody>
@@ -110,10 +142,10 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
               <tr key={rowIndex} className={`bg-white border-b border-brand-border hover:bg-brand-hover ${rowClassName ? rowClassName(item) : ''}`}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                    {col.render ? col.render(item[col.accessor]) : String(item[col.accessor])}
+                    {getCellValue(item, col)}
                   </td>
                 ))}
-                 {actionButtons && (
+                {actionButtons && (
                   <td className="px-6 py-4">{actionButtons(item)}</td>
                 )}
               </tr>

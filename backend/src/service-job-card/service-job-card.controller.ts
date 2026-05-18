@@ -64,6 +64,23 @@ export class ServiceJobCardController {
     return this.serviceJobCardService.findAll(search, include === 'serviceType');
   }
 
+  // ✅ Get Active Job Cards (only Pending status) for dropdown
+  @Get('active')
+  async findActiveJobCards(@Query('search') search?: string) {
+    return this.serviceJobCardService.findActiveJobCards(search);
+  }
+
+  // ✅ Get Active Job Cards by Mobile Number
+  @Get('active/by-mobile/:mobileNumber')
+  async findActiveByMobileNumber(
+    @Param('mobileNumber') mobileNumber: string
+  ) {
+    if (!mobileNumber) {
+      throw new HttpException('Mobile number is required', HttpStatus.BAD_REQUEST);
+    }
+    return this.serviceJobCardService.findActiveJobCardsByMobileNumber(mobileNumber);
+  }
+
   // ✅ Search endpoint (alternative)
   @Get('search')
   async search(
@@ -108,24 +125,23 @@ export class ServiceJobCardController {
   // ✅ Get One with include
   @Get(':id')
   findOne(@Param('id') id: string, @Query('include') include?: string) {
-    // For single record, always include serviceType for consistency
     return this.serviceJobCardService.findOne(+id);
   }
 
-  // ✅ Update Status
+  // ✅ Update Status (Updated to accept object)
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body() body: { status: string },
   ) {
-    if (!status) {
+    if (!body.status) {
       throw new HttpException(
         'Status is required',
         HttpStatus.BAD_REQUEST
       );
     }
 
-    return this.serviceJobCardService.updateStatus(+id, status);
+    return this.serviceJobCardService.updateStatus(+id, body);
   }
 
   // ✅ Delete One

@@ -20,9 +20,13 @@ import { ServiceTypeOfCollectionModule } from './service-type-of-collection/serv
 import { SalesInvoiceModule } from './sales-invoice/sales-invoice.module';
 import { ServiceJobCardModule } from './service-job-card/service-job-card.module';
 import { ServiceTypeModule } from './service-type/service-type.module';
+import { ServiceTypeOfPartModule } from './service-type-of-part/service-type-of-part.module';
+import { ServiceRemainderTemplateModule } from './service-remainder-template/service-remainder-template.module';
+import { ScheduleModule } from '@nestjs/schedule';
+
 
 @Module({
-  imports: [CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule],
+  imports: [ScheduleModule.forRoot(),CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule, ServiceRemainderTemplateModule],
   controllers: [AppController],
   providers: [AppService],
 })

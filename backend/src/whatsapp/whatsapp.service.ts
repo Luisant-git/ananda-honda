@@ -14,7 +14,7 @@ export class WhatsappService {
     this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID as string;
   }
 
-  async uploadMedia(buffer: Buffer, filename: string): Promise<string> {
+async uploadMedia(buffer: Buffer, filename: string): Promise<string> {
     try {
       const formData = new FormData();
       formData.append('file', buffer, {
@@ -126,12 +126,13 @@ export class WhatsappService {
     }
   }
 
+
   async sendServiceReceiptTemplate(
     toPhoneNumber: string,
-    customerName: string,      // {{1}}
-    receiptNo: string,         // {{2}}
-    jobCardNumber: string | number, // {{3}}
-    amount: string | number,   // {{4}}
+    customerName: string,
+    receiptNo: string,
+    jobCardNumber: string | number,
+    amount: string | number,
     mediaId: string,
     filename: string,
   ): Promise<any> {
@@ -163,10 +164,10 @@ export class WhatsappService {
               {
                 type: 'body',
                 parameters: [
-                  { type: 'text', text: String(customerName) },   // {{1}}
-                  { type: 'text', text: String(receiptNo) },      // {{2}}
-                  { type: 'text', text: String(jobCardNumber) },  // {{3}}
-                  { type: 'text', text: String(amount) },         // {{4}}
+                  { type: 'text', text: String(customerName) },
+                  { type: 'text', text: String(receiptNo) },
+                  { type: 'text', text: String(jobCardNumber) },
+                  { type: 'text', text: String(amount) },
                 ],
               },
             ],
@@ -189,5 +190,94 @@ export class WhatsappService {
     }
   }
 
-  
+  // NEW: Send Service Reminder Template (Only 4 parameters)
+async sendServiceReminderTemplate(
+  toPhoneNumber: string,
+  customerName: string,      // {{1}}
+  vehicleModel: string,      // {{2}}
+  registrationNo: string,    // {{3}}
+  serviceName: string,       // {{4}}
+): Promise<any> {
+  let formattedNumber = toPhoneNumber.trim();
+  if (/^\d{10}$/.test(formattedNumber)) {
+    formattedNumber = `91${formattedNumber}`;
+  }
+
+  try {
+    const response = await axios.post(
+      `${this.apiUrl}/${this.phoneNumberId}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        to: formattedNumber,
+        type: 'template',
+        template: {
+          name: 'service_remainder_template',
+          language: { code: 'en' },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: customerName },      // {{1}} - Customer Name
+                { type: 'text', text: vehicleModel },      // {{2}} - Vehicle Model
+                { type: 'text', text: registrationNo },    // {{3}} - Registration Number
+                { type: 'text', text: serviceName },       // {{4}} - Service Name
+              ],
+            },
+          ],
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    this.logger.log(`Service reminder template sent to ${formattedNumber}`);
+    return response.data;
+  } catch (error: any) {
+    this.logger.error(
+      'Error sending WhatsApp service reminder template',
+      error.response?.data || error.message,
+    );
+    throw error;
+  }
+}
+
+  // Optional: Send simple text message (as fallback)
+  async sendTextMessage(toPhoneNumber: string, message: string): Promise<any> {
+    let formattedNumber = toPhoneNumber.trim();
+    if (/^\d{10}$/.test(formattedNumber)) {
+      formattedNumber = `91${formattedNumber}`;
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.apiUrl}/${this.phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedNumber,
+          type: 'text',
+          text: {
+            preview_url: false,
+            body: message,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      this.logger.log(`Text message sent to ${formattedNumber}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Error sending text message',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
 }

@@ -8,6 +8,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
     payment_collection: false,
     settings: false,
     reports: false,
+    service_report: false,
   });
   const [permissions, setPermissions] = useState(null);
 
@@ -54,56 +55,51 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
     );
   };
 
-const NavGroup = ({ menuKey, label, icon, children }) => {
-  const isOpen = openMenus[menuKey];
+  const NavGroup = ({ menuKey, label, icon, children }) => {
+    const isOpen = openMenus[menuKey];
 
-  // Collapsed (icon-only) sidebar
-  if (isSidebarCollapsed) {
+    if (isSidebarCollapsed) {
+      return (
+        <li className="mt-2">
+          <div
+            className="flex items-center justify-center p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
+            title={label}
+          >
+            {icon}
+          </div>
+        </li>
+      );
+    }
+
+    if (!permissions) return null;
+
     return (
       <li className="mt-2">
-        <div
-          className="flex items-center justify-center p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
-          title={label}
+        <button
+          type="button"
+          className="flex items-center w-full px-2 py-2 text-sm font-medium text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
+          onClick={() => toggleMenu(menuKey)}
         >
-          {icon}
+          <span className="mr-3 text-lg">{icon}</span>
+          <span className="flex-1 text-left whitespace-nowrap">{label}</span>
+          <ChevronDownIcon
+            className={`w-5 h-5 transform transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        <div
+          className={`mt-1 transition-all duration-300 ease-in-out ${
+            isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+          } overflow-hidden`}
+        >
+          <ul className="space-y-1">
+            {isOpen && children}
+          </ul>
         </div>
       </li>
     );
-  }
-
-  if (!permissions) return null;
-
-  return (
-    <li className="mt-2">
-      {/* Group header */}
-      <button
-        type="button"
-        className="flex items-center w-full px-2 py-2 text-sm font-medium text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
-        onClick={() => toggleMenu(menuKey)}
-      >
-        <span className="mr-3 text-lg">{icon}</span>
-        <span className="flex-1 text-left whitespace-nowrap">{label}</span>
-        <ChevronDownIcon
-          className={`w-5 h-5 transform transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-
-      {/* Submenu container – no left border, just spacing and animation */}
-      <div
-        className={`mt-1 transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-        } overflow-hidden`}
-      >
-        <ul className="space-y-1">
-          {isOpen && children}
-        </ul>
-      </div>
-    </li>
-  );
-};
-
+  };
 
   return (
     <>
@@ -131,32 +127,43 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
             {permissions?.master && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
-                <li><NavLink view="sales_invoice_master" label="Sales Invoice Master" isSubmenu /></li>
+                {/* Fixed: Now wrapped in permission check */}
+                {permissions.master.sales_invoice_master && <li><NavLink view="sales_invoice_master" label="Sales Invoice Master" isSubmenu /></li>}
                 {permissions.master.jobcard_master && (
-  <li>
-    <NavLink
-      view="service_jobcard_master"
-      label="Service Dealership"
-      isSubmenu
-    />
-  </li>
-)}
+                  <li>
+                    <NavLink
+                      view="service_jobcard_master"
+                      label="Service Dealership"
+                      isSubmenu
+                    />
+                  </li>
+                )}
                 {permissions.master.payment_mode && <li><NavLink view="payment_mode" label="Payment Mode" isSubmenu /></li>}
                 {permissions.master.type_of_payment && <li><NavLink view="type_of_payment" label="Type of Payment" isSubmenu /></li>}
                 {permissions.master.type_of_collection && <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>}
                 {permissions.master.vehicle_model && <li><NavLink view="vehicle_model" label="Vehicle Model" isSubmenu /></li>}
                 {permissions.master.service_payment_mode && <li><NavLink view="service_payment_mode" label="S - Payment Mode" isSubmenu /></li>}
                 {permissions.master.service_type_of_payment && <li><NavLink view="service_type_of_payment" label="S - Type of Payment" isSubmenu /></li>}
-               {permissions?.master?.service_type_of_collection && (<li><NavLink view="service_type_of_collection" label="S - Type of Collection"  isSubmenu  /></li>)}
-             {permissions.master.service_type && 
-  <li>
-    <NavLink
-      view="service_type"
-      label="S - Type of Service"
-      isSubmenu
-    />
-  </li>
-}
+                {permissions?.master?.service_type_of_collection && (<li><NavLink view="service_type_of_collection" label="S - Type of Collection" isSubmenu /></li>)}
+                {permissions.master.service_type && 
+                  <li>
+                    <NavLink
+                      view="service_type"
+                      label="S - Type of Service"
+                      isSubmenu
+                    />
+                  </li>
+                }
+                {/* S - Type of Part */}
+                {permissions.master.service_type_of_part && 
+                  <li>
+                    <NavLink
+                      view="service_type_of_part"
+                      label="S - Type of Part"
+                      isSubmenu
+                    />
+                  </li>
+                }
                 {permissions.master.create_enquiry && <li><NavLink view="vehicle_enquiry_form" label="Create Enquiry" isSubmenu /></li>}
               </NavGroup>
             )}
@@ -168,11 +175,68 @@ const NavGroup = ({ menuKey, label, icon, children }) => {
               </NavGroup>
             )}
 
-            {(permissions?.reports?.payment_collection_report || permissions?.reports?.service_payment_collection_report || permissions?.reports?.enquiry_report) && (
-              <NavGroup menuKey="reports" label="Report" icon={<ReportIcon />}>
-                {permissions?.reports?.payment_collection_report && <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>}
-                {permissions?.reports?.service_payment_collection_report && <li><NavLink view="service_reports" label="Service Report" isSubmenu /></li>}
-                {permissions?.reports?.enquiry_report && <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>}
+            {/* Reports - Main Parent */}
+            {(permissions?.reports?.payment_collection_report || 
+              permissions?.reports?.service_payment_collection_report || 
+              permissions?.reports?.enquiry_report ||
+              permissions?.reports?.full_payment_report ||
+              permissions?.reports?.part_payment_report ||
+              permissions?.reports?.service_reminder_report) && (
+              <NavGroup menuKey="reports" label="Reports" icon={<ReportIcon />}>
+                
+                {/* Sales Report */}
+                {permissions?.reports?.payment_collection_report && (
+                  <li><NavLink view="reports" label="Sales Report" isSubmenu /></li>
+                )}
+                
+                {/* Service Report */}
+                {permissions?.reports?.service_payment_collection_report && (
+                  <li>
+                    <div>
+                      <div
+                        onClick={() => toggleMenu('service_report')}
+                        className={`flex items-center w-full p-2 text-base font-normal rounded-lg transition-colors duration-150 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary`}
+                        style={{ paddingLeft: '2.75rem' }}
+                      >
+                        <span className="flex-1 text-left">Service Report</span>
+                        <ChevronDownIcon
+                          className={`w-4 h-4 transform transition-transform duration-200 ${
+                            openMenus.service_report ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </div>
+                      <div
+                        className={`transition-all duration-300 ease-in-out ${
+                          openMenus.service_report ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                        } overflow-hidden`}
+                      >
+                        <ul className="space-y-1 mt-1">
+                          {permissions?.reports?.full_payment_report && (
+                            <li>
+                              <NavLink view="full_payment_report" label="Full Payment Report" isSubmenu />
+                            </li>
+                          )}
+                          {permissions?.reports?.part_payment_report && (
+                            <li>
+                              <NavLink view="part_payment_report" label="Part Payment Report" isSubmenu />
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </li>
+                )}
+                
+                {/* Service Reminder Report */}
+                {permissions?.reports?.service_reminder_report && (
+                  <li><NavLink view="service_reminder_report" label="Service Reminder Report" isSubmenu /></li>
+                )}
+                
+                {/* Enquiry Report */}
+                {permissions?.reports?.enquiry_report && (
+                  <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>
+                )}
+                
               </NavGroup>
             )}
 

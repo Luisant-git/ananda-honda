@@ -13,108 +13,111 @@ export class ServicePaymentCollectionService {
     private pdfService: PdfService,
   ) {}
 
- async create(data: { 
-  date: string; 
-  customerId: number; 
-  totalAmt?: number; 
-  recAmt: number; 
-  paymentType: string; 
-  paymentStatus?: string; 
-  vehicleNumber?: string; 
-  paymentModeId: number; 
-  typeOfPaymentId?: number; 
-  serviceTypeOfCollectionId?: number; 
-  vehicleModelId?: number; 
-  enteredBy?: number; 
-  remarks?: string; 
-  refNo?: string; 
-  jobCardNumber?: string; 
-  serviceTypeId?: number;
-}) {
-  const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
-    orderBy: { receiptNo: 'desc' }
-  });
-  
-  let nextNumber = 1;
-  if (lastPayment && lastPayment.receiptNo) {
-    const lastNumber = parseInt(lastPayment.receiptNo.replace('SRV', ''));
-    nextNumber = lastNumber + 1;
-  }
-  const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
+  async create(data: { 
+    date: string; 
+    customerId: number; 
+    totalAmt?: number; 
+    recAmt: number; 
+    paymentType: string; 
+    paymentStatus?: string; 
+    vehicleNumber?: string; 
+    paymentModeId: number; 
+    typeOfPaymentId?: number; 
+    serviceTypeOfCollectionId?: number; 
+    vehicleModelId?: number; 
+    enteredBy?: number; 
+    remarks?: string; 
+    refNo?: string; 
+    jobCardNumber?: string; 
+    serviceTypeId?: number;
+    selectedParts?: any[];
+  }) {
+    const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
+      orderBy: { receiptNo: 'desc' }
+    });
+    
+    let nextNumber = 1;
+    if (lastPayment && lastPayment.receiptNo) {
+      const lastNumber = parseInt(lastPayment.receiptNo.replace('SRV', ''));
+      nextNumber = lastNumber + 1;
+    }
+    const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
 
-  let paymentSessions: any[] = [];
+    let paymentSessions: any[] = [];
 
-  // If status is completed, mark all previous pending payments as completed
-  if (data.paymentStatus === 'completed') {
-    const partPayments = await this.prisma.servicePaymentCollection.findMany({
-      where: {
+    // If status is completed, mark all previous pending payments as completed
+    if (data.paymentStatus === 'completed') {
+      const partPayments = await this.prisma.servicePaymentCollection.findMany({
+        where: {
+          customerId: data.customerId,
+          paymentStatus: 'pending',
+          deletedAt: null
+        }
+      });
+
+      if (partPayments.length > 0) {
+        paymentSessions = partPayments.map(p => ({
+          receiptNo: p.receiptNo,
+          date: p.date,
+          amount: p.recAmt
+        }));
+
+        await this.prisma.servicePaymentCollection.updateMany({
+          where: {
+            id: { in: partPayments.map(p => p.id) }
+          },
+          data: { paymentStatus: 'completed' }
+        });
+      }
+    }
+
+    const savedPayment = await this.prisma.servicePaymentCollection.create({
+      data: {
+        date: new Date(data.date),
         customerId: data.customerId,
-        paymentStatus: 'pending',
-        deletedAt: null
+        totalAmt: data.totalAmt || null,
+        recAmt: data.recAmt,
+        paymentType: data.paymentType,
+        paymentStatus: data.paymentStatus || 'completed',
+        vehicleNumber: data.vehicleNumber || null,
+        paymentModeId: data.paymentModeId,
+        typeOfPaymentId: data.typeOfPaymentId || null,
+        serviceTypeOfCollectionId: data.serviceTypeOfCollectionId || null,
+        vehicleModelId: data.vehicleModelId || null,
+        enteredBy: data.enteredBy || null,
+        remarks: data.remarks || null,
+        refNo: data.refNo || null,
+        jobCardNumber: data.jobCardNumber || null,
+        serviceTypeId: data.serviceTypeId || null,
+        receiptNo,
+        paymentSessions,
+        selectedParts: data.selectedParts || [] // Add selectedParts
+      },
+      include: {
+        customer: true,
+        paymentMode: true,
+        typeOfPayment: true,
+        serviceTypeOfCollection: true,
+        vehicleModel: true,
+        serviceTypeRelation: true,
+        user: true
       }
     });
 
-    if (partPayments.length > 0) {
-      paymentSessions = partPayments.map(p => ({
-        receiptNo: p.receiptNo,
-        date: p.date,
-        amount: p.recAmt
-      }));
-
-      await this.prisma.servicePaymentCollection.updateMany({
-        where: {
-          id: { in: partPayments.map(p => p.id) }
-        },
-        data: { paymentStatus: 'completed' }
-      });
+    try {
+      if (savedPayment.customer && savedPayment.customer.contactNo) {
+        // Run asynchronously so it doesn't block the API response
+        this.sendWhatsappReceipt(savedPayment).catch((err) => {
+          this.logger.error('Failed to send WhatsApp receipt asynchronously', err);
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error triggering WhatsApp receipt', error);
     }
+
+    return savedPayment;
   }
 
-  const savedPayment = await this.prisma.servicePaymentCollection.create({
-    data: {
-      date: new Date(data.date),
-      customerId: data.customerId,
-      totalAmt: data.totalAmt || null,
-      recAmt: data.recAmt,
-      paymentType: data.paymentType,
-      paymentStatus: data.paymentStatus || 'completed',
-      vehicleNumber: data.vehicleNumber || null,
-      paymentModeId: data.paymentModeId,
-      typeOfPaymentId: data.typeOfPaymentId || null,
-      serviceTypeOfCollectionId: data.serviceTypeOfCollectionId || null,
-      vehicleModelId: data.vehicleModelId || null,
-      enteredBy: data.enteredBy || null,
-      remarks: data.remarks || null,
-      refNo: data.refNo || null,
-      jobCardNumber: data.jobCardNumber || null,
-      serviceTypeId: data.serviceTypeId || null,
-      receiptNo,
-      paymentSessions
-    },
-    include: {
-      customer: true,
-      paymentMode: true,
-      typeOfPayment: true,
-      serviceTypeOfCollection: true,
-      vehicleModel: true,
-      serviceTypeRelation: true,
-      user: true
-    }
-  });
-
-  try {
-    if (savedPayment.customer && savedPayment.customer.contactNo) {
-      // Run asynchronously so it doesn't block the API response
-      this.sendWhatsappReceipt(savedPayment).catch((err) => {
-        this.logger.error('Failed to send WhatsApp receipt asynchronously', err);
-      });
-    }
-  } catch (error) {
-    this.logger.error('Error triggering WhatsApp receipt', error);
-  }
-
-  return savedPayment;
-}
   private async sendWhatsappReceipt(payment: any) {
     try {
       const pdfBuffer = await this.pdfService.generateServiceReceipt(payment, payment.user);
@@ -135,18 +138,96 @@ export class ServicePaymentCollectionService {
         amount,
         mediaId,
         filename,
-       
       );
     } catch (error) {
       this.logger.error('Failed to send WhatsApp service receipt process', error);
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10, customerId?: number) {
+  async completePartPayment(id: number, data: {
+    recAmt?: number;
+    paymentModeId?: number;
+    typeOfPaymentId?: number;
+    remarks?: string;
+    enteredBy?: number;
+  }) {
+    // Get the part payment record
+    const partPayment = await this.prisma.servicePaymentCollection.findUnique({
+      where: { id },
+      include: { customer: true }
+    });
+
+    if (!partPayment) {
+      throw new Error('Payment record not found');
+    }
+
+    if (partPayment.paymentStatus === 'completed') {
+      throw new Error('Payment is already completed');
+    }
+
+    if (partPayment.paymentType !== 'part payment') {
+      throw new Error('This is not a part payment record');
+    }
+
+    // Update the part payment to completed and change type to full payment
+    const updatedPayment = await this.prisma.servicePaymentCollection.update({
+      where: { id },
+      data: {
+        paymentStatus: 'completed',
+        paymentType: 'full payment',
+        recAmt: data.recAmt || partPayment.recAmt,
+        paymentModeId: data.paymentModeId || partPayment.paymentModeId,
+        typeOfPaymentId: data.typeOfPaymentId || partPayment.typeOfPaymentId,
+        remarks: data.remarks || partPayment.remarks,
+        enteredBy: data.enteredBy || partPayment.enteredBy,
+      },
+      include: {
+        customer: true,
+        paymentMode: true,
+        typeOfPayment: true,
+        serviceTypeOfCollection: true,
+        vehicleModel: true,
+        serviceTypeRelation: true,
+        user: true
+      }
+    });
+
+    // Send WhatsApp receipt for completed payment
+    try {
+      if (updatedPayment.customer && updatedPayment.customer.contactNo) {
+        this.sendWhatsappReceipt(updatedPayment).catch((err) => {
+          this.logger.error('Failed to send WhatsApp receipt for completed payment', err);
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error triggering WhatsApp receipt for completed payment', error);
+    }
+
+    return updatedPayment;
+  }
+
+  async findAll(
+    page: number = 1, 
+    limit: number = 10, 
+    customerId?: number,
+    paymentType?: string, // 'full payment' | 'part payment' | 'all'
+    paymentStatus?: string // 'completed' | 'pending' | 'all'
+  ) {
     const skip = (page - 1) * limit;
     const where: any = { deletedAt: null };
+    
     if (customerId) {
       where.customerId = customerId;
+    }
+    
+    // Apply payment type filter
+    if (paymentType && paymentType !== 'all') {
+      where.paymentType = paymentType;
+    }
+    
+    // Apply payment status filter
+    if (paymentStatus && paymentStatus !== 'all') {
+      where.paymentStatus = paymentStatus;
     }
     
     const [data, total] = await Promise.all([
@@ -168,11 +249,18 @@ export class ServicePaymentCollectionService {
       }),
       this.prisma.servicePaymentCollection.count({ where })
     ]);
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    
+    // Ensure selectedParts is always an array for backward compatibility
+    const dataWithSelectedParts = data.map(item => ({
+      ...item,
+      selectedParts: item.selectedParts || []
+    }));
+    
+    return { data: dataWithSelectedParts, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: number) {
-    return this.prisma.servicePaymentCollection.findUnique({
+    const payment = await this.prisma.servicePaymentCollection.findUnique({
       where: { id },
       include: {
         customer: true,
@@ -185,6 +273,15 @@ export class ServicePaymentCollectionService {
         cancelledByUser: true
       }
     });
+    
+    // Ensure selectedParts is always an array
+    if (payment) {
+      return {
+        ...payment,
+        selectedParts: payment.selectedParts || []
+      };
+    }
+    return payment;
   }
 
   async update(id: number, data: { 
@@ -203,8 +300,8 @@ export class ServicePaymentCollectionService {
     remarks?: string; 
     refNo?: string; 
     jobCardNumber?: string; 
-   
     serviceTypeId?: number;
+    selectedParts?: any[];
   }) {
     const updateData: any = { ...data };
     if (data.date) {
@@ -224,6 +321,9 @@ export class ServicePaymentCollectionService {
     }
     if (data.serviceTypeId === undefined) {
       delete updateData.serviceTypeId;
+    }
+    if (data.selectedParts === undefined) {
+      delete updateData.selectedParts;
     }
 
     return this.prisma.servicePaymentCollection.update({

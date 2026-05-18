@@ -230,18 +230,19 @@ export class ServiceJobCardService {
     return { imported };
   }
 
-  // ✅ Find All with optional include parameter
-  async findAll(search?: string, includeServiceType?: boolean) {
-    const where: Prisma.ServiceJobCardWhereInput = search
-      ? {
-          OR: [
-            { jobCardNumber: { contains: search, mode: 'insensitive' as const } },
-            { registrationNumber: { contains: search, mode: 'insensitive' as const } },
-            { mobileNumber: { contains: search, mode: 'insensitive' as const } },
-            { customerName: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+  // ✅ Find All with optional include parameter and status filter
+  async findAll(search?: string, includeServiceType?: boolean, status?: string) {
+    const where: Prisma.ServiceJobCardWhereInput = {
+      ...(status && { status }), // Filter by status if provided
+      ...(search && {
+        OR: [
+          { jobCardNumber: { contains: search, mode: 'insensitive' as const } },
+          { registrationNumber: { contains: search, mode: 'insensitive' as const } },
+          { mobileNumber: { contains: search, mode: 'insensitive' as const } },
+          { customerName: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
 
     return this.prisma.serviceJobCard.findMany({
       where,
@@ -250,16 +251,42 @@ export class ServiceJobCardService {
     });
   }
 
-  // ✅ Find by Mobile Number
-  async findByMobileNumber(mobileNumber: string, includeServiceType?: boolean) {
+  // ✅ Find Active Job Cards (only Pending status) for dropdown
+  async findActiveJobCards(search?: string) {
+    return this.findAll(search, true, 'Pending');
+  }
+
+  // ✅ Find Active Job Cards by Mobile Number
+  async findActiveJobCardsByMobileNumber(mobileNumber: string) {
     if (!mobileNumber) {
       throw new BadRequestException('Mobile number is required');
     }
 
     const records = await this.prisma.serviceJobCard.findMany({
       where: { 
-        mobileNumber: mobileNumber 
+        mobileNumber: mobileNumber,
+        status: 'Pending'
       },
+      include: { serviceType: true },
+      orderBy: { id: 'desc' },
+    });
+
+    return records;
+  }
+
+  // ✅ Find by Mobile Number with optional status filter
+  async findByMobileNumber(mobileNumber: string, includeServiceType?: boolean, status?: string) {
+    if (!mobileNumber) {
+      throw new BadRequestException('Mobile number is required');
+    }
+
+    const where: Prisma.ServiceJobCardWhereInput = {
+      mobileNumber: mobileNumber,
+      ...(status && { status }),
+    };
+
+    const records = await this.prisma.serviceJobCard.findMany({
+      where,
       include: includeServiceType ? { serviceType: true } : undefined,
       orderBy: { id: 'desc' },
     });
@@ -267,13 +294,14 @@ export class ServiceJobCardService {
     return records;
   }
 
-  // ✅ Search with include option
-  async search(searchTerm: string, includeServiceType?: boolean) {
+  // ✅ Search with include option and status filter
+  async search(searchTerm: string, includeServiceType?: boolean, status?: string) {
     if (!searchTerm) {
-      return this.findAll(undefined, includeServiceType);
+      return this.findAll(undefined, includeServiceType, status);
     }
 
     const where: Prisma.ServiceJobCardWhereInput = {
+      ...(status && { status }),
       OR: [
         { jobCardNumber: { contains: searchTerm, mode: 'insensitive' as const } },
         { registrationNumber: { contains: searchTerm, mode: 'insensitive' as const } },
@@ -320,13 +348,22 @@ export class ServiceJobCardService {
     }
   }
 
-  // ✅ Update Status
-  async updateStatus(id: number, status: string) {
+  // ✅ Update Status (accepts object)
+  async updateStatus(id: number, data: { status: string }) {
     try {
       const numericId = Number(id);
       
       if (isNaN(numericId)) {
         throw new BadRequestException('Invalid ID format');
+      }
+
+      if (!data.status) {
+        throw new BadRequestException('Status is required');
+      }
+
+      const validStatuses = ['Pending', 'Closed'];
+      if (!validStatuses.includes(data.status)) {
+        throw new BadRequestException(`Status must be one of: ${validStatuses.join(', ')}`);
       }
 
       const existingRecord = await this.prisma.serviceJobCard.findUnique({
@@ -339,7 +376,8 @@ export class ServiceJobCardService {
 
       return this.prisma.serviceJobCard.update({
         where: { id: numericId },
-        data: { status },
+        data: { status: data.status },
+        include: { serviceType: true },
       });
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
@@ -349,6 +387,68 @@ export class ServiceJobCardService {
     }
   }
 
+ // ✅ Update entire record
+async update(id: number, data: {
+  jobCardNumber?: string;
+  registrationNumber?: string;
+  customerName?: string;
+  mobileNumber?: string;
+  vehicleDetails?: string;
+  serviceType?: string;
+  status?: string;
+}) {
+  try {
+    const numericId = Number(id);
+    
+    if (isNaN(numericId)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+
+    const existingRecord = await this.prisma.serviceJobCard.findUnique({
+      where: { id: numericId },
+    });
+
+    if (!existingRecord) {
+      throw new NotFoundException(`Service job card with ID ${id} not found`);
+    }
+
+    let serviceId: number | null = null; // Changed from undefined to null
+
+    if (data.serviceType) {
+      const service = await this.prisma.serviceType.findFirst({
+        where: { name: data.serviceType },
+      });
+
+      if (!service) {
+        throw new BadRequestException(`ServiceType not found: ${data.serviceType}`);
+      }
+
+      serviceId = service.id;
+    }
+
+    const updateData: any = {};
+    if (data.jobCardNumber !== undefined) updateData.jobCardNumber = data.jobCardNumber;
+    if (data.registrationNumber !== undefined) updateData.registrationNumber = data.registrationNumber;
+    if (data.customerName !== undefined) updateData.customerName = data.customerName;
+    if (data.mobileNumber !== undefined) updateData.mobileNumber = data.mobileNumber;
+    if (data.vehicleDetails !== undefined) updateData.vehicleDetails = data.vehicleDetails;
+    if (serviceId !== null) updateData.serviceId = serviceId; // Check for null instead of undefined
+    if (data.status !== undefined) updateData.status = data.status;
+
+    return this.prisma.serviceJobCard.update({
+      where: { id: numericId },
+      data: updateData,
+      include: { serviceType: true },
+    });
+  } catch (error) {
+    if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      throw error;
+    }
+    throw new BadRequestException(`Error updating service job card: ${error.message}`);
+  }
+}
+ // ✅ Update entire record
+  
   // ✅ Delete
   async remove(id: number) {
     try {
@@ -388,5 +488,10 @@ export class ServiceJobCardService {
     } catch (error) {
       throw new BadRequestException(`Error clearing service job cards: ${error.message}`);
     }
+  }
+
+  // ✅ Get All Statuses (for dropdown)
+  async getStatuses() {
+    return ['Pending', 'Closed'];
   }
 }
