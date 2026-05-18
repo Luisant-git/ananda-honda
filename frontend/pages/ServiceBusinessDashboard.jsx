@@ -4,47 +4,47 @@ const ServiceBusinessDashboard = ({ data: dynamicData }) => {
   // Static data matching the user's dashboard image for initial layout
   const [defaultData] = useState({
     summary: {
-      serviceVolume: 581,
-      labour: 413834,
-      stdParts: 463831,
-      overallParts: 544376,
-      lubrications: 86935,
-      labourPerVehicle: 669,
-      partsPerVehicle: 798,
-      oilCount: 495,
-      amc: 26,
-      battery: 14,
-      paintingPanels: 11,
-      tyre: 23,
-      startDate: '31-03-2023',
-      todaysDate: '15-05-2026',
-      reportDate: '30-04-2023',
-      daysCompleted: 30,
-      daysLeft: 1,
-      daysInMonth: 31,
+      serviceVolume: 0,
+      labour: 0,
+      stdParts: 0,
+      overallParts: 0,
+      lubrications: 0,
+      labourPerVehicle: 0,
+      partsPerVehicle: 0,
+      oilCount: 0,
+      amc: 0,
+      battery: 0,
+      paintingPanels: 0,
+      tyre: 0,
+      startDate: '-',
+      todaysDate: '-',
+      reportDate: '-',
+      daysCompleted: 0,
+      daysLeft: 0,
+      daysInMonth: 0,
     },
     serviceVolume: [
       { type: 'Data For the Month', free01: '', free02: '', free03: '', paid: '', accidentRepairs: '', general: '', minor: '', total: '', withoutMinor: '' },
       { type: 'Target For the Month', free01: '', free02: '', free03: '', paid: '', accidentRepairs: '', general: '', minor: '', total: '', withoutMinor: '' },
-      { type: 'Received Vehicles', free01: 54, free02: 64, free03: 48, paid: 312, accidentRepairs: 0, general: 146, minor: 34, total: 657, withoutMinor: 623 },
-      { type: 'Invoice Pending', free01: 0, free02: 0, free03: 0, paid: 6, accidentRepairs: 0, general: 0, minor: 0, total: 6, withoutMinor: 6 },
-      { type: 'Invoiced Vehicles', free01: 54, free02: 64, free03: 47, paid: 301, accidentRepairs: 0, general: 119, minor: 12, total: 593, withoutMinor: 581 },
-      { type: 'Per Day Invoice', free01: 2, free02: 2, free03: 2, paid: 10, accidentRepairs: 0, general: 4, minor: 0, total: 20, withoutMinor: 19 },
-      { type: 'Volume Service Rate', free01: 56, free02: 66, free03: 49, paid: 311, accidentRepairs: 0, general: 119, minor: 12, total: 613, withoutMinor: 600 },
+      { type: 'Received Vehicles', free01: 0, free02: 0, free03: 0, paid: 0, accidentRepairs: 0, general: 0, minor: 0, total: 0, withoutMinor: 0 },
+      { type: 'Invoice Pending', free01: 0, free02: 0, free03: 0, paid: 0, accidentRepairs: 0, general: 0, minor: 0, total: 0, withoutMinor: 0 },
+      { type: 'Invoiced Vehicles', free01: 0, free02: 0, free03: 0, paid: 0, accidentRepairs: 0, general: 0, minor: 0, total: 0, withoutMinor: 0 },
+      { type: 'Per Day Invoice', free01: 0, free02: 0, free03: 0, paid: 0, accidentRepairs: 0, general: 0, minor: 0, total: 0, withoutMinor: 0 },
+      { type: 'Volume Service Rate', free01: 0, free02: 0, free03: 0, paid: 0, accidentRepairs: 0, general: 0, minor: 0, total: 0, withoutMinor: 0 },
     ],
     incomeTargetCount: [
       { particulars: '3 months Average Sale', battery: '', tyre: '', amc: '', painting: '' },
-      { particulars: 'Target', battery: 120, tyre: 100, amc: 250, painting: 100 },
-      { particulars: 'Achieved No', battery: 14, tyre: 23, amc: 26, painting: 11 },
-      { particulars: 'Per Day Count Achieved', battery: 0, tyre: 1, amc: 1, painting: 0 },
-      { particulars: 'Current Rate for the month', battery: 14, tyre: 21, amc: 27, painting: 11 },
+      { particulars: 'Target', battery: 0, tyre: 0, amc: 0, painting: 0 },
+      { particulars: 'Achieved No', battery: 0, tyre: 0, amc: 0, painting: 0 },
+      { particulars: 'Per Day Count Achieved', battery: 0, tyre: 0, amc: 0, painting: 0 },
+      { particulars: 'Current Rate for the month', battery: 0, tyre: 0, amc: 0, painting: 0 },
     ],
     incomeParameters: [
-      { particulars: 'Last 3 Months Average Achieve', serviceVolume: 2465, labour: 1775582, std: 1208698, overallParts: 1803685, lubrication: '', battery: '', batteryJet: '', tyre: '', amc: '', carbonCleaner: '', healthCard: '', painting: '', oilRevenue: '' },
-      { particulars: 'Target', serviceVolume: 3000, labour: 1775582, std: 1250000, overallParts: 1820000, lubrication: '', battery: '', batteryJet: '', tyre: '', amc: '', carbonCleaner: '', healthCard: '', painting: '', oilRevenue: '' },
-      { particulars: 'Achieved', serviceVolume: 581, labour: 413834, std: 463831, overallParts: 544376, lubrication: 86810, battery: 14831, batteryJet: 15132, tyre: 28314, amc: 23901, carbonCleaner: 22578, healthCard: 0, painting: 13207, oilRevenue: 86935 },
-      { particulars: 'Per Day', serviceVolume: 19, labour: 13794, std: 15461, overallParts: 18146, lubrication: 2887, battery: 494, batteryJet: 504, tyre: 944, amc: 797, carbonCleaner: 753, healthCard: 0, painting: 440, oilRevenue: 2898 },
-      { particulars: 'Rate for the month', serviceVolume: 600, labour: 427628, std: 479292, overallParts: 562522, lubrication: 89497, battery: 15325, batteryJet: 15636, tyre: 29258, amc: 24698, carbonCleaner: 23329, healthCard: 0, painting: 13647, oilRevenue: 89833 },
+      { particulars: 'Last 3 Months Average Achieve', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: '', battery: '', batteryJet: '', tyre: '', amc: '', carbonCleaner: '', healthCard: '', painting: '', oilRevenue: '' },
+      { particulars: 'Target', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: '', battery: '', batteryJet: '', tyre: '', amc: '', carbonCleaner: '', healthCard: '', painting: '', oilRevenue: '' },
+      { particulars: 'Achieved', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: 0, battery: 0, batteryJet: 0, tyre: 0, amc: 0, carbonCleaner: 0, healthCard: 0, painting: 0, oilRevenue: 0 },
+      { particulars: 'Per Day', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: 0, battery: 0, batteryJet: 0, tyre: 0, amc: 0, carbonCleaner: 0, healthCard: 0, painting: 0, oilRevenue: 0 },
+      { particulars: 'Rate for the month', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: 0, battery: 0, batteryJet: 0, tyre: 0, amc: 0, carbonCleaner: 0, healthCard: 0, painting: 0, oilRevenue: 0 },
     ]
   });
 
@@ -274,13 +274,16 @@ const WorkshopReportGraph = ({ dailyTrend }) => {
   const maxVal = Math.max(70, ...dailyTrend.map(d => (d.received || 0) + (d.pending || 0) + (d.invoiced || 0)));
   
   return (
-    <div className="bg-[#666666] p-4 sm:p-6 rounded-sm shadow-xl border border-gray-500 overflow-x-auto mb-8">
+    <div className="bg-[#666666] p-4 sm:p-6 rounded-sm shadow-xl border border-gray-500 mb-8">
       <h3 className="text-white text-center text-sm sm:text-lg font-medium mb-8 tracking-wide">
         Total Received Vehicles, Pending Vehicles and Invoiced as per Workshop report
       </h3>
       
-      <div className="flex items-start gap-2 min-w-[900px] px-2">
-        {/* Y-Axis Labels */}
+      <div className="flex flex-col xl:flex-row items-start gap-6 px-2">
+        {/* Scrollable Chart Container */}
+        <div className="flex-1 w-full overflow-x-auto pb-2">
+          <div className="flex items-start gap-2 min-w-[700px] pb-16">
+            {/* Y-Axis Labels */}
         <div className="flex flex-col justify-between h-[250px] text-white text-[9px] font-bold pr-2 pb-6 select-none">
           {[70, 60, 50, 40, 30, 20, 10, 0].map(val => (
             <div key={val} className="flex items-center justify-end h-0">
@@ -309,7 +312,7 @@ const WorkshopReportGraph = ({ dailyTrend }) => {
               <div key={idx} className="flex flex-col items-center flex-1 min-w-[26px] group relative h-full">
                 {/* The Stacked Bar */}
                 <div className="w-full h-full flex flex-col justify-end items-center mb-1">
-                  <div className="w-4 flex flex-col justify-end shadow-2xl transition-all duration-300 group-hover:scale-y-105 origin-bottom">
+                  <div className="w-5 sm:w-6 h-full flex flex-col justify-end shadow-2xl transition-all duration-300 group-hover:scale-y-105 origin-bottom">
                     {/* Invoiced - Yellow */}
                     {day.invoiced > 0 && (
                       <div 
@@ -344,7 +347,7 @@ const WorkshopReportGraph = ({ dailyTrend }) => {
                 </div>
                 
                 {/* X-Axis Date Label */}
-                <div className="absolute top-full mt-2 left-1/2 transform -rotate-45 origin-top-left text-white text-[8px] whitespace-nowrap opacity-70 group-hover:opacity-100 group-hover:font-bold transition-all">
+                <div className="absolute top-[100%] mt-3 left-1/2 -translate-x-1/2 -rotate-45 text-white text-[9.5px] sm:text-[10px] whitespace-nowrap opacity-80 group-hover:opacity-100 group-hover:text-brand-accent group-hover:font-bold transition-all z-10">
                   {day.date}
                 </div>
               </div>
@@ -352,8 +355,11 @@ const WorkshopReportGraph = ({ dailyTrend }) => {
           })}
         </div>
 
+          </div>
+        </div>
+
         {/* Legend Panel */}
-        <div className="w-52 flex flex-col gap-4 ml-6 mt-12 bg-black/20 p-4 rounded border border-white/5">
+        <div className="w-full xl:w-52 flex flex-col gap-4 bg-black/20 p-4 rounded border border-white/5 shrink-0">
           <div className="flex items-center gap-3 group cursor-default">
             <div className="w-3.5 h-3.5 bg-[#FFB700] border border-black/40 shadow-md group-hover:scale-110 transition-transform"></div>
             <span className="text-white text-[9px] font-medium leading-tight">Invoiced as per Workshop report</span>
@@ -372,9 +378,6 @@ const WorkshopReportGraph = ({ dailyTrend }) => {
           </div>
         </div>
       </div>
-      
-      {/* Bottom spacer for rotated labels */}
-      <div className="h-16"></div>
     </div>
   );
 };

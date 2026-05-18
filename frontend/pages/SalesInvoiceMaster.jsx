@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { salesInvoiceApi } from '../api/salesInvoiceApi.js';
+import { FileSpreadsheet } from 'lucide-react';
 
 const SalesInvoiceMaster = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -151,41 +152,57 @@ const SalesInvoiceMaster = ({ user }) => {
       </div>
 
       {/* Upload Section */}
-      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
-              Upload Sales Invoice Excel
-            </label>
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={handleUpload}
-                className="hidden"
-                id="excel-upload"
-              />
-              <label
-                htmlFor="excel-upload"
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-3 hover:border-brand-accent transition-colors ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isUploading ? (
-                  <span className="text-brand-text-secondary text-sm">Uploading...</span>
-                ) : (
-                  <span className="text-brand-text-secondary text-sm">
-                    📂 Click to upload Excel or CSV file (.xlsx / .xls / .csv)
-                  </span>
-                )}
-              </label>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl group-hover:scale-110 transition-transform">
+              <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <p className="text-xs text-brand-text-secondary mt-1">
-              Supports standard shell format. Picks: Customer Name (First/Middle/Last), Mobile Phone #, Permanent Reg No, Model Name, Assigned To (DSE) Name, Actual Deliver date
-            </p>
+            <div>
+              <h3 className="font-bold text-brand-text-primary">Sales Invoice Master</h3>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">Excel Import</p>
+            </div>
           </div>
+          <div className="space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleUpload}
+              className="hidden"
+              id="excel-upload"
+              disabled={!!isUploading}
+            />
+            <label
+              htmlFor="excel-upload"
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-6 cursor-pointer hover:bg-blue-50/50 hover:border-blue-400 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isUploading ? (
+                <div className="flex items-center gap-2 text-blue-600 font-medium">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading...
+                </div>
+              ) : (
+                <>
+                  <span className="text-brand-text-primary font-bold text-sm">Upload Sales Invoice Excel</span>
+                  <span className="text-xs text-brand-text-secondary text-center mt-1">
+                    <strong className="text-blue-600 font-semibold">Key Data:</strong> Customer Name, Mobile, Reg No, Model, DSE, Deliver date
+                  </span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
+      {/* Search Section */}
+      <div className="bg-brand-surface p-4 rounded-xl shadow-sm border border-brand-border">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">
               Search Records
             </label>
             <div className="flex gap-2">
@@ -199,14 +216,14 @@ const SalesInvoiceMaster = ({ user }) => {
               />
               <button
                 onClick={handleSearch}
-                className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg"
+                className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
               >
                 Search
               </button>
               {search && (
                 <button
                   onClick={() => { setSearch(''); fetchRecords(''); }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
                 >
                   Clear
                 </button>
@@ -215,8 +232,8 @@ const SalesInvoiceMaster = ({ user }) => {
           </div>
         </div>
 
-        <div className="mt-3 text-sm text-brand-text-secondary">
-          Total Records: <strong>{records.length}</strong>
+        <div className="mt-3 text-sm text-brand-text-secondary flex items-center justify-between">
+          <span>Total Records: <strong className="text-brand-text-primary">{records.length}</strong></span>
         </div>
       </div>
 

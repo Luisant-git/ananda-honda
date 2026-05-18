@@ -86,7 +86,23 @@ export class ServiceJobCardService {
   async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' = 'REVENUE') {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    // Dynamically find header row (skip garbage rows like #ERROR!)
+    const allRowsAoa: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    let headerRowIdx = 0;
+    for (let i = 0; i < Math.min(20, allRowsAoa.length); i++) {
+      const rowArray = allRowsAoa[i] || [];
+      const hasJobCardHeader = rowArray.some(cell => {
+        const str = String(cell).toLowerCase().trim();
+        return str === 'job card number' || str === 'job card #' || str === 'registration number' || str === 'jobcard no.';
+      });
+      if (hasJobCardHeader) {
+        headerRowIdx = i;
+        break;
+      }
+    }
+
+    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', range: headerRowIdx });
 
     if (!rows.length) {
       throw new BadRequestException('Excel file is empty');
@@ -110,6 +126,9 @@ export class ServiceJobCardService {
       let totalRevenue = 0;
       let amc = false;
       let oil = false;
+      let battery = false;
+      let tyre = false;
+      let painting = false;
       let currentKM = 0;
       let frameNumber = '';
 
@@ -144,6 +163,16 @@ export class ServiceJobCardService {
         vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
         currentKM = parseFloat(row['Current KM'] || 0);
         frameNumber = String(row['Frame Number'] || '').trim();
+
+        // Extract boolean flags from Part Category
+        const partCategory = String(row['Part Category'] || '').toLowerCase();
+        if (partCategory) {
+          if (partCategory.includes('oil') || partCategory.includes('lube')) oil = true;
+          if (partCategory.includes('amc')) amc = true;
+          if (partCategory.includes('battery')) battery = true;
+          if (partCategory.includes('tyre') || partCategory.includes('tire')) tyre = true;
+          if (partCategory.includes('paint') || partCategory.includes('panel')) painting = true;
+        }
       } else if (type === 'INVOICE') {
         jobCardNumber = String(row['Job Card #'] || '').trim();
         jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
@@ -196,8 +225,11 @@ export class ServiceJobCardService {
           lubesRevenue: lubesRevenue || undefined,
           accessoriesRevenue: accessoriesRevenue || undefined,
           totalRevenue: totalRevenue || undefined,
-          amc: amc,
-          oil: oil,
+          amc: amc ? true : undefined,
+          oil: oil ? true : undefined,
+          battery: battery ? true : undefined,
+          tyre: tyre ? true : undefined,
+          painting: painting ? true : undefined,
           currentKM: currentKM || undefined,
           frameNumber: frameNumber || undefined,
           createdAt: finalCreatedAt,
@@ -218,6 +250,9 @@ export class ServiceJobCardService {
           totalRevenue,
           amc,
           oil,
+          battery,
+          tyre,
+          painting,
           currentKM,
           frameNumber,
           createdAt: finalCreatedAt,

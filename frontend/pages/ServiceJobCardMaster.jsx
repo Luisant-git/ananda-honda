@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
+import { Coins, Wrench, Receipt } from 'lucide-react';
 
 const ServiceJobCardMaster = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -188,7 +189,13 @@ const ServiceJobCardMaster = ({ user }) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-brand-text-primary">Service Dealership Master</h1>
-          <p className="text-sm text-brand-text-secondary mt-1">Manage and import service data reports</p>
+          <p className="text-sm text-brand-text-secondary mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <span>Manage and import service data reports.</span>
+            <span className="text-brand-accent font-medium bg-brand-accent/10 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              All uploaded reports are intelligently synced & merged by Job Card Number
+            </span>
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -222,7 +229,7 @@ const ServiceJobCardMaster = ({ user }) => {
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl group-hover:scale-110 transition-transform">
-              💰
+              <Coins className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-brand-text-primary">Job Card Log & Revenue</h3>
@@ -253,7 +260,9 @@ const ServiceJobCardMaster = ({ user }) => {
               ) : (
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Revenue Sheet</span>
-                  <span className="text-[10px] text-brand-text-secondary text-center">Labour, Parts, Lubes Revenue...</span>
+                  <span className="text-xs text-brand-text-secondary text-center mt-1">
+                    <strong className="text-blue-600 font-semibold">Key Data:</strong> Labour, Parts, Lubes Revenue
+                  </span>
                 </>
               )}
             </label>
@@ -264,7 +273,7 @@ const ServiceJobCardMaster = ({ user }) => {
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-orange-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl group-hover:scale-110 transition-transform">
-              🛠️
+              <Wrench className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-brand-text-primary">Workshop Sheet</h3>
@@ -295,7 +304,9 @@ const ServiceJobCardMaster = ({ user }) => {
               ) : (
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Workshop Excel</span>
-                  <span className="text-[10px] text-brand-text-secondary text-center">Job Card Status, Close Date...</span>
+                  <span className="text-xs text-brand-text-secondary text-center mt-1">
+                    <strong className="text-orange-600 font-semibold">Key Data:</strong> Job Card Status, Close Date, Parts (Oil, Battery, Tyre, etc.)
+                  </span>
                 </>
               )}
             </label>
@@ -306,7 +317,7 @@ const ServiceJobCardMaster = ({ user }) => {
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-purple-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl group-hover:scale-110 transition-transform">
-              📄
+              <Receipt className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-brand-text-primary">Invoice Report</h3>
@@ -337,7 +348,9 @@ const ServiceJobCardMaster = ({ user }) => {
               ) : (
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Invoice Report</span>
-                  <span className="text-[10px] text-brand-text-secondary text-center">Registration, Customer Name...</span>
+                  <span className="text-xs text-brand-text-secondary text-center mt-1">
+                    <strong className="text-purple-600 font-semibold">Key Data:</strong> Registration, Customer Name, Mobile, Vehicle
+                  </span>
                 </>
               )}
             </label>
