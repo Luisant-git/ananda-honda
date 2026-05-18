@@ -30,7 +30,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
   };
 
   const hasDashboardAccess =
-    !!(permissions?.dashboard?.sales || permissions?.dashboard?.service);
+    !!(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business);
 
   const NavLink = ({ view, label, icon, isSubmenu = false }) => {
     const isActive = currentView === view;

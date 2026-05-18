@@ -508,7 +508,7 @@ const handleEdit = (part) => {
             <label className="block text-sm font-medium text-brand-text-secondary mb-2">
               Upload Service Parts Excel
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -519,12 +519,12 @@ const handleEdit = (part) => {
               />
               <label
                 htmlFor="service-parts-upload"
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-3 hover:border-brand-accent transition-colors ${
+                className={`cursor-pointer w-full flex items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-3 hover:border-brand-accent transition-colors ${
                   isImporting ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {isImporting ? (
-                  <span className="text-brand-text-secondary text-sm">
+                  <span className="text-brand-text-secondary text-sm text-center">
                     <svg className="animate-spin h-5 w-5 inline mr-2" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -532,7 +532,7 @@ const handleEdit = (part) => {
                     Importing...
                   </span>
                 ) : (
-                  <span className="text-brand-text-secondary text-sm">
+                  <span className="text-brand-text-secondary text-sm text-center">
                     📂 Click to upload Excel file (.xlsx / .xls)
                   </span>
                 )}
@@ -548,18 +548,18 @@ const handleEdit = (part) => {
             <label className="block text-sm font-medium text-brand-text-secondary mb-2">
               Search Records
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search by Part No, Part Description or Model..."
-                className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                className="w-full flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               />
               <button
                 onClick={handleSearch}
-                className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm"
+                className="w-full sm:w-auto bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm"
               >
                 Search
               </button>
@@ -571,11 +571,11 @@ const handleEdit = (part) => {
             <label className="block text-sm font-medium text-brand-text-secondary mb-2">
               Filter by Status
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                className="w-full flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               >
                 <option value="">All Status</option>
                 <option value="ORDERED">ORDERED</option>
@@ -585,7 +585,7 @@ const handleEdit = (part) => {
               {statusFilter && (
                 <button
                   onClick={() => { setStatusFilter(''); handleStatusFilterChange(''); }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+                  className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
                 >
                   Clear
                 </button>
@@ -638,30 +638,14 @@ const handleEdit = (part) => {
             )}
           </div>
         )}
+        pagination={{
+          total: totalRecords,
+          totalPages,
+          page: currentPage,
+          limit: 10,
+          onPageChange: handlePageChange,
+        }}
       />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-4">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-3 py-1 rounded border border-brand-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-hover"
-          >
-            Previous
-          </button>
-          <span className="text-brand-text-secondary">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded border border-brand-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-hover"
-          >
-            Next
-          </button>
-        </div>
-      )}
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Service Part" : "Add Service Part"}>

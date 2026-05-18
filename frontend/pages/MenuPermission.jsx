@@ -27,7 +27,7 @@ const MenuPermission = () => {
     const existing = permissions.find(p => p.role === role);
     setSelectedRole(role);
     setEditData(existing?.permissions || {
-      dashboard: { sales: false, service: false },
+      dashboard: { sales: false, service: false, service_business: false },
       master: false,
       payment_collection: {
         sales: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false },
@@ -96,12 +96,14 @@ const MenuPermission = () => {
 
   const hasDashboardAccess = (perm) =>
     perm?.permissions?.dashboard?.sales === true ||
-    perm?.permissions?.dashboard?.service === true;
+    perm?.permissions?.dashboard?.service === true ||
+    perm?.permissions?.dashboard?.service_business === true;
 
   const showDashboardColumn = permissions.some(
     (p) =>
       p?.permissions?.dashboard?.sales === true ||
-      p?.permissions?.dashboard?.service === true
+      p?.permissions?.dashboard?.service === true ||
+      p?.permissions?.dashboard?.service_business === true
   );
   
   const getModuleLabel = (module) => {
@@ -244,6 +246,19 @@ const MenuPermission = () => {
                       }
                     />
                     <span>Service Dashboard</span>
+                  </label>
+                  <label className="flex items-center gap-2 mt-2">
+                    <input
+                      type="checkbox"
+                      checked={editData.dashboard?.service_business || false}
+                      onChange={() =>
+                        setEditData(prev => ({
+                          ...prev,
+                          dashboard: { ...prev.dashboard, service_business: !prev.dashboard?.service_business }
+                        }))
+                      }
+                    />
+                    <span>Service Business Dashboard</span>
                   </label>
                 </div>
               </label>

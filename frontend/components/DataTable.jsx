@@ -122,7 +122,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm text-left text-brand-text-secondary">
           <thead className="text-xs text-brand-text-secondary uppercase bg-brand-hover">
             <tr>
@@ -152,6 +152,24 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="sm:hidden space-y-3">
+        {currentData.map((item, rowIndex) => (
+          <div key={rowIndex} className="bg-white border border-brand-border rounded-lg p-4 shadow-sm">
+            <div className="grid grid-cols-1 gap-3">
+              {columns.map((col, colIndex) => (
+                <div key={colIndex} className="flex flex-col gap-1 text-sm">
+                  <span className="text-brand-text-secondary font-medium">{col.header}</span>
+                  <span className="text-brand-text-primary">{getCellValue(item, col)}</span>
+                </div>
+              ))}
+            </div>
+            {actionButtons && (
+              <div className="mt-4 flex flex-wrap gap-2">{actionButtons(item)}</div>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4">
