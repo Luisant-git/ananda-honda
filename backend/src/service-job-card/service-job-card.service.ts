@@ -109,6 +109,7 @@ export class ServiceJobCardService {
     }
 
     let imported = 0;
+    const seenPartCategories = new Set<string>();
 
     for (const row of rows) {
       let jobCardNumber = '';
@@ -148,7 +149,6 @@ export class ServiceJobCardService {
         accessoriesRevenue = parseFloat(row['Accessories Revenue'] || 0);
         totalRevenue = parseFloat(row['Total Job Card Revenue'] || 0);
         amc = String(row['AMC Service'] || '').toLowerCase().includes('yes') || String(row['AMC Service'] || '') === '1';
-        oil = lubesRevenue > 0;
         currentKM = parseFloat(row['Current KMs'] || 0);
         frameNumber = String(row['Frame Number'] || '').trim();
         vehicleDetails = String(row['Model Name'] || '').trim();
@@ -164,14 +164,30 @@ export class ServiceJobCardService {
         currentKM = parseFloat(row['Current KM'] || 0);
         frameNumber = String(row['Frame Number'] || '').trim();
 
-        // Extract boolean flags from Part Category
-        const partCategory = String(row['Part Category'] || '').toLowerCase();
+        // Extract boolean flags strictly from the Part Category column (except painting which can be in description)
+        const partCategory = String(row['Part Category'] || '').toLowerCase().trim();
+        const partDesc = String(row['Part Description'] || '').toLowerCase().trim();
+        const combined = `${partCategory} ${partDesc}`.trim();
+
         if (partCategory) {
-          if (partCategory.includes('oil') || partCategory.includes('lube')) oil = true;
-          if (partCategory.includes('amc')) amc = true;
-          if (partCategory.includes('battery')) battery = true;
-          if (partCategory.includes('tyre') || partCategory.includes('tire')) tyre = true;
-          if (partCategory.includes('paint') || partCategory.includes('panel')) painting = true;
+          // Oil: Match 'oil' (but not 'coil'/'foil') or 'lub' (to match 'LUB', 'LUBRICANT', 'lubricant', etc.)
+          if ((partCategory.includes('oil') && !partCategory.includes('coil') && !partCategory.includes('foil')) || partCategory.includes('lub')) {
+            oil = true;
+          }
+          if (partCategory.includes('amc')) {
+            amc = true;
+          }
+          if (partCategory.includes('battery') || partCategory.includes('batteries')) {
+            battery = true;
+          }
+          if (partCategory.includes('tyr') || partCategory.includes('tire')) {
+            tyre = true;
+          }
+        }
+
+        // Painting/Panels can be in Part Category or Part Description
+        if (combined && (combined.includes('paint') || combined.includes('panel'))) {
+          painting = true;
         }
       } else if (type === 'INVOICE') {
         jobCardNumber = String(row['Job Card #'] || '').trim();
@@ -262,6 +278,7 @@ export class ServiceJobCardService {
       imported++;
     }
 
+    console.log('DEBUG UNIQUE PART CATEGORIES SEEN IN UPLOAD:', Array.from(seenPartCategories));
     return { imported };
   }
 
