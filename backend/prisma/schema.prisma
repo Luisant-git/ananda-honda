@@ -260,7 +260,8 @@ model ServiceTypeOfPart {
   partNo    String   @unique
   partName  String // for part description
   Model String ?
-  status    String   
+  status    String  @default("ORDERED")
+  statusDate    DateTime?  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

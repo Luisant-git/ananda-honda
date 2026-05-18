@@ -17,13 +17,17 @@ const ServiceTypeOfPart = ({ user }) => {
   const [formData, setFormData] = useState({ 
     partNo: '', 
     partDescription: '',
-    Model: '',  // Changed from partModel to Model
-    status: 'Enable' 
+    Model: '',
+    status: 'ORDERED' 
   });
   const [permissions, setPermissions] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -40,29 +44,32 @@ const ServiceTypeOfPart = ({ user }) => {
     }
   };
 
-  const fetchServiceParts = async (searchTerm = search) => {
+  const fetchServiceParts = async (page = currentPage) => {
     setLoading(true);
     try {
-      const data = await serviceTypeOfPartApi.getAll();
-      const filteredData = searchTerm 
-        ? data.filter(part => 
-            part.partNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (part.partDescription || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (part.Model || '').toLowerCase().includes(searchTerm.toLowerCase())  // Changed from partModel to Model
-          )
-        : data;
+      const response = await serviceTypeOfPartApi.getAll({
+        page: page,
+        limit: 10,
+        search: search,
+        status: statusFilter
+      });
       
-      const formattedData = filteredData.map((part, index) => ({
-        sNo: index + 1,
+      const formattedData = response.data.map((part, index) => ({
+        sNo: ((page - 1) * 10) + index + 1,
         id: part.id,
         partNo: part.partNo,
-        partDescription: part.partDescription || part.partName,
-        Model: part.Model || 'N/A',  // Changed from partModel to Model
+        partDescription: part.partDescription,
+        Model: part.Model || 'N/A',
         status: part.status,
+        statusDate: part.statusDate,
         createdAt: part.createdAt,
         updatedAt: part.updatedAt
       }));
+      
       setServiceParts(formattedData);
+      setTotalPages(response.meta.totalPages);
+      setTotalRecords(response.meta.total);
+      setCurrentPage(response.meta.page);
     } catch (error) {
       console.error('Error fetching service parts:', error);
       toast.error('Failed to fetch records');
@@ -72,61 +79,103 @@ const ServiceTypeOfPart = ({ user }) => {
   };
 
   const handleSearch = () => {
-    fetchServiceParts(search);
+    setCurrentPage(1);
+    fetchServiceParts(1);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.partNo.trim()) {
-      toast.error('Part No is required');
-      return;
-    }
-    if (!formData.partDescription.trim()) {
-      toast.error('Part Description is required');
-      return;
-    }
+  const handleStatusFilterChange = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  };
 
-    setLoading(true);
-    try {
-      const submitData = {
-        partNo: formData.partNo,
-        partDescription: formData.partDescription,
-        Model: formData.Model || null,  // Changed from partModel to Model
-        status: formData.status
-      };
+  useEffect(() => {
+    if (currentPage === 1) {
+      fetchServiceParts(1);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [search, statusFilter]);
 
-      if (isEditMode) {
-        await serviceTypeOfPartApi.update(editingPart.id, submitData);
-        toast.success('Service part updated successfully!');
-      } else {
-        await serviceTypeOfPartApi.create(submitData);
-        toast.success('Service part created successfully!');
-      }
-      setIsModalOpen(false);
-      setIsEditMode(false);
-      setEditingPart(null);
-      setFormData({ partNo: '', partDescription: '', Model: '', status: 'Enable' });  // Changed from partModel to Model
-      fetchServiceParts(search);
-    } catch (error) {
-      toast.error(error.message || 'Error saving service part');
-      console.error('Error saving service part:', error);
-    } finally {
-      setLoading(false);
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      fetchServiceParts(newPage);
     }
   };
 
-  const handleEdit = (part) => {
-    setIsEditMode(true);
-    setEditingPart(part);
-    setFormData({
-      partNo: part.partNo,
-      partDescription: part.partDescription,
-      Model: part.Model !== 'N/A' ? part.Model : '',  // Changed from partModel to Model
-      status: part.status
-    });
-    setIsModalOpen(true);
+ 
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  console.log('Current formData before submit:', formData); // Debug log
+  
+  if (!formData.partNo.trim()) {
+    toast.error('Part No is required');
+    return;
+  }
+  if (!formData.partDescription.trim()) {
+    toast.error('Part Description is required');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const submitData = {
+      partNo: formData.partNo,
+      partDescription: formData.partDescription,
+      Model: formData.Model || null,
+      status: formData.status, // This should be 'ORDERED', 'RECEIVED', or 'NOT_RECEIVED'
+      statusDate: new Date().toISOString()
+    };
+
+    console.log('Submitting to API:', submitData); // Debug log - check if status is here
+
+    if (isEditMode) {
+      const numericId = typeof editingPart.id === 'string' ? parseInt(editingPart.id, 10) : editingPart.id;
+      const response = await serviceTypeOfPartApi.update(numericId, submitData);
+      console.log('Update response:', response);
+      toast.success('Service part updated successfully!');
+    } else {
+      await serviceTypeOfPartApi.create(submitData);
+      toast.success('Service part created successfully!');
+    }
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingPart(null);
+    setFormData({ partNo: '', partDescription: '', Model: '', status: 'ORDERED' });
+    fetchServiceParts(currentPage);
+  } catch (error) {
+    toast.error(error.message || 'Error saving service part');
+    console.error('Error saving service part:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleEdit = (part) => {
+  console.log('Editing part - raw data:', part); // Debug log
+  
+  setIsEditMode(true);
+  setEditingPart(part);
+  
+  // Convert status if it's the old 'Enable'/'Disable' format
+  let statusValue = part.status;
+  if (statusValue === 'Enable') statusValue = 'ORDERED';
+  if (statusValue === 'Disable') statusValue = 'NOT_RECEIVED';
+  
+  const newFormData = {
+    partNo: part.partNo,
+    partDescription: part.partDescription,
+    Model: part.Model !== 'N/A' ? part.Model : '',
+    status: statusValue // Make sure status is set
   };
+  
+  console.log('Setting form data to:', newFormData); // Debug log
+  
+  setFormData(newFormData);
+  setIsModalOpen(true);
+};
 
   const handleDelete = (part) => {
     setPartToDelete(part);
@@ -136,11 +185,12 @@ const ServiceTypeOfPart = ({ user }) => {
   const confirmDelete = async () => {
     setLoading(true);
     try {
-      await serviceTypeOfPartApi.delete(partToDelete.id);
+      const numericId = typeof partToDelete.id === 'string' ? parseInt(partToDelete.id, 10) : partToDelete.id;
+      await serviceTypeOfPartApi.delete(numericId);
       toast.success('Service part deleted successfully!');
       setIsDeleteModalOpen(false);
       setPartToDelete(null);
-      fetchServiceParts(search);
+      fetchServiceParts(currentPage);
     } catch (error) {
       toast.error(error.message || 'Error deleting service part');
       console.error('Error deleting service part:', error);
@@ -152,14 +202,16 @@ const ServiceTypeOfPart = ({ user }) => {
   const handleClearAll = async () => {
     setLoading(true);
     try {
-      const allParts = await serviceTypeOfPartApi.getAll();
-      for (const part of allParts) {
+      const allParts = await serviceTypeOfPartApi.getAll({ page: 1, limit: 999999 });
+      for (const part of allParts.data) {
         await serviceTypeOfPartApi.delete(part.id);
       }
       toast.success('All service parts cleared successfully!');
       setIsClearModalOpen(false);
-      fetchServiceParts('');
       setSearch('');
+      setStatusFilter('');
+      setCurrentPage(1);
+      fetchServiceParts(1);
     } catch (error) {
       toast.error('Error clearing records');
       console.error('Error clearing records:', error);
@@ -168,16 +220,52 @@ const ServiceTypeOfPart = ({ user }) => {
     }
   };
 
+  // Get status color for display
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'ORDERED':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'RECEIVED':
+        return 'text-green-600 bg-green-50';
+      case 'NOT_RECEIVED':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const columns = [
+    { header: 'SNo', accessor: 'sNo' },
+    { header: 'Part No', accessor: 'partNo' },
+    { header: 'Part Description', accessor: 'partDescription' },
+    { header: 'Model', accessor: 'Model' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      render: (value) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(value)}`}>
+          {value}
+        </span>
+      )
+    },
+    {
+      header: 'Status Date',
+      accessor: 'statusDate',
+      render: (v) => v ? new Date(v).toLocaleDateString() : 'N/A'
+    }
+  ];
+
   // Export to CSV
   const exportToCSV = () => {
     try {
-      const headers = ['SNo', 'Part No', 'Part Description', 'Model', 'Status', 'Created Date'];  // Changed header
+      const headers = ['SNo', 'Part No', 'Part Description', 'Model', 'Status', 'Status Date', 'Created Date'];
       const rows = serviceParts.map(row => [
         row.sNo,
         row.partNo,
         row.partDescription,
-        row.Model || 'N/A',  // Changed from partModel to Model
+        row.Model || 'N/A',
         row.status,
+        row.statusDate ? new Date(row.statusDate).toLocaleDateString('en-GB') : '',
         row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB') : ''
       ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
       const content = headers.join(',') + '\n' + rows.join('\n');
@@ -201,8 +289,9 @@ const ServiceTypeOfPart = ({ user }) => {
       const exportData = serviceParts.map(part => ({
         'Part No': part.partNo,
         'Part Description': part.partDescription,
-        'Model': part.Model || 'N/A',  // Changed from partModel to Model
+        'Model': part.Model || 'N/A',
         'Status': part.status,
+        'Status Date': part.statusDate ? new Date(part.statusDate).toLocaleDateString('en-GB') : '',
         'Created Date': part.createdAt ? new Date(part.createdAt).toLocaleDateString('en-GB') : '',
       }));
 
@@ -214,7 +303,8 @@ const ServiceTypeOfPart = ({ user }) => {
         { wch: 20 },
         { wch: 40 },
         { wch: 20 },
-        { wch: 10 },
+        { wch: 12 },
+        { wch: 12 },
         { wch: 15 }
       ];
 
@@ -230,9 +320,9 @@ const ServiceTypeOfPart = ({ user }) => {
   const downloadTemplate = () => {
     try {
       const templateData = [
-        { 'Part Number': '04053-K0Z-901', 'Part Description': 'CHAIN SPROCKET KIT - CB350', 'Model': 'CB350', 'Status': 'Enable' },
-        { 'Part Number': '05030-KSP-861', 'Part Description': 'RACE CONE GREASE KIT-MOTORCYCL', 'Model': 'N/A', 'Status': 'Enable' },
-        { 'Part Number': 'PART003', 'Part Description': 'BRAKE PAD SET', 'Model': 'N/A', 'Status': 'Disable' },
+        { 'Part Number': '04053-K0Z-901', 'Part Description': 'CHAIN SPROCKET KIT - CB350', 'Model': 'CB350', 'Status': 'ORDERED' },
+        { 'Part Number': '05030-KSP-861', 'Part Description': 'RACE CONE GREASE KIT-MOTORCYCL', 'Model': 'N/A', 'Status': 'ORDERED' },
+        { 'Part Number': 'PART003', 'Part Description': 'BRAKE PAD SET', 'Model': 'N/A', 'Status': 'RECEIVED' },
       ];
 
       const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -243,7 +333,7 @@ const ServiceTypeOfPart = ({ user }) => {
         { wch: 20 },
         { wch: 40 },
         { wch: 15 },
-        { wch: 10 }
+        { wch: 12 }
       ];
 
       XLSX.writeFile(workbook, 'service_parts_template.xlsx');
@@ -290,16 +380,15 @@ const ServiceTypeOfPart = ({ user }) => {
         const errors = [];
 
         for (const row of jsonData) {
-          // Map "Part Number" to partNo
           let partNo = row['Part Number'] || row['Part No'] || row['partNo'] || row['PART_NO'];
-          
-          // Map "Part Description" to partDescription
           let partDescription = row['Part Description'] || row['Part Name'] || row['partName'] || row['PART_NAME'];
+          let Model = row['Model'] || row['model'] || row['MODEL'] || 'N/A';
+          let status = row['Status'] || row['status'] || 'ORDERED';
           
-          // Map "Model" - default to 'N/A' if not provided
-          let Model = row['Model'] || row['model'] || row['MODEL'] || 'N/A';  // Changed from partModel to Model
-          
-          const status = row['Status'] || row['status'] || 'Enable';
+          // Ensure status is one of the valid values
+          if (!['ORDERED', 'RECEIVED', 'NOT_RECEIVED'].includes(status)) {
+            status = 'ORDERED';
+          }
 
           if (!partNo || !partDescription) {
             errorCount++;
@@ -307,24 +396,21 @@ const ServiceTypeOfPart = ({ user }) => {
             continue;
           }
 
-          // Check if part already exists
-          const existingPart = serviceParts.find(p => p.partNo === partNo);
-          if (existingPart) {
-            duplicateCount++;
-            continue;
-          }
-
           try {
             await serviceTypeOfPartApi.create({
               partNo: partNo.toString().trim(),
               partDescription: partDescription.toString().trim(),
-              Model: Model !== 'N/A' ? Model.toString().trim() : null,  // Changed from partModel to Model
-              status: status === 'Enable' || status === 'enable' ? 'Enable' : 'Disable'
+              Model: Model !== 'N/A' ? Model.toString().trim() : null,
+              status: status
             });
             successCount++;
           } catch (err) {
-            errorCount++;
-            errors.push(`${partNo}: ${err.message}`);
+            if (err.message.includes('already exists')) {
+              duplicateCount++;
+            } else {
+              errorCount++;
+              errors.push(`${partNo}: ${err.message}`);
+            }
           }
         }
 
@@ -337,7 +423,7 @@ const ServiceTypeOfPart = ({ user }) => {
         }
         
         toast.success(message, { duration: 5000 });
-        await fetchServiceParts(search);
+        await fetchServiceParts(currentPage);
         
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -358,20 +444,7 @@ const ServiceTypeOfPart = ({ user }) => {
     reader.readAsArrayBuffer(file);
   };
 
-  const columns = [
-    { header: 'SNo', accessor: 'sNo' },
-    { header: 'Part No', accessor: 'partNo' },
-    { header: 'Part Description', accessor: 'partDescription' },
-    { header: 'Model', accessor: 'Model' },  // Changed header
-    { header: 'Status', accessor: 'status' },
-    {
-      header: 'Created Date',
-      accessor: 'createdAt',
-      render: (v) => v ? new Date(v).toLocaleDateString('en-GB') : 'N/A',
-    },
-  ];
-
-  if (loading) {
+  if (loading && serviceParts.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
@@ -408,12 +481,12 @@ const ServiceTypeOfPart = ({ user }) => {
               >
                 Export Excel
               </button>
-              <button
+              {/* <button
                 onClick={() => setIsClearModalOpen(true)}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
               >
                 Clear All
-              </button>
+              </button> */}
             </>
           )}
           {permissions?.master?.service_type_of_part?.add && (
@@ -427,9 +500,9 @@ const ServiceTypeOfPart = ({ user }) => {
         </div>
       </div>
 
-      {/* Upload + Search Section */}
+      {/* Upload + Search + Status Filter Section */}
       <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Upload */}
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-2">
@@ -466,7 +539,7 @@ const ServiceTypeOfPart = ({ user }) => {
               </label>
             </div>
             <p className="text-xs text-brand-text-secondary mt-1">
-              Expected columns: Part Number, Part Description, Model, Status (Enable/Disable)
+              Expected columns: Part Number, Part Description, Model, Status (ORDERED/RECEIVED/NOT_RECEIVED)
             </p>
           </div>
 
@@ -490,9 +563,28 @@ const ServiceTypeOfPart = ({ user }) => {
               >
                 Search
               </button>
-              {search && (
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
+              Filter by Status
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value)}
+                className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              >
+                <option value="">All Status</option>
+                <option value="ORDERED">ORDERED</option>
+                <option value="RECEIVED">RECEIVED</option>
+                <option value="NOT_RECEIVED">NOT RECEIVED</option>
+              </select>
+              {statusFilter && (
                 <button
-                  onClick={() => { setSearch(''); fetchServiceParts(''); }}
+                  onClick={() => { setStatusFilter(''); handleStatusFilterChange(''); }}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
                 >
                   Clear
@@ -502,8 +594,23 @@ const ServiceTypeOfPart = ({ user }) => {
           </div>
         </div>
 
-        <div className="mt-3 text-sm text-brand-text-secondary">
-          Total Records: <strong>{serviceParts.length}</strong>
+        <div className="mt-3 text-sm text-brand-text-secondary flex justify-between items-center">
+          <div>
+            Total Records: <strong>{totalRecords}</strong>
+          </div>
+          {(search || statusFilter) && (
+            <button
+              onClick={() => { 
+                setSearch(''); 
+                setStatusFilter(''); 
+                handleStatusFilterChange('');
+                handleSearch();
+              }}
+              className="text-red-600 hover:text-red-700 text-sm font-medium"
+            >
+              Clear All Filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -532,6 +639,29 @@ const ServiceTypeOfPart = ({ user }) => {
           </div>
         )}
       />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded border border-brand-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-hover"
+          >
+            Previous
+          </button>
+          <span className="text-brand-text-secondary">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded border border-brand-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-hover"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditMode ? "Edit Service Part" : "Add Service Part"}>
@@ -587,8 +717,9 @@ const ServiceTypeOfPart = ({ user }) => {
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               required
             >
-              <option value="Enable">Enable</option>
-              <option value="Disable">Disable</option>
+              <option value="ORDERED">ORDERED</option>
+              <option value="RECEIVED">RECEIVED</option>
+              <option value="NOT_RECEIVED">NOT RECEIVED</option>
             </select>
           </div>
 
@@ -599,7 +730,7 @@ const ServiceTypeOfPart = ({ user }) => {
                 setIsModalOpen(false);
                 setIsEditMode(false);
                 setEditingPart(null);
-                setFormData({ partNo: '', partDescription: '', Model: '', status: 'Enable' });
+                setFormData({ partNo: '', partDescription: '', Model: '', status: 'ORDERED' });
               }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
@@ -646,7 +777,7 @@ const ServiceTypeOfPart = ({ user }) => {
           <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-brand-text-primary mb-3">Confirm Clear All</h3>
             <p className="text-brand-text-secondary mb-4">
-              Are you sure you want to delete all <strong>{serviceParts.length}</strong> service part records? This cannot be undone.
+              Are you sure you want to delete all <strong>{totalRecords}</strong> service part records? This cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
