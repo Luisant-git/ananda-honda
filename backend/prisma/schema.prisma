@@ -235,12 +235,26 @@ model ServiceJobCard {
   vehicleDetails     String?
   serviceId      Int?
   serviceType        ServiceType? @relation(fields: [serviceId], references: [id])
+  closedDate         DateTime?
   status             String   @default("Pending")
+  labourRevenue      Float?   @default(0)
+  partsRevenue       Float?   @default(0)
+  lubesRevenue       Float?   @default(0)
+  accessoriesRevenue Float?   @default(0)
+  totalRevenue       Float?   @default(0)
+  amc                Boolean  @default(false)
+  oil                Boolean  @default(false)
+  battery            Boolean  @default(false)
+  tyre               Boolean  @default(false)
+  painting           Boolean  @default(false)
+  frameNumber        String?
+  currentKM          Float?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
    @@index([mobileNumber]) 
   @@index([registrationNumber])
+  @@index([closedDate])
 }
 
 model ServiceType{

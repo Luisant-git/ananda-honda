@@ -220,12 +220,22 @@ export class PaymentCollectionService {
   }
 
   async getDashboardStats(fromDate: string, toDate: string) {
-    const startDate = new Date(fromDate);
-    startDate.setHours(0, 0, 0, 0);
+    const dateFilter: any = {};
+    if (fromDate && toDate) {
+      const startDate = new Date(fromDate);
+      startDate.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+      const endDate = new Date(toDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      dateFilter.gte = startDate;
+      dateFilter.lte = endDate;
+    }
 
+    const baseWhere: any = { deletedAt: null };
+    if (Object.keys(dateFilter).length > 0) {
+      baseWhere.date = dateFilter;
+    }
 
     const paymentModes = await this.prisma.paymentMode.findMany({
       include: {
@@ -237,9 +247,8 @@ export class PaymentCollectionService {
       paymentModes.map(async (mode) => {
         const data = await this.prisma.paymentCollection.aggregate({
           where: {
-            date: { gte: startDate, lte: endDate },
+            ...baseWhere,
             paymentModeId: mode.id,
-            deletedAt: null
           },
           _sum: { recAmt: true },
           _count: true
@@ -249,10 +258,9 @@ export class PaymentCollectionService {
           mode.typeOfPayments.map(async (type) => {
             const typeData = await this.prisma.paymentCollection.aggregate({
               where: {
-                date: { gte: startDate, lte: endDate },
+                ...baseWhere,
                 paymentModeId: mode.id,
                 typeOfPaymentId: type.id,
-                deletedAt: null
               },
               _sum: { recAmt: true },
               _count: true
@@ -276,10 +284,7 @@ export class PaymentCollectionService {
     );
 
     const totalCount = await this.prisma.paymentCollection.count({
-      where: {
-        date: { gte: startDate, lte: endDate },
-        deletedAt: null
-      }
+      where: baseWhere
     });
 
     return { modes, totalCount };

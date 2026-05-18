@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { dashboardApi } from '../api/dashboardApi';
 import { menuPermissionApi } from '../api/menuPermissionApi';
+import ServiceBusinessDashboard from './ServiceBusinessDashboard';
 const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
   const [chartData, setChartData] = useState({ modes: [] });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [expandedMode, setExpandedMode] = useState(null); // store the mode name or index
   const [permissions, setPermissions] = useState(null);
 const [activeTab, setActiveTab] = useState(null);
@@ -26,21 +27,27 @@ useEffect(() => {
 
 if (perms?.dashboard?.sales === true) setActiveTab('sales');
 else if (perms?.dashboard?.service === true) setActiveTab('services');
+else if (perms?.dashboard?.service_business === true) setActiveTab('service_business');
 else setActiveTab(null);
   };
 
   fetchPerms();
 }, []);
   const fetchDashboardData = async () => {
-    if (!fromDate || !toDate) {
-      toast.error('Please select both from and to dates');
+    if ((fromDate && !toDate) || (!fromDate && toDate)) {
+      toast.error('Please select both from and to dates or clear both for overall data');
       return;
     }
     setLoading(true);
     try {
-      const data = activeTab === 'sales' 
-        ? await dashboardApi.getDashboardStats(fromDate, toDate)
-        : await dashboardApi.getServicesDashboardStats(fromDate, toDate);
+      let data;
+      if (activeTab === 'sales') {
+        data = await dashboardApi.getDashboardStats(fromDate, toDate);
+      } else if (activeTab === 'services') {
+        data = await dashboardApi.getServicesDashboardStats(fromDate, toDate);
+      } else if (activeTab === 'service_business') {
+        data = await dashboardApi.getBusinessDashboardStats(fromDate, toDate);
+      }
       setChartData(data);
       setExpandedMode(null); // collapse any expanded row
       setLoading(false);
@@ -52,15 +59,21 @@ else setActiveTab(null);
   };
 
   const handleReset = async () => {
-    setFromDate(today);
-    setToDate(today);
+
+    setFromDate('');
+    setToDate('');
     setSearchTerm('');
     setExpandedMode(null);
     setLoading(true);
     try {
-      const data = activeTab === 'sales'
-        ? await dashboardApi.getDashboardStats(today, today)
-        : await dashboardApi.getServicesDashboardStats(today, today);
+      let data;
+      if (activeTab === 'sales') {
+        data = await dashboardApi.getDashboardStats('', '');
+      } else if (activeTab === 'services') {
+        data = await dashboardApi.getServicesDashboardStats('', '');
+      } else if (activeTab === 'service_business') {
+        data = await dashboardApi.getBusinessDashboardStats('', '');
+      }
       setChartData(data);
       setLoading(false);
     } catch (error) {
@@ -155,7 +168,7 @@ else setActiveTab(null);
             <div>
               <h3 className="text-base sm:text-lg font-bold text-white">{reportTitle}</h3>
               <p className="text-white text-xs sm:text-sm mt-1 opacity-90">
-                {fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'Select date range'}
+                {fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'All Time Overview'}
               </p>
             </div>
             <div className="flex gap-2 items-center w-full sm:w-auto">
@@ -313,7 +326,7 @@ else setActiveTab(null);
     );
   };
 const hasDashboardAccess =
-  !!(permissions?.dashboard?.sales || permissions?.dashboard?.service);
+  !!(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business);
 
 if (!permissions) return null; // or: return <div>Loading...</div>
 
@@ -323,7 +336,7 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Dashboard</h1>
       
       {/* Tabs */}
-{(permissions?.dashboard?.sales && permissions?.dashboard?.service) && (
+{(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business) && (
   <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
     <div className="flex border-b border-brand-border">
       {permissions?.dashboard?.sales && (
@@ -335,6 +348,12 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       {permissions?.dashboard?.service && (
         <button onClick={() => handleTabChange('services')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'services' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
           Services Dashboard
+        </button>
+      )}
+
+      {permissions?.dashboard?.service_business && (
+        <button onClick={() => handleTabChange('service_business')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'service_business' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+          Service Business Dashboard
         </button>
       )}
     </div>
@@ -381,10 +400,13 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       </div>
       
       {/* Summary Cards */}
-      {renderSummaryCards(chartData.modes, chartData.totalCount)}
+      {activeTab !== 'service_business' && renderSummaryCards(chartData.modes, chartData.totalCount)}
       
       {/* Data Table */}
-      {renderTable(chartData.modes)}
+      {activeTab !== 'service_business' && renderTable(chartData.modes)}
+
+      {/* Service Business Dashboard */}
+      {activeTab === 'service_business' && <ServiceBusinessDashboard data={chartData} />}
     </div>
   );
 };

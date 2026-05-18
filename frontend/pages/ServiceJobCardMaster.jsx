@@ -35,6 +35,11 @@ const ServiceJobCardMaster = ({ user }) => {
           serviceType: r.serviceType?.name || r.serviceType || r.servicetype || r.service_type || 'N/A',
           customerComplaint: r.complaint || r.customerComplaint || 'N/A',
           status: r.status || 'N/A',
+          closedDate: r.closedDate,
+          labourRevenue: r.labourRevenue,
+          partsRevenue: r.partsRevenue,
+          lubesRevenue: r.lubesRevenue,
+          totalRevenue: r.totalRevenue,
           createdAt: r.createdAt,
         }))
       );
@@ -44,16 +49,15 @@ const ServiceJobCardMaster = ({ user }) => {
     }
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleUpload = async (file, type) => {
     if (!file) return;
     if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
       toast.error('Please upload an Excel or CSV file (.xlsx, .xls, .csv)');
       return;
     }
-    setIsUploading(true);
+    setIsUploading(type);
     try {
-      const result = await serviceJobCardApi.upload(file);
+      const result = await serviceJobCardApi.upload(file, type);
       toast.success(`Successfully imported ${result.imported || 0} records`);
       fetchRecords('');
       setSearch('');
@@ -61,7 +65,6 @@ const ServiceJobCardMaster = ({ user }) => {
       toast.error(error.message || 'Upload failed');
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -163,15 +166,6 @@ const ServiceJobCardMaster = ({ user }) => {
     { header: 'Vehicle Reg No', accessor: 'vehicleRegNo', render: (v) => v || 'N/A' },
     { header: 'Vehicle Model', accessor: 'vehicleModel', render: (v) => v || 'N/A' },
     { header: 'Service Type', accessor: 'serviceType', render: (v) => v || 'N/A' },
-    // { 
-    //   header: 'Status', 
-    //   accessor: 'status',
-    //   render: (v) => (
-    //     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(v)}`}>
-    //       {v || 'N/A'}
-    //     </span>
-    //   )
-    // },
     {
       header: 'Created Date',
       accessor: 'createdAt',
@@ -183,18 +177,21 @@ const ServiceJobCardMaster = ({ user }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-brand-text-primary">Service Dealership Master</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-brand-text-primary">Service Dealership Master</h1>
+          <p className="text-sm text-brand-text-secondary mt-1">Manage and import service data reports</p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={downloadTemplate}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-sm"
+            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
           >
             Download Template
           </button>
           {records.length > 0 && (
             <button
               onClick={downloadCSV}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
             >
               Export CSV
             </button>
@@ -202,7 +199,7 @@ const ServiceJobCardMaster = ({ user }) => {
           {records.length > 0 && (
             <button
               onClick={() => setIsClearModalOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
             >
               Clear All
             </button>
@@ -210,88 +207,175 @@ const ServiceJobCardMaster = ({ user }) => {
         </div>
       </div>
 
-      {/* Upload + Search Section */}
-      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Upload */}
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
-              Upload Service Job Card Excel
-            </label>
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={handleUpload}
-                className="hidden"
-                id="sjc-excel-upload"
-              />
-              <label
-                htmlFor="sjc-excel-upload"
-                className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-3 hover:border-brand-accent transition-colors ${
-                  isUploading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {isUploading ? (
-                  <span className="text-brand-text-secondary text-sm">
-                    <svg className="animate-spin h-5 w-5 inline mr-2" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Uploading...
-                  </span>
-                ) : (
-                  <span className="text-brand-text-secondary text-sm">
-                    📂 Click to upload Excel or CSV file (.xlsx / .xls / .csv)
-                  </span>
-                )}
-              </label>
+      {/* Upload Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 1. Revenue Report */}
+        <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl group-hover:scale-110 transition-transform">
+              💰
             </div>
-            <p className="text-xs text-brand-text-secondary mt-1">
-              Expected columns: Job Card #, Vehicle Registration No., Customer First Name, Customer Last Name, 
-              Contact Phone, Model Name, Service Type, Job Card Status
-            </p>
-            <p className="text-xs text-green-600 mt-1">
-              💡 Service types from Excel will be automatically added to Service Type master
-            </p>
+            <div>
+              <h3 className="font-bold text-brand-text-primary">Job Card Log & Revenue</h3>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">Revenue Report</p>
+            </div>
           </div>
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => handleUpload(e.target.files[0], 'REVENUE')}
+              className="hidden"
+              id="upload-revenue"
+              disabled={!!isUploading}
+            />
+            <label
+              htmlFor="upload-revenue"
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-6 cursor-pointer hover:bg-blue-50/50 hover:border-blue-400 transition-all ${isUploading === 'REVENUE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isUploading === 'REVENUE' ? (
+                <div className="flex items-center gap-2 text-blue-600 font-medium">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading...
+                </div>
+              ) : (
+                <>
+                  <span className="text-brand-text-primary font-bold text-sm">Upload Revenue Sheet</span>
+                  <span className="text-[10px] text-brand-text-secondary text-center">Labour, Parts, Lubes Revenue...</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
 
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-2">
+        {/* 2. Workshop Report */}
+        <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-orange-400 transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl group-hover:scale-110 transition-transform">
+              🛠️
+            </div>
+            <div>
+              <h3 className="font-bold text-brand-text-primary">Workshop Sheet</h3>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">Status Report</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => handleUpload(e.target.files[0], 'WORKSHOP')}
+              className="hidden"
+              id="upload-workshop"
+              disabled={!!isUploading}
+            />
+            <label
+              htmlFor="upload-workshop"
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-6 cursor-pointer hover:bg-orange-50/50 hover:border-orange-400 transition-all ${isUploading === 'WORKSHOP' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isUploading === 'WORKSHOP' ? (
+                <div className="flex items-center gap-2 text-orange-600 font-medium">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading...
+                </div>
+              ) : (
+                <>
+                  <span className="text-brand-text-primary font-bold text-sm">Upload Workshop Excel</span>
+                  <span className="text-[10px] text-brand-text-secondary text-center">Job Card Status, Close Date...</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
+        {/* 3. Invoice Report */}
+        <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-purple-400 transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl group-hover:scale-110 transition-transform">
+              📄
+            </div>
+            <div>
+              <h3 className="font-bold text-brand-text-primary">Invoice Report</h3>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">3 Order Report</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => handleUpload(e.target.files[0], 'INVOICE')}
+              className="hidden"
+              id="upload-invoice"
+              disabled={!!isUploading}
+            />
+            <label
+              htmlFor="upload-invoice"
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-6 cursor-pointer hover:bg-purple-50/50 hover:border-purple-400 transition-all ${isUploading === 'INVOICE' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isUploading === 'INVOICE' ? (
+                <div className="flex items-center gap-2 text-purple-600 font-medium">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading...
+                </div>
+              ) : (
+                <>
+                  <span className="text-brand-text-primary font-bold text-sm">Upload Invoice Report</span>
+                  <span className="text-[10px] text-brand-text-secondary text-center">Registration, Customer Name...</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Section */}
+      <div className="bg-brand-surface p-4 rounded-xl shadow-sm border border-brand-border">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1.5">
               Search Records
             </label>
-            <div className="flex gap-2">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by job card no, reg no, mobile, customer name..."
-                className="flex-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                placeholder="Search by job card no, registration no, mobile, customer name..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border text-brand-text-primary rounded-lg focus:ring-2 focus:ring-brand-accent/20 focus:border-brand-accent transition-all"
               />
-              <button
-                onClick={handleSearch}
-                className="bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg"
-              >
-                Search
-              </button>
-              {search && (
-                <button
-                  onClick={() => { setSearch(''); fetchRecords(''); }}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-                >
-                  Clear
-                </button>
-              )}
             </div>
           </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <button
+              onClick={handleSearch}
+              className="flex-1 md:flex-none bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2.5 px-6 rounded-lg transition-colors"
+            >
+              Search
+            </button>
+            {search && (
+              <button
+                onClick={() => { setSearch(''); fetchRecords(''); }}
+                className="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
+      </div>
 
-        <div className="mt-3 text-sm text-brand-text-secondary">
-          Total Records: <strong>{records.length}</strong>
-        </div>
+      <div className="mt-3 text-sm text-brand-text-secondary">
+        Total Records: <strong>{records.length}</strong>
       </div>
 
       {/* Data Table */}
@@ -367,7 +451,39 @@ const ServiceJobCardMaster = ({ user }) => {
                   {selectedJobCard.createdAt ? new Date(selectedJobCard.createdAt).toLocaleDateString('en-GB') : 'N/A'}
                 </div>
               </div>
+              {selectedJobCard.closedDate && (
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Closed Date</label>
+                  <div className="text-brand-text-primary font-medium">
+                    {new Date(selectedJobCard.closedDate).toLocaleDateString('en-GB')}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {(selectedJobCard.labourRevenue > 0 || selectedJobCard.partsRevenue > 0) && (
+              <div className="border-t border-brand-border pt-4">
+                <h4 className="text-sm font-bold text-brand-text-primary mb-3">Revenue Details</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Labour</label>
+                    <div className="text-brand-text-primary font-medium">₹{selectedJobCard.labourRevenue || 0}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Parts</label>
+                    <div className="text-brand-text-primary font-medium">₹{selectedJobCard.partsRevenue || 0}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Lubes</label>
+                    <div className="text-brand-text-primary font-medium">₹{selectedJobCard.lubesRevenue || 0}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Total Revenue</label>
+                    <div className="text-brand-text-primary font-bold text-brand-accent">₹{selectedJobCard.totalRevenue || 0}</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {selectedJobCard.customerComplaint && selectedJobCard.customerComplaint !== 'N/A' && (
               <div className="border-t border-brand-border pt-4">
