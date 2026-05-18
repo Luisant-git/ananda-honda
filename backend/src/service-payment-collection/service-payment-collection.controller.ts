@@ -35,6 +35,11 @@ export class ServicePaymentCollectionController {
     return this.servicePaymentCollectionService.getDashboardStats(fromDate, toDate);
   }
 
+  @Get('stats/business-dashboard')
+  getBusinessDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.servicePaymentCollectionService.getBusinessDashboardStats(fromDate, toDate);
+  }
+
 @Get()
   findAll(
     @Query('page') page?: string, 

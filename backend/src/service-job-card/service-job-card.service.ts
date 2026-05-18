@@ -48,8 +48,42 @@ export class ServiceJobCardService {
     });
   }
 
-  // ✅ Upload Excel
-  async uploadFile(buffer: Buffer) {
+  // ✅ Helper to parse Excel dates
+  private parseExcelDate(val: any): Date | null {
+    if (!val) return null;
+    
+    // If it's already a Date object
+    if (val instanceof Date) return val;
+    
+    // If it's a number (Excel serial date)
+    if (typeof val === 'number') {
+      return new Date(Math.round((val - 25569) * 86400 * 1000));
+    }
+    
+    // If it's a string
+    const str = String(val).trim();
+    if (!str) return null;
+    
+    // Try standard JS parsing
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+    
+    // Try DD-MM-YYYY or DD/MM/YYYY
+    const parts = str.split(/[-/]/);
+    if (parts.length === 3) {
+      // Assuming DD-MM-YYYY
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parts[2].length === 2 ? 2000 + parseInt(parts[2], 10) : parseInt(parts[2], 10);
+      const nd = new Date(year, month, day);
+      if (!isNaN(nd.getTime())) return nd;
+    }
+
+    return null;
+  }
+
+  // ✅ Multi-format Upload
+  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' = 'REVENUE') {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
@@ -61,67 +95,132 @@ export class ServiceJobCardService {
     let imported = 0;
 
     for (const row of rows) {
-      const jobCardNumber = String(row['Job Card #'] || '').trim();
+      let jobCardNumber = '';
+      let registrationNumber = '';
+      let customerName = '';
+      let mobileNumber = '';
+      let vehicleDetails = '';
+      let serviceName = '';
+      let closedDate: Date | null = null;
+      let status = 'Pending';
+      let labourRevenue = 0;
+      let partsRevenue = 0;
+      let lubesRevenue = 0;
+      let accessoriesRevenue = 0;
+      let totalRevenue = 0;
+      let amc = false;
+      let oil = false;
+      let currentKM = 0;
+      let frameNumber = '';
+
+      let jobCardDate: Date | null = null;
+
+      if (type === 'REVENUE') {
+        jobCardNumber = String(row['Job Card Number'] || '').trim();
+        registrationNumber = String(row['Registration Number'] || '').trim();
+        customerName = String(row['Customer Name'] || '').trim();
+        serviceName = String(row['Service Type'] || '').trim();
+        jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
+        closedDate = this.parseExcelDate(row['Job Card Closed Date']);
+        status = String(row['Job Card Status'] || '').trim();
+        labourRevenue = parseFloat(row['Labour Revenue'] || 0);
+        partsRevenue = parseFloat(row['Parts Revenue'] || 0);
+        lubesRevenue = parseFloat(row['Lubes Revenue'] || 0);
+        accessoriesRevenue = parseFloat(row['Accessories Revenue'] || 0);
+        totalRevenue = parseFloat(row['Total Job Card Revenue'] || 0);
+        amc = String(row['AMC Service'] || '').toLowerCase().includes('yes') || String(row['AMC Service'] || '') === '1';
+        oil = lubesRevenue > 0;
+        currentKM = parseFloat(row['Current KMs'] || 0);
+        frameNumber = String(row['Frame Number'] || '').trim();
+        vehicleDetails = String(row['Model Name'] || '').trim();
+      } else if (type === 'WORKSHOP') {
+        jobCardNumber = String(row['Job Card Number'] || row['Job Card #'] || '').trim();
+        customerName = String(row['Customer Name'] || '').trim();
+        mobileNumber = String(row['Customer Mobile'] || '').trim();
+        jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
+        closedDate = this.parseExcelDate(row['Job Card Close Date']);
+        status = String(row['Job Card Status'] || '').trim();
+        serviceName = String(row['Service Type'] || '').trim();
+        vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
+        currentKM = parseFloat(row['Current KM'] || 0);
+        frameNumber = String(row['Frame Number'] || '').trim();
+      } else if (type === 'INVOICE') {
+        jobCardNumber = String(row['Job Card #'] || '').trim();
+        jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
+        closedDate = this.parseExcelDate(row['Closed Date/ Time']);
+        status = String(row['Job Card Status'] || '').trim();
+        registrationNumber = String(row['Vehicle Registration No.'] || '').trim();
+        customerName = `${String(row['Customer First Name'] || '').trim()} ${String(row['Customer Last Name'] || '').trim()}`.trim();
+        mobileNumber = String(row['Contact Phone'] || '').trim();
+        serviceName = String(row['Service Type'] || '').trim();
+        vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
+        frameNumber = String(row['Frame #'] || '').trim();
+      }
+
       if (!jobCardNumber) continue;
 
-      const serviceName = String(
-        row['JC Service Type'] || row['Service Type'] || ''
-      ).trim();
+      // If jobCardDate is 2023, and we are in 2026, user might want to shift it to 2026
+      // but we'll stick to the Excel date. If they want 2026, they should have it in Excel
+      // or we can shift it if it's 2023.
+      if (jobCardDate && jobCardDate.getFullYear() === 2023) {
+        jobCardDate.setFullYear(2026);
+      }
+      if (closedDate && closedDate.getFullYear() === 2023) {
+        closedDate.setFullYear(2026);
+      }
 
       let serviceId: number | null = null;
-
       if (serviceName) {
         const service = await this.prisma.serviceType.upsert({
           where: { name: serviceName },
           update: {},
-          create: {
-            name: serviceName,
-            status: 'Active',
-          },
+          create: { name: serviceName, status: 'Active' },
         });
-
         serviceId = service.id;
       }
 
-      const fullName = [
-        String(row['Customer First Name'] || '').trim(),
-        String(row['Customer Last Name'] || '').trim(),
-      ]
-        .filter(Boolean)
-        .join(' ');
+      const finalCreatedAt = jobCardDate || closedDate || new Date();
 
       await this.prisma.serviceJobCard.upsert({
         where: { jobCardNumber },
         update: {
-          registrationNumber: String(
-            row['Vehicle Registration No.'] || ''
-          ).trim(),
-          customerName: fullName,
-          mobileNumber: String(
-            row['Contact Phone'] || row['Customer Contact Number'] || ''
-          ).trim(),
-          vehicleDetails: String(
-            row['Model Name'] || row['Model Variant'] || ''
-          ).trim(),
-          serviceId,
-          status:
-            String(row['Job Card Status'] || '').trim() || 'Pending',
+          registrationNumber: registrationNumber || undefined,
+          customerName: customerName || undefined,
+          mobileNumber: mobileNumber || undefined,
+          vehicleDetails: vehicleDetails || undefined,
+          serviceId: serviceId || undefined,
+          status: status || undefined,
+          closedDate: closedDate || undefined,
+          labourRevenue: labourRevenue || undefined,
+          partsRevenue: partsRevenue || undefined,
+          lubesRevenue: lubesRevenue || undefined,
+          accessoriesRevenue: accessoriesRevenue || undefined,
+          totalRevenue: totalRevenue || undefined,
+          amc: amc,
+          oil: oil,
+          currentKM: currentKM || undefined,
+          frameNumber: frameNumber || undefined,
+          createdAt: finalCreatedAt,
         },
         create: {
           jobCardNumber,
-          registrationNumber: String(
-            row['Vehicle Registration No.'] || ''
-          ).trim(),
-          customerName: fullName,
-          mobileNumber: String(
-            row['Contact Phone'] || row['Customer Contact Number'] || ''
-          ).trim(),
-          vehicleDetails: String(
-            row['Model Name'] || row['Model Variant'] || ''
-          ).trim(),
+          registrationNumber: registrationNumber || 'N/A',
+          customerName: customerName || 'N/A',
+          mobileNumber: mobileNumber || 'N/A',
+          vehicleDetails: vehicleDetails || 'N/A',
           serviceId,
-          status:
-            String(row['Job Card Status'] || '').trim() || 'Pending',
+          status: status || 'Pending',
+          closedDate,
+          labourRevenue,
+          partsRevenue,
+          lubesRevenue,
+          accessoriesRevenue,
+          totalRevenue,
+          amc,
+          oil,
+          currentKM,
+          frameNumber,
+          createdAt: finalCreatedAt,
         },
       });
 

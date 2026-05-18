@@ -130,11 +130,11 @@ export const serviceJobCardApi = {
     return response.json();
   },
 
-  upload: async (file) => {
+  upload: async (file, type = 'REVENUE') => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/upload`, {
+    const response = await fetch(`${API_URL}/upload?type=${type}`, {
       method: 'POST',
       credentials: 'include',
       body: formData,

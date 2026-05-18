@@ -23,7 +23,10 @@ export class ServiceJobCardController {
   // ✅ Upload Excel
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async upload(@UploadedFile() file: Express.Multer.File) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('type') type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' = 'REVENUE'
+  ) {
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
     }
@@ -36,7 +39,7 @@ export class ServiceJobCardController {
     }
 
     try {
-      return await this.serviceJobCardService.uploadFile(file.buffer);
+      return await this.serviceJobCardService.uploadFile(file.buffer, type);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

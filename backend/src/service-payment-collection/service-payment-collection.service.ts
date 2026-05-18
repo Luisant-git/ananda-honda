@@ -409,11 +409,20 @@ export class ServicePaymentCollectionService {
   }
 
   async getDashboardStats(fromDate: string, toDate: string) {
-    const startDate = new Date(fromDate);
-    startDate.setHours(0, 0, 0, 0);
+    const dateFilter: any = {};
+    if (fromDate && toDate) {
+      const startDate = new Date(fromDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(toDate);
+      endDate.setHours(23, 59, 59, 999);
+      dateFilter.gte = startDate;
+      dateFilter.lte = endDate;
+    }
 
-    const endDate = new Date(toDate);
-    endDate.setHours(23, 59, 59, 999);
+    const baseWhere: any = { deletedAt: null };
+    if (Object.keys(dateFilter).length > 0) {
+      baseWhere.date = dateFilter;
+    }
 
     const paymentModes = await this.prisma.servicePaymentMode.findMany({
       include: { serviceTypeOfPayments: true }
@@ -423,9 +432,8 @@ export class ServicePaymentCollectionService {
       paymentModes.map(async (mode) => {
         const data = await this.prisma.servicePaymentCollection.aggregate({
           where: {
-            date: { gte: startDate, lte: endDate },
-            paymentModeId: mode.id,
-            deletedAt: null
+            ...baseWhere,
+            paymentModeId: mode.id
           },
           _sum: { recAmt: true },
           _count: true
@@ -435,10 +443,9 @@ export class ServicePaymentCollectionService {
           mode.serviceTypeOfPayments.map(async (type) => {
             const typeData = await this.prisma.servicePaymentCollection.aggregate({
               where: {
-                date: { gte: startDate, lte: endDate },
+                ...baseWhere,
                 paymentModeId: mode.id,
-                typeOfPaymentId: type.id,
-                deletedAt: null
+                typeOfPaymentId: type.id
               },
               _sum: { recAmt: true },
               _count: true
@@ -462,12 +469,218 @@ export class ServicePaymentCollectionService {
     );
 
     const totalCount = await this.prisma.servicePaymentCollection.count({
-      where: {
-        date: { gte: startDate, lte: endDate },
-        deletedAt: null
-      }
+      where: baseWhere
     });
 
     return { modes, totalCount };
+  }
+
+  async getBusinessDashboardStats(fromDate: string, toDate: string) {
+    try {
+      const dateFilter: any = {};
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+
+      if (fromDate && toDate) {
+        startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        dateFilter.gte = startDate;
+        dateFilter.lte = endDate;
+      }
+
+      const jobCardWhere: any = {};
+      if (Object.keys(dateFilter).length > 0) {
+        // Prioritize closedDate for reporting, fallback to createdAt if not set
+        jobCardWhere.OR = [
+          { closedDate: dateFilter },
+          { AND: [{ closedDate: null }, { createdAt: dateFilter }] }
+        ];
+      }
+
+      const jobCardsData = await this.prisma.serviceJobCard.aggregate({
+        where: jobCardWhere,
+        _sum: {
+          labourRevenue: true,
+          partsRevenue: true,
+          lubesRevenue: true,
+          accessoriesRevenue: true,
+          totalRevenue: true,
+        },
+        _count: {
+          _all: true
+        }
+      });
+
+      const actualLabour = Math.round(jobCardsData?._sum?.labourRevenue || 0);
+      const actualParts = Math.round(jobCardsData?._sum?.partsRevenue || 0);
+      const actualLubes = Math.round(jobCardsData?._sum?.lubesRevenue || 0);
+      const actualAccessories = Math.round(jobCardsData?._sum?.accessoriesRevenue || 0);
+      const actualTotal = Math.round(jobCardsData?._sum?.totalRevenue || 0);
+      const jobCardsCount = jobCardsData?._count?._all || 0;
+
+      // Count specific items
+      const [oilCount, amcCount, batteryCount, tyreCount, paintingCount] = await Promise.all([
+        this.prisma.serviceJobCard.count({ where: { ...jobCardWhere, oil: true } }),
+        this.prisma.serviceJobCard.count({ where: { ...jobCardWhere, amc: true } }),
+        this.prisma.serviceJobCard.count({ where: { ...jobCardWhere, battery: true } }),
+        this.prisma.serviceJobCard.count({ where: { ...jobCardWhere, tyre: true } }),
+        this.prisma.serviceJobCard.count({ where: { ...jobCardWhere, painting: true } }),
+      ]);
+
+      // Get all job cards to build the service volume map
+      const allJobCards = await this.prisma.serviceJobCard.findMany({
+        where: jobCardWhere,
+        include: {
+          serviceType: true
+        }
+      });
+
+      const receivedVolumeMap: Record<string, number> = {
+        'Free 01': 0, 'Free 02': 0, 'Free 03': 0, 'Paid': 0, 'Accident Repairs': 0, 'General': 0, 'Minor': 0
+      };
+      const invoicedVolumeMap: Record<string, number> = { ...receivedVolumeMap };
+
+      allJobCards.forEach(jc => {
+        const stName = (jc.serviceType?.name || '').toUpperCase();
+        let targetKey = 'General';
+        
+        if (stName.includes('FREE 01') || stName.includes('FREE 1') || stName.includes('1ST FREE')) targetKey = 'Free 01';
+        else if (stName.includes('FREE 02') || stName.includes('FREE 2') || stName.includes('2ND FREE')) targetKey = 'Free 02';
+        else if (stName.includes('FREE 03') || stName.includes('FREE 3') || stName.includes('3RD FREE')) targetKey = 'Free 03';
+        else if (stName.includes('PAID')) targetKey = 'Paid';
+        else if (stName.includes('ACCIDENT') || stName.includes('INSURANCE')) targetKey = 'Accident Repairs';
+        else if (stName.includes('MINOR')) targetKey = 'Minor';
+
+        receivedVolumeMap[targetKey]++;
+        if (jc.status === 'Closed' || jc.status === 'Invoiced' || jc.closedDate) {
+          invoicedVolumeMap[targetKey]++;
+        }
+      });
+
+      const totalReceived = Object.values(receivedVolumeMap).reduce((a, b) => a + b, 0);
+      const totalInvoiced = Object.values(invoicedVolumeMap).reduce((a, b) => a + b, 0);
+      const pendingInvoiceMap: Record<string, number> = {};
+      Object.keys(receivedVolumeMap).forEach(key => {
+        pendingInvoiceMap[key] = receivedVolumeMap[key] - invoicedVolumeMap[key];
+      });
+
+      const dailyStatsMap = new Map();
+      
+      // If we have a date range, pre-fill all dates with zero
+      if (startDate && endDate) {
+        let current = new Date(startDate);
+        while (current <= endDate) {
+          const dateStr = current.toLocaleDateString('en-GB').replace(/\//g, '-');
+          dailyStatsMap.set(dateStr, { date: dateStr, received: 0, pending: 0, invoiced: 0 });
+          current.setDate(current.getDate() + 1);
+        }
+      }
+
+      allJobCards.forEach(jc => {
+        const receivedDate = jc.createdAt.toLocaleDateString('en-GB').replace(/\//g, '-');
+        const closedDate = jc.closedDate ? jc.closedDate.toLocaleDateString('en-GB').replace(/\//g, '-') : null;
+        
+        if (!dailyStatsMap.has(receivedDate)) {
+          dailyStatsMap.set(receivedDate, { date: receivedDate, received: 0, pending: 0, invoiced: 0 });
+        }
+        
+        const stats = dailyStatsMap.get(receivedDate);
+        stats.received++;
+        if (jc.status === 'Pending') {
+          stats.pending++;
+        }
+        
+        if (closedDate) {
+          if (!dailyStatsMap.has(closedDate)) {
+            dailyStatsMap.set(closedDate, { date: closedDate, received: 0, pending: 0, invoiced: 0 });
+          }
+          dailyStatsMap.get(closedDate).invoiced++;
+        }
+      });
+
+      const dailyTrend = Array.from(dailyStatsMap.values()).sort((a: any, b: any) => {
+        const [dayA, monthA, yearA] = a.date.split('-').map(Number);
+        const [dayB, monthB, yearB] = b.date.split('-').map(Number);
+        return new Date(yearA, monthA - 1, dayA).getTime() - new Date(yearB, monthB - 1, dayB).getTime();
+      });
+
+      const totalVolume = jobCardsCount;
+      const withoutMinorReceived = totalReceived - receivedVolumeMap['Minor'];
+      const withoutMinorInvoiced = totalInvoiced - invoicedVolumeMap['Minor'];
+
+      const today = new Date();
+      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const daysCompletedActual = startDate && endDate 
+        ? Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24))) 
+        : today.getDate();
+      
+      const daysLeft = daysInMonth - daysCompletedActual;
+
+      // Helper for per-day and rate calculations
+      const calcPerDay = (val: number) => daysCompletedActual > 0 ? parseFloat((val / daysCompletedActual).toFixed(2)) : 0;
+      const calcRate = (val: number) => daysCompletedActual > 0 ? Math.round((val / daysCompletedActual) * daysInMonth) : 0;
+
+      return {
+        summary: {
+          serviceVolume: totalReceived,
+          labour: actualLabour,
+          stdParts: actualParts,
+          overallParts: actualParts + actualAccessories,
+          lubrications: actualLubes,
+          labourPerVehicle: totalReceived > 0 ? Math.floor(actualLabour / totalReceived) : 0,
+          partsPerVehicle: totalReceived > 0 ? Math.floor(actualParts / totalReceived) : 0,
+          oilCount: oilCount,
+          amc: amcCount,
+          battery: batteryCount,
+          paintingPanels: paintingCount,
+          tyre: tyreCount,
+          startDate: startDate ? startDate.toLocaleDateString('en-GB').replace(/\//g, '-') : 'All Time',
+          todaysDate: today.toLocaleDateString('en-GB').replace(/\//g, '-'),
+          reportDate: endDate ? endDate.toLocaleDateString('en-GB').replace(/\//g, '-') : 'All Time',
+          daysCompleted: daysCompletedActual,
+          daysLeft: daysLeft > 0 ? daysLeft : 0,
+          daysInMonth: daysInMonth,
+        },
+        serviceVolume: [
+          { type: 'Data For the Month', free01: '', free02: '', free03: '', paid: '', accidentRepairs: '', general: '', minor: '', total: '', withoutMinor: '' },
+          { type: 'Target For the Month', free01: '', free02: '', free03: '', paid: '', accidentRepairs: '', general: '', minor: '', total: '', withoutMinor: '' },
+          { type: 'Received Vehicles', free01: receivedVolumeMap['Free 01'], free02: receivedVolumeMap['Free 02'], free03: receivedVolumeMap['Free 03'], paid: receivedVolumeMap['Paid'], accidentRepairs: receivedVolumeMap['Accident Repairs'], general: receivedVolumeMap['General'], minor: receivedVolumeMap['Minor'], total: totalReceived, withoutMinor: withoutMinorReceived },
+          { type: 'Invoice Pending', free01: pendingInvoiceMap['Free 01'], free02: pendingInvoiceMap['Free 02'], free03: pendingInvoiceMap['Free 03'], paid: pendingInvoiceMap['Paid'], accidentRepairs: pendingInvoiceMap['Accident Repairs'], general: pendingInvoiceMap['General'], minor: pendingInvoiceMap['Minor'], total: totalReceived - totalInvoiced, withoutMinor: withoutMinorReceived - withoutMinorInvoiced },
+          { type: 'Invoiced Vehicles', free01: invoicedVolumeMap['Free 01'], free02: invoicedVolumeMap['Free 02'], free03: invoicedVolumeMap['Free 03'], paid: invoicedVolumeMap['Paid'], accidentRepairs: invoicedVolumeMap['Accident Repairs'], general: invoicedVolumeMap['General'], minor: invoicedVolumeMap['Minor'], total: totalInvoiced, withoutMinor: withoutMinorInvoiced },
+          { type: 'Per Day Invoice', free01: calcPerDay(invoicedVolumeMap['Free 01']), free02: calcPerDay(invoicedVolumeMap['Free 02']), free03: calcPerDay(invoicedVolumeMap['Free 03']), paid: calcPerDay(invoicedVolumeMap['Paid']), accidentRepairs: calcPerDay(invoicedVolumeMap['Accident Repairs']), general: calcPerDay(invoicedVolumeMap['General']), minor: calcPerDay(invoicedVolumeMap['Minor']), total: calcPerDay(totalInvoiced), withoutMinor: calcPerDay(withoutMinorInvoiced) },
+          { type: 'Volume Service Rate', 
+            free01: Math.round(invoicedVolumeMap['Free 01'] + calcPerDay(invoicedVolumeMap['Free 01'])), 
+            free02: Math.round(invoicedVolumeMap['Free 02'] + calcPerDay(invoicedVolumeMap['Free 02'])), 
+            free03: Math.round(invoicedVolumeMap['Free 03'] + calcPerDay(invoicedVolumeMap['Free 03'])), 
+            paid: Math.round(invoicedVolumeMap['Paid'] + calcPerDay(invoicedVolumeMap['Paid'])), 
+            accidentRepairs: Math.round(invoicedVolumeMap['Accident Repairs'] + calcPerDay(invoicedVolumeMap['Accident Repairs'])), 
+            general: Math.round(invoicedVolumeMap['General'] + calcPerDay(invoicedVolumeMap['General'])), 
+            minor: Math.round(invoicedVolumeMap['Minor'] + calcPerDay(invoicedVolumeMap['Minor'])), 
+            total: Math.round(totalInvoiced + calcPerDay(totalInvoiced)), 
+            withoutMinor: Math.round(withoutMinorInvoiced + calcPerDay(withoutMinorInvoiced)) 
+          },
+        ],
+        incomeTargetCount: [
+          { particulars: '3 months Average Sale', battery: 0, tyre: 0, amc: 0, painting: 0 },
+          { particulars: 'Target', battery: 0, tyre: 0, amc: 0, painting: 0 },
+          { particulars: 'Achieved No', battery: batteryCount, tyre: tyreCount, amc: amcCount, painting: paintingCount },
+          { particulars: 'Per Day Count Achieved', battery: calcPerDay(batteryCount), tyre: calcPerDay(tyreCount), amc: calcPerDay(amcCount), painting: calcPerDay(paintingCount) },
+          { particulars: 'Current Rate for the month', battery: calcRate(batteryCount), tyre: calcRate(tyreCount), amc: calcRate(amcCount), painting: calcRate(paintingCount) },
+        ],
+        incomeParameters: [
+          { particulars: 'Last 3 Months Average Achieve', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: 0, battery: 0, batteryJet: 0, tyre: 0, amc: 0, carbonCleaner: 0, healthCard: 0, painting: 0, oilRevenue: 0 },
+          { particulars: 'Target', serviceVolume: 0, labour: 0, std: 0, overallParts: 0, lubrication: 0, battery: 0, batteryJet: 0, tyre: 0, amc: 0, carbonCleaner: 0, healthCard: 0, painting: 0, oilRevenue: 0 },
+          { particulars: 'Achieved', serviceVolume: totalVolume, labour: actualLabour, std: actualParts, overallParts: actualParts + actualAccessories, lubrication: actualLubes, battery: batteryCount, batteryJet: 0, tyre: tyreCount, amc: amcCount, carbonCleaner: 0, healthCard: 0, painting: paintingCount, oilRevenue: actualLubes },
+          { particulars: 'Per Day', serviceVolume: calcPerDay(totalVolume), labour: calcPerDay(actualLabour), std: calcPerDay(actualParts), overallParts: calcPerDay(actualParts + actualAccessories), lubrication: calcPerDay(actualLubes), battery: calcPerDay(batteryCount), batteryJet: 0, tyre: calcPerDay(tyreCount), amc: calcPerDay(amcCount), carbonCleaner: 0, healthCard: 0, painting: calcPerDay(paintingCount), oilRevenue: calcPerDay(actualLubes) },
+          { particulars: 'Rate for the month', serviceVolume: calcRate(totalVolume), labour: calcRate(actualLabour), std: calcRate(actualParts), overallParts: calcRate(actualParts + actualAccessories), lubrication: calcRate(actualLubes), battery: calcRate(batteryCount), batteryJet: 0, tyre: calcRate(tyreCount), amc: calcRate(amcCount), carbonCleaner: 0, healthCard: 0, painting: calcRate(paintingCount), oilRevenue: calcRate(actualLubes) },
+        ],
+        dailyTrend: dailyTrend
+      };
+    } catch (error) {
+      this.logger.error('Error in getBusinessDashboardStats', error.stack);
+      throw error;
+    }
   }
 }
