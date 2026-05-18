@@ -360,9 +360,12 @@ const fetchCustomers = async () => {
       allJobCards.filter(jc => jc.status === 'Pending' || jc.status === 'Open').map(jc => jc.mobileNumber)
     );
     
-    // Track customers with closed job cards
+    // Track customers with closed or inactive job cards
     const closedJobCardContacts = new Set(
-      allJobCards.filter(jc => jc.status === 'Closed' || jc.status === 'Completed').map(jc => jc.mobileNumber)
+      allJobCards.filter(jc => {
+        const status = (jc.status || '').toString().toLowerCase();
+        return ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(status);
+      }).map(jc => jc.mobileNumber)
     );
 
     const enrichedCustomerData = customerData.map(c => ({
@@ -371,8 +374,14 @@ const fetchCustomers = async () => {
       hasJobCard: jobCardContacts.has(c.contactNo),
       hasActiveJobCard: activeJobCardContacts.has(c.contactNo),
       hasClosedJobCard: closedJobCardContacts.has(c.contactNo),
-      activeJobCard: allJobCards.find(jc => jc.mobileNumber === c.contactNo && (jc.status === 'Pending' || jc.status === 'Open')),
-      closedJobCard: allJobCards.find(jc => jc.mobileNumber === c.contactNo && (jc.status === 'Closed' || jc.status === 'Completed'))
+      activeJobCard: allJobCards.find(jc => {
+        const status = (jc.status || '').toString().toLowerCase();
+        return jc.mobileNumber === c.contactNo && (status === 'pending' || status === 'open');
+      }),
+      closedJobCard: allJobCards.find(jc => {
+        const status = (jc.status || '').toString().toLowerCase();
+        return jc.mobileNumber === c.contactNo && ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(status);
+      })
     }));
 
     const customerContacts = new Set(customerData.map(c => c.contactNo));
@@ -391,8 +400,14 @@ const fetchCustomers = async () => {
           invoiceData: inv,
           hasActiveJobCard: activeJobCardContacts.has(inv.contactInfo),
           hasClosedJobCard: closedJobCardContacts.has(inv.contactInfo),
-          activeJobCard: allJobCards.find(jc => jc.mobileNumber === inv.contactInfo && (jc.status === 'Pending' || jc.status === 'Open')),
-          closedJobCard: allJobCards.find(jc => jc.mobileNumber === inv.contactInfo && (jc.status === 'Closed' || jc.status === 'Completed'))
+          activeJobCard: allJobCards.find(jc => {
+            const status = (jc.status || '').toString().toLowerCase().trim();
+            return jc.mobileNumber === inv.contactInfo && (status === 'pending' || status === 'open');
+          }),
+          closedJobCard: allJobCards.find(jc => {
+            const status = (jc.status || '').toString().toLowerCase().trim();
+            return jc.mobileNumber === inv.contactInfo && ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(status);
+          })
         });
         seenContacts.add(inv.contactInfo);
       }
@@ -408,10 +423,10 @@ const fetchCustomers = async () => {
           address: "Imported from Service Master",
           isJobCard: true,
           jobCardData: jc,
-          hasActiveJobCard: jc.status === 'Pending' || jc.status === 'Open',
-          hasClosedJobCard: jc.status === 'Closed' || jc.status === 'Completed',
-          activeJobCard: (jc.status === 'Pending' || jc.status === 'Open') ? jc : null,
-          closedJobCard: (jc.status === 'Closed' || jc.status === 'Completed') ? jc : null
+          hasActiveJobCard: ['pending', 'open'].includes((jc.status || '').toString().toLowerCase().trim()),
+          hasClosedJobCard: ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes((jc.status || '').toString().toLowerCase().trim()),
+          activeJobCard: (['pending', 'open'].includes((jc.status || '').toString().toLowerCase().trim())) ? jc : null,
+          closedJobCard: (['closed', 'completed', 'cancelled', 'canceled', 'close'].includes((jc.status || '').toString().toLowerCase().trim())) ? jc : null
         });
         seenContacts.add(jc.mobileNumber);
       }
@@ -1031,14 +1046,16 @@ const handleCustomerSelect = async (customer) => {
     
     if (allJobCardsForCustomer && allJobCardsForCustomer.length > 0) {
       // Find active job card (Pending or Open)
-      const activeJobCard = allJobCardsForCustomer.find(jc => jc.status === 'Pending' || jc.status === 'Open');
+      const activeJobCard = allJobCardsForCustomer.find(jc => {
+        const status = (jc.status || '').toString().toLowerCase();
+        return status === 'pending' || status === 'open';
+      });
       
-      // Find closed job card (Closed or Completed) for display only
-      const closedJobCard = allJobCardsForCustomer.find(jc => jc.status === 'Closed' || jc.status === 'Completed');
-      
-      // Store job card info for display (show to user)
-      setServiceJobCardInfo(activeJobCard || closedJobCard || allJobCardsForCustomer[0]);
-      
+      // Treat cancelled, closed or completed job cards as reference-only
+      const closedJobCard = allJobCardsForCustomer.find(jc => {
+        const status = (jc.status || '').toString().toLowerCase();
+        return ['closed', 'completed', 'cancelled', 'canceled'].includes(status);
+      });
       if (activeJobCard) {
         // Has active job card - auto-fill the job card number
         setIsManualJobCard(false);
@@ -1599,14 +1616,70 @@ const handleCustomerSelect = async (customer) => {
         {(customer.isJobCard || customer.hasJobCard) && (
           <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">Service Dealership</span>
         )}
-        {customer.hasActiveJobCard && customer.activeJobCard && (
-          <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold uppercase">
-            {customer.activeJobCard.status === 'Pending' ? 'Job Card Pending' : 'Job Card Open'}
-          </span>
-        )}
-        {customer.hasClosedJobCard && !customer.hasActiveJobCard && (
-          <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase">Job Card Closed</span>
-        )}
+        {customer.hasActiveJobCard && customer.activeJobCard && (() => {
+          const status = (customer.activeJobCard.status || '').toString().toLowerCase();
+          const trimmed = status.trim();
+          const label = trimmed === 'pending'
+            ? 'Job Card Pending'
+            : trimmed === 'open'
+            ? 'Job Card Open'
+            : trimmed === 'completed'
+            ? 'Job Card Completed'
+            : trimmed === 'cancelled' || trimmed === 'canceled'
+            ? 'Job Card Cancelled'
+            : trimmed === 'closed' || trimmed === 'close'
+            ? 'Job Card Closed'
+            : `Job Card ${customer.activeJobCard.status}`;
+          const bg = trimmed === 'pending'
+            ? 'bg-yellow-100 text-yellow-700'
+            : trimmed === 'open'
+            ? 'bg-blue-100 text-blue-700'
+            : trimmed === 'completed'
+            ? 'bg-green-100 text-green-700'
+            : trimmed === 'cancelled' || trimmed === 'canceled'
+            ? 'bg-red-100 text-red-600'
+            : trimmed === 'closed' || trimmed === 'close'
+            ? 'bg-red-100 text-red-600'
+            : 'bg-gray-100 text-gray-700';
+
+          return (
+            <span className={`text-[10px] ${bg} px-2 py-0.5 rounded-full font-bold uppercase`}>
+              {label}
+            </span>
+          );
+        })()}
+        {customer.hasClosedJobCard && !customer.hasActiveJobCard && customer.closedJobCard && (() => {
+          const status = (customer.closedJobCard.status || '').toString().toLowerCase();
+          const trimmed = status.trim();
+          const label = trimmed === 'pending'
+            ? 'Job Card Pending'
+            : trimmed === 'open'
+            ? 'Job Card Open'
+            : trimmed === 'completed'
+            ? 'Job Card Completed'
+            : trimmed === 'cancelled' || trimmed === 'canceled'
+            ? 'Job Card Cancelled'
+            : trimmed === 'closed' || trimmed === 'close'
+            ? 'Job Card Closed'
+            : `Job Card ${customer.closedJobCard.status}`;
+          const bg = trimmed === 'pending'
+            ? 'bg-yellow-100 text-yellow-700'
+            : trimmed === 'open'
+            ? 'bg-blue-100 text-blue-700'
+            : trimmed === 'completed'
+            ? 'bg-green-100 text-green-700'
+            : trimmed === 'cancelled' || trimmed === 'canceled'
+            ? 'bg-red-100 text-red-600'
+            : trimmed === 'closed' || trimmed === 'close'
+            ? 'bg-red-100 text-red-600'
+            : 'bg-gray-100 text-gray-700';
+
+          return (
+            <span className={`text-[10px] ${bg} px-2 py-0.5 rounded-full font-bold uppercase`}>
+              {label}
+            </span>
+          );
+        })()}
       </div>
     </div>
     <div className="text-sm text-brand-text-secondary">{customer.contactNo}</div>
@@ -1664,28 +1737,30 @@ const handleCustomerSelect = async (customer) => {
 {/* Display Job Card Information for ALL Statuses - For Reference Only */}
 {serviceJobCardInfo && (
   <div className={`mt-4 p-4 rounded-lg border ${
-    serviceJobCardInfo.status === 'Pending' ? 'bg-yellow-50 border-yellow-200' :
-    serviceJobCardInfo.status === 'Open' ? 'bg-blue-50 border-blue-200' :
-    serviceJobCardInfo.status === 'Closed' || serviceJobCardInfo.status === 'Completed' ? 'bg-gray-50 border-gray-300' :
+    (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-50 border-yellow-200' :
+    (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'bg-blue-50 border-blue-200' :
+    ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-gray-50 border-gray-300' :
+    ['cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-red-50 border-red-200' :
     'bg-green-50 border-green-200'
   }`}>
     <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${
-      serviceJobCardInfo.status === 'Pending' ? 'text-yellow-800' :
-      serviceJobCardInfo.status === 'Open' ? 'text-blue-800' :
-      serviceJobCardInfo.status === 'Closed' || serviceJobCardInfo.status === 'Completed' ? 'text-gray-600' :
+      (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'text-yellow-800' :
+      (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'text-blue-800' :
+      ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'text-gray-600' :
+      ['cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'text-red-800' :
       'text-green-800'
     }`}>
       📋 Previous Service Dealership Information
       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-        serviceJobCardInfo.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-        serviceJobCardInfo.status === 'Open' ? 'bg-blue-100 text-blue-700' :
-        serviceJobCardInfo.status === 'Closed' ? 'bg-gray-200 text-gray-700' :
-        serviceJobCardInfo.status === 'Completed' ? 'bg-gray-200 text-gray-700' :
+        (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+        (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'bg-blue-100 text-blue-700' :
+        ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-gray-200 text-gray-700' :
+        ['cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-red-100 text-red-700' :
         'bg-gray-100 text-gray-700'
       }`}>
         Status: {serviceJobCardInfo.status}
       </span>
-      {(serviceJobCardInfo.status === 'Closed' || serviceJobCardInfo.status === 'Completed') && (
+      {(['closed', 'completed', 'cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim())) && (
         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 ml-2">
           Reference Only
         </span>
