@@ -44,6 +44,19 @@ export const serviceTypeOfPartApi = {
     return handleResponse(res);
   },
 
+  // ✅ GET ENABLED/AVAILABLE PARTS FOR DROPDOWN
+  getEnabledParts: async ({ search = '' } = {}) => {
+    const params = new URLSearchParams({ page: 1, limit: 999999 });
+    if (search) params.append('search', search);
+
+    const res = await fetch(`${API_URL}?${params.toString()}`, {
+      credentials: 'include',
+    });
+
+    const data = await handleResponse(res);
+    return data.data || [];
+  },
+
   // ✅ CREATE
   create: async (data) => {
     const res = await fetch(API_URL, {

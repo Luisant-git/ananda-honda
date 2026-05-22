@@ -57,7 +57,7 @@ const ServicePaymentCollection = ({ user }) => {
     partNo: '',
     partDescription: '',
     Model: '',
-    status: 'Enable'
+    status: 'ORDERED'
   });
 
   const [formData, setFormData] = useState({
@@ -168,16 +168,31 @@ const handleView = (payment) => {
       return;
     }
 
+    const normalizedPartNo = newPartData.partNo.trim().toUpperCase();
+    const existingPart = availableParts.find(
+      (part) => part.partNo?.trim().toUpperCase() === normalizedPartNo
+    );
+
+    if (existingPart) {
+      toast.error('Part No already exists');
+      return;
+    }
+
     try {
       const newPart = await serviceTypeOfPartApi.create(newPartData);
       toast.success('Part added to master successfully!');
       setIsNewPartModalOpen(false);
-      setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'Enable' });
+      setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'ORDERED' });
       await fetchAvailableParts();
       // Auto-add the new part to payment
       setSelectedParts([...selectedParts, newPart]);
     } catch (error) {
-      toast.error(error.message || 'Error adding part');
+      const message = error.message || '';
+      if (message.toLowerCase().includes('already exists') || message.toLowerCase().includes('duplicate')) {
+        toast.error('Part No already exists');
+      } else {
+        toast.error(message || 'Error adding part');
+      }
       console.error('Error adding part:', error);
     }
   };
@@ -2062,7 +2077,7 @@ const handleCustomerSelect = async (customer) => {
       </Modal>
 
       {/* Add New Part Modal */}
-      <Modal isOpen={isNewPartModalOpen} onClose={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'Enable' }); }} title="Add New Part to Master" maxWidth="max-w-md">
+      <Modal isOpen={isNewPartModalOpen} onClose={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'ORDERED' }); }} title="Add New Part to Master" maxWidth="max-w-md">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">Part No <span className="text-red-500">*</span></label>
@@ -2103,14 +2118,15 @@ const handleCustomerSelect = async (customer) => {
               onChange={(e) => setNewPartData({ ...newPartData, status: e.target.value })}
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
             >
-              <option value="Enable">Enable</option>
-              <option value="Disable">Disable</option>
+              <option value="ORDERED">ORDERED</option>
+              <option value="RECEIVED">RECEIVED</option>
+              <option value="NOT_RECEIVED">NOT_RECEIVED</option>
             </select>
           </div>
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'Enable' }); }}
+              onClick={() => { setIsNewPartModalOpen(false); setNewPartData({ partNo: '', partDescription: '', Model: '', status: 'ORDERED' }); }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
               Cancel
