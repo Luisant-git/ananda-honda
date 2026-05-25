@@ -1,6 +1,8 @@
 import config from '../config.js';
 
 const API_URL = `${config.API_BASE_URL}/customers`;
+const BIGWING_API_BASE_URL = config.VITE_BIGWING_API_BASE_URL;
+
 
 export const customerApi = {
   getAll: async () => {
@@ -63,5 +65,17 @@ export const customerApi = {
     const response = await fetch(`${API_URL}/${id}/details`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch customer details');
     return response.json();
+  },
+
+  getByPhoneNumber: async (phoneNo) => {
+  const response = await fetch(
+    `${BIGWING_API_BASE_URL}/api/v1/leads/phone/${phoneNo}`
+  );
+
+  if (!response.ok) {
+    return null;
   }
+
+  return response.json();
+},
 };

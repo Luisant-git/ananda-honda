@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
@@ -32,6 +33,7 @@ const CustomerDetails = ({ user }) => {
     toDate: "",
   });
   const [permissions, setPermissions] = useState(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   // Enquiry related state
   const [customerEnquiries, setCustomerEnquiries] = useState([]);
@@ -125,6 +127,58 @@ const CustomerDetails = ({ user }) => {
       setFilteredCustomers(formattedData);
     } catch (error) {
       console.error("Error fetching customers:", error);
+    }
+  };
+
+  const fetchCustomerByPhone = async (phoneNo) => {
+    if (!phoneNo || phoneNo.length !== 10) {
+      return null;
+    }
+    
+    setIsFetchingDetails(true);
+    try {
+      const customer = await customerApi.getByPhoneNumber(phoneNo);
+      if (customer && !isEditMode) {
+        // Check if it's a new customer form (not edit mode)
+        toast.success(`Customer found: ${customer.name}`, {
+          duration: 3000,
+        });
+        // Auto-fill the form with fetched customer details
+        setFormData({
+          name: customer.name || "",
+          contactNo: customer.contactNo || phoneNo,
+          address: customer.address || "",
+          status: customer.status || "Walk in Customer",
+        });
+        return customer;
+      } else if (customer && isEditMode && editingCustomer?.contactNo !== phoneNo) {
+        toast.error(`Mobile number belongs to another customer: ${customer.name}`);
+        return null;
+      }
+    } catch (error) {
+      // Customer not found - that's fine for new customer
+      console.log("No existing customer found with this mobile number");
+      return null;
+    } finally {
+      setIsFetchingDetails(false);
+    }
+  };
+
+  const handleMobileNumberChange = async (e) => {
+    const numericValue = e.target.value.replace(/\D/g, "");
+    if (numericValue.length > 10) {
+      toast.error("Mobile number cannot exceed 10 digits");
+      return;
+    }
+    
+    setFormData({ ...formData, contactNo: numericValue });
+    
+    // Fetch customer details when 10 digits are entered and not in edit mode
+    if (numericValue.length === 10 && !isEditMode) {
+      await fetchCustomerByPhone(numericValue);
+    } else if (numericValue.length === 10 && isEditMode && editingCustomer?.contactNo !== numericValue) {
+      // Check if the mobile number being edited belongs to another customer
+      await fetchCustomerByPhone(numericValue);
     }
   };
 
@@ -323,11 +377,7 @@ const CustomerDetails = ({ user }) => {
         xmlContent += `<ADDRESS>${customer.address || "N/A"}</ADDRESS>\n`;
         xmlContent += "</ADDRESS.LIST>\n";
         xmlContent += `<ADDITIONALNAME>${customer.custId} ${customer.name}</ADDITIONALNAME>\n`;
-        // xmlContent += '<ISINTERESTON>No</ISINTERESTON>\n';
         xmlContent += `<PARENT>Sundry Debtors</PARENT>\n`;
-        // xmlContent += '<VATTINNUMBER/>\n';
-        // xmlContent += '<PARTYGSTIN/>\n';
-        // xmlContent += '<PINCODE/>\n';
         xmlContent += "</LEDGER>\n";
         xmlContent += "</TALLYMESSAGE>\n";
       });
@@ -489,28 +539,33 @@ const CustomerDetails = ({ user }) => {
               }
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               required
+              disabled={isFetchingDetails}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
               Mobile Number
             </label>
-            <input
-              type="text"
-              value={formData.contactNo}
-              onChange={(e) => {
-                const numericValue = e.target.value.replace(/\D/g, "");
-                if (numericValue.length > 10) {
-                  toast.error("Mobile number cannot exceed 10 digits");
-                  return;
-                }
-                setFormData({ ...formData, contactNo: numericValue });
-              }}
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              placeholder="Enter 10 digit mobile number"
-              maxLength="10"
-              required
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.contactNo}
+                onChange={handleMobileNumberChange}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                placeholder="Enter 10 digit mobile number"
+                maxLength="10"
+                required
+                disabled={isFetchingDetails}
+              />
+              {isFetchingDetails && (
+                <div className="absolute right-3 top-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-accent"></div>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-brand-text-secondary mt-1">
+              {!isEditMode ? "Enter 10-digit mobile number to auto-fetch customer details" : "Edit mobile number if needed"}
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -524,6 +579,7 @@ const CustomerDetails = ({ user }) => {
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               rows={3}
               required
+              disabled={isFetchingDetails}
             ></textarea>
           </div>
           <div>
@@ -536,6 +592,7 @@ const CustomerDetails = ({ user }) => {
                 setFormData({ ...formData, status: e.target.value })
               }
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              disabled={isFetchingDetails}
             >
               <option>Walk in Customer</option>
               <option>Online Enquiry</option>
@@ -546,14 +603,16 @@ const CustomerDetails = ({ user }) => {
               type="button"
               onClick={() => setIsModalOpen(false)}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
+              disabled={isFetchingDetails}
             >
               Close
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold"
+              disabled={isFetchingDetails}
             >
-              {isEditMode ? "Update" : "Save"}
+              {isFetchingDetails ? "Fetching..." : (isEditMode ? "Update" : "Save")}
             </button>
           </div>
         </form>
@@ -851,7 +910,7 @@ const CustomerDetails = ({ user }) => {
                         </tr>
                       )}
                     </tbody>
-                 </table>
+                  </table>
               </div>
             )}
 
@@ -881,7 +940,7 @@ const CustomerDetails = ({ user }) => {
                         </tr>
                       )}
                     </tbody>
-                 </table>
+                  </table>
                </div>
             )}
 
@@ -911,7 +970,7 @@ const CustomerDetails = ({ user }) => {
                         </tr>
                       )}
                     </tbody>
-                 </table>
+                  </table>
                </div>
             )}
 
@@ -941,7 +1000,7 @@ const CustomerDetails = ({ user }) => {
                         </tr>
                       )}
                     </tbody>
-                 </table>
+                  </table>
                </div>
             )}
           </div>
