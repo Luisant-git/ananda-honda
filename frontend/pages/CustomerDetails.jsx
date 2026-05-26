@@ -138,21 +138,23 @@ const CustomerDetails = ({ user }) => {
     setIsFetchingDetails(true);
     try {
       const customer = await customerApi.getByPhoneNumber(phoneNo);
+       console.log("fetching customer details from bigwing crm");
       if (customer && !isEditMode) {
+         console.log("customer", customer);
         // Check if it's a new customer form (not edit mode)
-        toast.success(`Customer found: ${customer.name}`, {
+        toast.success(`Customer found: ${customer.firstName}`, {
           duration: 3000,
         });
         // Auto-fill the form with fetched customer details
         setFormData({
-          name: customer.name || "",
+          name: customer.firstName || "",
           contactNo: customer.contactNo || phoneNo,
           address: customer.address || "",
           status: customer.status || "Walk in Customer",
         });
         return customer;
       } else if (customer && isEditMode && editingCustomer?.contactNo !== phoneNo) {
-        toast.error(`Mobile number belongs to another customer: ${customer.name}`);
+        toast.error(`Mobile number belongs to another customer: ${customer.firstName}`);
         return null;
       }
     } catch (error) {

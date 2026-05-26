@@ -69,10 +69,7 @@ export const customerApi = {
 
 getByPhoneNumber: async (phoneNo) => {
     // Check if BigWing API URL is configured
-    if (!BIGWING_API_BASE_URL) {
-      console.warn('BigWing API URL not configured, falling back to getByMobile');
-      return customerApi.getByMobile(phoneNo);
-    }
+   
     
     const response = await fetch(
       `https://crm.api.anandahonda.cloud/api/v1/leads/phone/${phoneNo}`
