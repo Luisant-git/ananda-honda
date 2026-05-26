@@ -1,7 +1,7 @@
 import config from '../config.js';
 
 const API_URL = `${config.API_BASE_URL}/customers`;
-const BIGWING_API_BASE_URL = config.VITE_BIGWING_API_BASE_URL;
+// Comment out or remove the BigWing API base URL if not needed
 
 
 export const customerApi = {
@@ -67,15 +67,21 @@ export const customerApi = {
     return response.json();
   },
 
-  getByPhoneNumber: async (phoneNo) => {
-  const response = await fetch(
-    `${BIGWING_API_BASE_URL}/api/v1/leads/phone/${phoneNo}`
-  );
+getByPhoneNumber: async (phoneNo) => {
+    // Check if BigWing API URL is configured
+    if (!BIGWING_API_BASE_URL) {
+      console.warn('BigWing API URL not configured, falling back to getByMobile');
+      return customerApi.getByMobile(phoneNo);
+    }
+    
+    const response = await fetch(
+      `https://crm.api.anandahonda.cloud/api/v1/leads/phone/${phoneNo}`
+    );
 
-  if (!response.ok) {
-    return null;
-  }
+    if (!response.ok) {
+      return null;
+    }
 
-  return response.json();
-},
+    return response.json();
+  },
 };
