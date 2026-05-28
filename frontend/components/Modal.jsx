@@ -1,18 +1,18 @@
 import React from 'react';
 import { CloseIcon } from './icons/Icons';
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg" }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg", maxHeight = "max-h-[85vh]" }) => {
   if (!isOpen) {
     return null;
   }
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div 
-        className={`bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full ${maxWidth} mx-auto border border-brand-border`}
+        className={`bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full ${maxWidth} mx-auto border border-brand-border ${maxHeight}`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-4 border-b border-brand-border">
@@ -24,7 +24,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg" }) => {
             <CloseIcon />
           </button>
         </div>
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-10rem)]">
           {children}
         </div>
       </div>

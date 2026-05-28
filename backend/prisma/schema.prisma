@@ -14,7 +14,21 @@ model Customer {
   name      String
   contactNo String
   address   String
+  location  String?
   status    String
+
+  enquiryDate       DateTime?  
+  vehicleModel      String?     // crm vehicle model
+  color             String?     
+  variant           String?     
+  interestLevel     String?     
+  purchaseType      String?    
+  exchangeDetails   String? 
+  branch            String?      
+  assignedExecutive String?     
+  remarks            String?
+
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   paymentCollections PaymentCollection[]

@@ -1,11 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+type CustomerPayload = {
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  contactNo?: string;
+  address?: string;
+  location?: string;
+  status?: string;
+  branch?: string;
+
+  enquiryDate?: string;
+  vehicleModel?: string;
+  color?: string;
+  variant?: string;
+  interestLevel?: string;
+  purchaseType?: string;
+  exchangeDetails?: string;
+  assignedExecutive?: string;
+  remarks?: string;
+};
+
 @Injectable()
 export class CustomerService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: { name: string; contactNo: string; address: string; status: string }) {
+  async create(data: CustomerPayload) {
     const lastCustomer = await this.prisma.customer.findFirst({
       orderBy: { id: 'desc' }
     });
@@ -13,12 +35,31 @@ export class CustomerService {
     const nextId = lastCustomer ? lastCustomer.id + 1 : 1;
     const custId = `CUST${nextId.toString().padStart(3, '0')}`;
 
-    return this.prisma.customer.create({
-      data: {
-        custId,
-        ...data
-      }
-    });
+    const name = data.name || [data.firstName, data.lastName].filter(Boolean).join(' ').trim() || data.mobile || data.contactNo || 'Customer';
+    const contactNo = data.mobile || data.contactNo || '';
+
+   return this.prisma.customer.create({
+  data: {
+    custId,
+    name,
+    contactNo,
+    address: data.address || '',
+    location: data.location || null,
+    status: data.status || 'Walk in Customer',
+    branch: data.branch || undefined,
+
+    // ✅ NEW FIELDS
+    enquiryDate: data.enquiryDate ? new Date(data.enquiryDate) : undefined,
+    vehicleModel: data.vehicleModel,
+    color: data.color,
+    variant: data.variant,
+    interestLevel: data.interestLevel,
+    purchaseType: data.purchaseType,
+    exchangeDetails: data.exchangeDetails,
+    assignedExecutive: data.assignedExecutive,
+    remarks: data.remarks,
+  }
+});
   }
 
   async findAll() {
@@ -51,10 +92,76 @@ export class CustomerService {
     return { customers, salesInvoices };
   }
 
-  async update(id: number, data: { name?: string; contactNo?: string; address?: string; status?: string }) {
+  async update(id: number, data: CustomerPayload) {
+    const name = data.name || [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
+    const contactNo = data.mobile || data.contactNo;
+
+   const updateData: {
+  name?: string;
+  contactNo?: string;
+  address?: string;
+  location?: string;
+  status?: string;
+  branch?: string;
+
+  enquiryDate?: Date | null;
+  vehicleModel?: string;
+  color?: string;
+  variant?: string;
+  interestLevel?: string;
+  purchaseType?: string;
+  exchangeDetails?: string;
+  assignedExecutive?: string;
+  remarks?: string;
+} = {};
+    if (data.address !== undefined)
+      updateData.address = data.address;
+
+    if (contactNo !== undefined)
+      updateData.contactNo = contactNo;
+
+    if (name)
+      updateData.name = name;
+
+    if (data.status !== undefined)
+      updateData.status = data.status;
+
+    if (data.enquiryDate !== undefined)
+      updateData.enquiryDate = data.enquiryDate
+        ? new Date(data.enquiryDate)
+        : null;
+
+    if (data.vehicleModel !== undefined)
+      updateData.vehicleModel = data.vehicleModel;
+
+    if (data.color !== undefined)
+      updateData.color = data.color;
+
+    if (data.variant !== undefined)
+      updateData.variant = data.variant;
+
+    if (data.interestLevel !== undefined)
+      updateData.interestLevel = data.interestLevel;
+
+    if (data.purchaseType !== undefined)
+      updateData.purchaseType = data.purchaseType;
+
+    if (data.exchangeDetails !== undefined)
+      updateData.exchangeDetails = data.exchangeDetails;
+
+    if (data.branch !== undefined)
+      updateData.branch = data.branch;
+
+    if (data.assignedExecutive !== undefined)
+      updateData.assignedExecutive = data.assignedExecutive;
+    if (data.location !== undefined)
+      updateData.location = data.location;
+    if (data.remarks !== undefined)
+      updateData.remarks = data.remarks;
+
     return this.prisma.customer.update({
       where: { id },
-      data
+      data: updateData
     });
   }
 

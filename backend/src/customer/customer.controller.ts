@@ -1,12 +1,34 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 
+type CustomerRequestDto = {
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  mobile?: string;
+  contactNo?: string;
+  address?: string;
+  location?: string;
+  status?: string;
+  branch?: string;
+
+  enquiryDate?: string;
+  vehicleModel?: string;
+  color?: string;
+  variant?: string;
+  interestLevel?: string;
+  purchaseType?: string;
+  exchangeDetails?: string;
+  assignedExecutive?: string;
+  remarks?: string;
+};
+
 @Controller('customers')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post()
-  create(@Body() createCustomerDto: { name: string; contactNo: string; address: string; status: string }) {
+  create(@Body() createCustomerDto: CustomerRequestDto) {
     return this.customerService.create(createCustomerDto);
   }
 
@@ -39,7 +61,7 @@ export class CustomerController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCustomerDto: { name?: string; contactNo?: string; address?: string; status?: string }) {
+  update(@Param('id') id: string, @Body() updateCustomerDto: CustomerRequestDto) {
     return this.customerService.update(+id, updateCustomerDto);
   }
 
