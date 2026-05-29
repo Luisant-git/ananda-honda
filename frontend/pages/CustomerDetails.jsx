@@ -13,7 +13,7 @@ import {
   User, Phone, MapPin, Sparkles, CheckCircle2, Save, X,
   Mail, Calendar, Briefcase, Home, Building2, CreditCard,
   FileText, AlertCircle, Search, UserCheck, UserPlus,
-  Bike, Wrench, Target, ClipboardList, Globe, Award, Repeat
+  Bike, Wrench, Target, ClipboardList, Globe, Award, CalendarClock, Repeat
 } from "lucide-react";
 
 const InputField = ({ label, value, onChange, icon: Icon, type = "text", required = false, placeholder = "", disabled = false, maxLength }) => {
@@ -92,8 +92,6 @@ const CustomerDetails = ({ user }) => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
-  const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -143,17 +141,6 @@ const CustomerDetails = ({ user }) => {
     toDate: "",
   });
   const [permissions, setPermissions] = useState(null);
-  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
-
-  const [customerEnquiries, setCustomerEnquiries] = useState([]);
-  const [showEnquiryForm, setShowEnquiryForm] = useState(false);
-  const [enquiryFormData, setEnquiryFormData] = useState({
-    enquiryType: "",
-    vehicleModelId: "",
-    mobileNumber: "",
-    leadSources: [],
-    executiveName: "",
-  });
 
   const [lookupData, setLookupData] = useState({
     sources: [],
@@ -165,36 +152,55 @@ const CustomerDetails = ({ user }) => {
   });
   const [selectedModel, setSelectedModel] = useState("");
   const [variants, setVariants] = useState([]);
+  
+  // Store pending data for auto-fill
+  const [pendingBigWingData, setPendingBigWingData] = useState({
+    variantName: "",
+    executiveName: "",
+    modelId: "",
+    colourName: "",
+  });
+  
+  // BigWing enquiry type, date, and role for display only
+  const [bigWingEnquiryType, setBigWingEnquiryType] = useState("");
+  const [bigWingEnquiryDate, setBigWingEnquiryDate] = useState("");
+  const [bigWingCreatedByRole, setBigWingCreatedByRole] = useState("");
 
-  const customerTypes = ["RETAIL", "CORPORATE", "DEALER"];
-  const leadSources = [
-    "WALK_IN", "PHONE_CALL", "WEBSITE", "INSTAGRAM", 
-    "GOOGLE_BUSINESS", "FACEBOOK", "REFERENCE", "EXISTING_CUSTOMER"
-  ];
-  const occupations = ["SALARIED", "SELF_EMPLOYED", "BUSINESS", "PROFESSIONAL", "STUDENT", "RETIRED", "HOUSEWIFE"];
-  const CHANNELS = [
-    { value: "WALKIN", label: "Walk-in" },
-    { value: "TELE", label: "Tele" },
-    { value: "DIGITAL", label: "Digital" },
-    { value: "SOCIAL", label: "Social" },
-    { value: "REFERENCE", label: "Reference" },
-    { value: "WEBSITE", label: "Website" },
-  ];
+  const normalizeText = (value) => String(value || "").trim().toLowerCase();
+  const findLookupId = (items, value) => {
+    if (!value || !items?.length) return "";
+    const normalized = normalizeText(value);
+    const match = items.find((item) =>
+      normalizeText(item.name) === normalized ||
+      normalizeText(item.label) === normalized ||
+      normalizeText(item.value) === normalized
+    );
+    return match ? String(match.id || match.value || match.name) : "";
+  };
 
-  const enquiryTypes = ["BIG_WING", "INSURANCE", "ACCESSORIES", "HSRP"];
-  const bigWingExecutives = [
-    "Vinushree", "Chandana", "Jeevitha", "Murali", 
-    "Anusha", "Aadharsh", "Tejaswini", "Punith", "Babyrani"
-  ];
-  const accessoriesExecutives = ["Amrutha", "Sangeetha"];
-  const bigWingModels = [
-    "Activa", "Activa 125", "Dio", "Dio 125", 
-    "Shine 100", "Shine 125", "SP160", "Unicorn", "Livo"
-  ];
-  const accessoriesModels = [
-    "Activa 110", "Activa 125", "Dio", "Shine 100", 
-    "Shine (123 cc)", "SP 125", "Unicorn", "CB125", "Hornet", "SP 160"
-  ];
+  const findVariantIdByName = (value) => {
+    if (!value || !variants?.length) return "";
+    const normalized = normalizeText(value);
+    const match = variants.find((item) => normalizeText(item.name) === normalized);
+    return match ? String(match.id) : "";
+  };
+
+  const getExecutiveValue = (executive) => {
+    return executive?.name || executive?.fullName || executive?.label || executive?.value || "";
+  };
+
+  const findExecutiveName = (executiveName) => {
+    if (!executiveName || !lookupData.executives?.length) return executiveName || "";
+    const normalizedSearch = normalizeText(executiveName);
+    const exactMatch = lookupData.executives.find(ex => normalizeText(getExecutiveValue(ex)) === normalizedSearch);
+    if (exactMatch) return getExecutiveValue(exactMatch);
+    const cleanSearch = executiveName.replace(/[\s\.\-_]/g, '').toLowerCase();
+    const partialMatch = lookupData.executives.find(ex => {
+      const cleanEx = getExecutiveValue(ex).replace(/[\s\.\-_]/g, '').toLowerCase();
+      return cleanEx === cleanSearch || cleanEx.includes(cleanSearch) || cleanSearch.includes(cleanEx);
+    });
+    return partialMatch ? getExecutiveValue(partialMatch) : executiveName;
+  };
 
   useEffect(() => {
     fetchCustomers();
@@ -202,34 +208,30 @@ const CustomerDetails = ({ user }) => {
     fetchLookupData();
   }, []);
 
- const fetchLookupData = async () => {
-  try {
-    // Fetch all data using the correct API functions
-    const [models, colours, executives, branches] = await Promise.all([
-      vehicleCatalogueApi.getVehicleModels(),
-      vehicleCatalogueApi.getVehicleColours(),
-      vehicleCatalogueApi.getSalesExecutives(),
-      salesExecutiveApi.getBranches(),
-    ]);
-    
-    setLookupData({
-      sources: [], // You can remove this if not needed
-      enquiryTypes: [], // You can remove this if not needed  
-      models: models.data || [],
-      colours: colours.data || [],
-      executives: executives.data || [],
-      branches: branches.data || [],
-    });
-
-    console.log("Models loaded:", models.data);
-    console.log("Colours loaded:", colours.data);
-    console.log("Executives loaded:", executives.data);
-    console.log("Branches loaded:", branches.data);
-  } catch (error) {
-    console.error("Error fetching lookup data:", error);
-    toast.error("Failed to load master data. Please refresh the page.");
-  }
-};
+  const fetchLookupData = async () => {
+    try {
+      const [models, colours, executives, branches] = await Promise.all([
+        vehicleCatalogueApi.getVehicleModels(),
+        vehicleCatalogueApi.getVehicleColours(),
+        vehicleCatalogueApi.getSalesExecutives(),
+        salesExecutiveApi.getBranches(),
+      ]);
+      
+      setLookupData({
+        sources: [],
+        enquiryTypes: [],  
+        models: models.data || [],
+        colours: colours.data || [],
+        executives: executives.data || [],
+        branches: branches.data || [],
+      });
+    } catch (error) {
+      console.error("Error fetching lookup data:", error);
+      toast.error("Failed to load master data. Please refresh the page.");
+    }
+  };
+  
+  // Load variants when model changes
   useEffect(() => {
     const loadVariants = async () => {
       if (!selectedModel) {
@@ -247,17 +249,44 @@ const CustomerDetails = ({ user }) => {
 
     loadVariants();
   }, [selectedModel]);
-
-  const fetchCustomerEnquiries = async (customerId) => {
-    try {
-      const data = await enquiryApi.getByCustomer(customerId);
-      setCustomerEnquiries(data);
-    } catch (error) {
-      console.error("Error fetching customer enquiries:", error);
+  
+// After variants are loaded, auto-fill the variant field
+useEffect(() => {
+  if (pendingBigWingData.variantName && variants.length > 0) {
+    console.log("Attempting to auto-fill variant:", pendingBigWingData.variantName);
+    console.log("Available variants:", variants.map(v => v.name));
+    
+    const variantId = findVariantIdByName(pendingBigWingData.variantName);
+    if (variantId) {
+      setFormData(prev => ({ ...prev, variantId: variantId }));
+      console.log("Variant auto-filled successfully:", pendingBigWingData.variantName, "ID:", variantId);
+    } else {
+      console.log("Variant not found in list:", pendingBigWingData.variantName);
     }
-  };
+  }
+}, [variants, pendingBigWingData.variantName]);
 
-  const fetchPermissions = async () => {
+// After executives are loaded, auto-fill the assigned executive field
+useEffect(() => {
+  if (pendingBigWingData.executiveName && lookupData.executives?.length) {
+    const matchedExecutive = findExecutiveName(pendingBigWingData.executiveName);
+    if (matchedExecutive) {
+      setFormData(prev => ({ ...prev, executiveName: matchedExecutive }));
+    }
+  }
+}, [lookupData.executives, pendingBigWingData.executiveName]);
+
+// After colours are loaded, auto-fill the colour field from BigWing
+useEffect(() => {
+  if (pendingBigWingData.colourName && lookupData.colours?.length) {
+    const colourId = findLookupId(lookupData.colours, pendingBigWingData.colourName);
+    if (colourId) {
+      setFormData(prev => ({ ...prev, colourId }));
+    }
+  }
+}, [lookupData.colours, pendingBigWingData.colourName]);
+
+const fetchPermissions = async () => {
     try {
       const perms = await menuPermissionApi.get();
       setPermissions(perms);
@@ -281,87 +310,173 @@ const CustomerDetails = ({ user }) => {
   };
 
   const checkCustomerInBigWing = async (mobileNumber) => {
-    if (!mobileNumber || mobileNumber.length !== 10) {
-      return null;
-    }
+  if (!mobileNumber || mobileNumber.length !== 10) {
+    return null;
+  }
+  
+  setIsCheckingCustomer(true);
+  try {
+    const result = await customerApi.getByPhoneNumber(mobileNumber);
     
-    setIsCheckingCustomer(true);
-    try {
-      const result = await customerApi.getByPhoneNumber(mobileNumber);
-      
-      let dataItems = [];
-      if (result) {
-        if (Array.isArray(result.data)) {
-          dataItems = result.data;
-        } else if (Array.isArray(result)) {
-          dataItems = result;
-        } else if (result.customer || result.firstName) {
-          dataItems = [result];
-        }
+    let dataItems = [];
+    if (result) {
+      if (Array.isArray(result.data)) {
+        dataItems = result.data;
+      } else if (Array.isArray(result)) {
+        dataItems = result;
+      } else if (result.customer || result.firstName) {
+        dataItems = [result];
       }
-
-      if (dataItems.length > 0) {
-        const customerData = dataItems[0];
-        const customer = customerData.customer || customerData;
-        
-        setFoundCustomer(customer);
-        setBigWingEnquiries(dataItems);
-        setShowBigWingData(true);
-        
-        const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim();
-        
-        toast.success(`Customer found: ${fullName}`, { duration: 3000 });
-        
-        return customer;
-      } else {
-        toast.info("No existing customer found with this mobile number", { duration: 2000 });
-        setFoundCustomer(null);
-        setShowBigWingData(false);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error checking customer:", error);
-      return null;
-    } finally {
-      setIsCheckingCustomer(false);
     }
-  };
 
-  const autoFillFromBigWing = () => {
-    if (foundCustomer) {
+    if (dataItems.length > 0) {
+      const enquiryData = dataItems[0];
+      const customer = enquiryData.customer || enquiryData;
+      
+      // Debug logging
+      console.log("=== BigWing Data Received ===");
+      console.log("Full Response:", enquiryData);
+      console.log("Executive Name from BigWing:", enquiryData.executiveName);
+      console.log("Model:", enquiryData.model);
+      console.log("Variant:", enquiryData.variant);
+      
+      // Set BigWing display info for Enquiry Details section
+      const oldEnquiryType = enquiryData.enquiryType || enquiryData.type || enquiryData.status || "";
+      const createdBy = enquiryData.createdBy || enquiryData.customer?.createdBy;
+      const createdByRole = Array.isArray(createdBy?.roles)
+        ? createdBy.roles.join(", ")
+        : createdBy?.role || createdBy?.roles || "";
+      setBigWingEnquiryType(oldEnquiryType);
+      setBigWingCreatedByRole(createdByRole);
+      
+      // Extract field values from BigWing response
+      const rawFirstName = customer.firstName || "";
+      const rawLastName = customer.lastName || "";
+      const rawMobile = customer.mobile || enquiryData.mobileNumber || enquiryData.phoneNumber || "";
+      const rawAltMobile = customer.altMobile || enquiryData.altMobile || enquiryData.alternateMobile || enquiryData.altPhone || "";
+      const rawEmail = customer.email || enquiryData.email || enquiryData.customer?.email || "";
+      const rawAddress = customer.address || enquiryData.address || enquiryData.customer?.address || customer.addressLine || "";
+      const rawLocation = customer.location || enquiryData.location || enquiryData.city || enquiryData.customer?.city || "";
+      const rawModelName = enquiryData.model || enquiryData.vehicleModel || customer.vehicleModel || enquiryData.modelName || "";
+      const rawVariantName = enquiryData.variant || enquiryData.modelVariant || enquiryData.customer?.variant || "";
+      const rawBranchName = enquiryData.referredFromBranch || enquiryData.branch || enquiryData.branchName || customer.branch || enquiryData.customer?.branch || "";
+      const rawExecutiveName = enquiryData.executiveName || enquiryData.assignedExecutive || customer.assignedExecutive || enquiryData.customer?.assignedExecutive || enquiryData.customer?.executiveName || "";
+      const rawColourName = enquiryData.colour?.name || enquiryData.color || enquiryData.customer?.color || enquiryData.colour || "";
+      const rawInterestLevel = enquiryData.interestLevel || enquiryData.interest || enquiryData.customer?.interestLevel || "";
+      const rawPurchaseType = enquiryData.purchaseType || enquiryData.paymentType || enquiryData.customer?.purchaseType || "";
+      const rawRemark = enquiryData.remark || enquiryData.notes || enquiryData.customer?.remark || enquiryData.customer?.notes || "";
+      const rawEnquiryDate = enquiryData.enquiryDate || enquiryData.date || enquiryData.customer?.enquiryDate || new Date().toISOString().split("T")[0];
+      const currentDate = new Date().toISOString().split("T")[0];
+      
+      // Find lookup IDs
+      const modelId = findLookupId(lookupData.models, rawModelName);
+      const branchId = findLookupId(lookupData.branches, rawBranchName);
+      const colourId = findLookupId(lookupData.colours, rawColourName);
+      const matchedExecutiveName = findExecutiveName(rawExecutiveName);
+      
+      setBigWingEnquiryDate(rawEnquiryDate.split('T')[0]);
+      
+      // For Variant, executive and colour - store to auto-fill after master data loads
+      setPendingBigWingData({
+        variantName: rawVariantName,
+        executiveName: rawExecutiveName,
+        modelId: modelId,
+        colourName: rawColourName,
+      });
+      
+      // Auto-fill form data
       setFormData(prev => ({
         ...prev,
-        firstName: foundCustomer.firstName || "",
-        lastName: foundCustomer.lastName || "",
-        mobile: foundCustomer.mobile || prev.mobile,
-        address: foundCustomer.address || "",
-        location: foundCustomer.location || "",
+        firstName: rawFirstName,
+        lastName: rawLastName,
+        mobile: rawMobile,
+        altMobile: rawAltMobile,
+        email: rawEmail,
+        address: rawAddress,
+        location: rawLocation,
+        modelId: modelId || prev.modelId,
+        branchId: branchId || prev.branchId,
+        colourId: colourId || prev.colourId,
+        executiveName: matchedExecutiveName || prev.executiveName,
+        interestLevel: rawInterestLevel || prev.interestLevel,
+        purchaseType: rawPurchaseType || prev.purchaseType,
+        enquiryDate: currentDate,
+        remark: rawRemark || prev.remark,
+        // Status remains the new enquiry type selection; keep existing default
       }));
-      toast.success("Form auto-filled with customer data from BigWing!");
-      setShowBigWingData(false);
+      
+      // Set selected model to trigger variant loading
+      if (modelId) {
+        setSelectedModel(modelId);
+      }
+      
+      const rawEnquiryNo = enquiryData.enquiryNo || enquiryData.enquiryNumber || enquiryData.referenceId || enquiryData.id || "";
+      const mappedCustomer = {
+        firstName: rawFirstName,
+        lastName: rawLastName,
+        mobile: rawMobile,
+        enquiryNo: rawEnquiryNo,
+      };
+      
+      const sanitizeBigWingItem = (item) => {
+        const { createdBy, customer: nestedCustomer, ...rest } = item;
+        const sanitizedCustomer = nestedCustomer
+          ? (({ createdBy: _cb, roles: _roles, ...c }) => c)(nestedCustomer)
+          : undefined;
+        return { ...rest, customer: sanitizedCustomer };
+      };
+      
+      setFoundCustomer(mappedCustomer);
+      setBigWingEnquiries(dataItems.map(sanitizeBigWingItem));
+      setShowBigWingData(true);
+      
+      const fullName = `${rawFirstName} ${rawLastName}`.trim();
+      toast.success(`BigWing Data Loaded: ${fullName || "Customer Found"}`, { duration: 3000 });
+      return mappedCustomer;
+    } else {
+      resetBigWingData();
+      toast.info("No existing customer found in BigWing", { duration: 2000 });
+      return null;
     }
-  };
-
-const handleMobileNumberChange = async (value) => {
-  const numericValue = value.replace(/\D/g, "");
-  if (numericValue.length > 10) return;
-  
-  setFormData(prev => ({ ...prev, mobile: numericValue }));
-  
-  if (numericValue.length === 10 && !isEditMode) {
-    setIsCheckingCustomer(true);
-    
-    // First check in local database using your existing getByMobile function
-    const localExists = await checkLocalCustomerExists(numericValue);
-    
-    // Only check BigWing if not found locally
-    if (!localExists) {
-      await checkCustomerInBigWing(numericValue);
-    }
-    
+  } catch (error) {
+    console.error("Error checking customer:", error);
+    return null;
+  } finally {
     setIsCheckingCustomer(false);
   }
 };
+  
+  const resetBigWingData = () => {
+    setBigWingEnquiryType("");
+    setBigWingCreatedByRole("");
+    setPendingBigWingData({
+      variantName: "",
+      executiveName: "",
+      modelId: "",
+      colourName: "",
+    });
+    setFoundCustomer(null);
+    setShowBigWingData(false);
+  };
+
+  const handleMobileNumberChange = async (value) => {
+    const numericValue = value.replace(/\D/g, "");
+    if (numericValue.length > 10) return;
+    
+    setFormData(prev => ({ ...prev, mobile: numericValue }));
+    
+    if (numericValue.length === 10 && !isEditMode) {
+      setIsCheckingCustomer(true);
+      
+      const localExists = await checkLocalCustomerExists(numericValue);
+      
+      if (!localExists) {
+        await checkCustomerInBigWing(numericValue);
+      }
+      
+      setIsCheckingCustomer(false);
+    }
+  };
 
   const handleFilterLoad = () => {
     let filtered = [...customers];
@@ -400,154 +515,98 @@ const handleMobileNumberChange = async (value) => {
     setFilteredCustomers(customers);
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!/^\d{10}$/.test(formData.mobile)) {
-    toast.error("Mobile number must be exactly 10 digits");
-    return;
-  }
-
-  if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    toast.error("Please enter a valid email address");
-    return;
-  }
-
-  if (!isEditMode) {
-    const exists = await checkLocalCustomerExists(formData.mobile);
-    if (exists) {
-      toast.error("This mobile number is already registered. Please use a different number or edit existing customer.");
+    if (!/^\d{10}$/.test(formData.mobile)) {
+      toast.error("Mobile number must be exactly 10 digits");
       return;
     }
-  }
 
-  if (formData.altMobile && formData.altMobile === formData.mobile) {
-    toast.error("Alternate mobile number cannot be the same as primary mobile number.");
-    return;
-  }
 
-  try {
-    const customerData = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      mobile: formData.mobile,
-      altMobile: formData.altMobile,
-      email: formData.email,
-      location: formData.location,
-      address: formData.address,
-      customerType: formData.customerType,
-      dob: formData.dob,
-      anniversary: formData.anniversary,
-      occupation: formData.occupation,
-      gstNo: formData.gstNo,
-      status: formData.status,
-      // Lead/Enquiry fields
-      enquiryDate: formData.enquiryDate,
-      vehicleModel: lookupData.models.find(m => String(m.id) === formData.modelId)?.name,
-      color: lookupData.colours.find(c => String(c.id) === formData.colourId)?.name,
-      variant: variants.find(v => String(v.id) === formData.variantId)?.name,
-      interestLevel: formData.interestLevel,
-      purchaseType: formData.purchaseType,
-      branch: lookupData.branches.find((b) => String(b.id) === formData.branchId)?.name,
-      exchangeDetails: formData.exchangeEnabled && formData.exchangeValue ? formData.exchangeValue : undefined,
-      assignedExecutive: formData.executiveName || undefined,
-      remarks: formData.remark || undefined,
-    };
 
-    let savedCustomer;
-    if (isEditMode) {
-      await customerApi.update(editingCustomer.id, customerData);
-      toast.success("Customer updated successfully!");
-      savedCustomer = { id: editingCustomer.id, ...customerData };
-    } else {
-      savedCustomer = await customerApi.create(customerData);
-      toast.success("Customer created successfully!");
+    if (!isEditMode) {
+      const exists = await checkLocalCustomerExists(formData.mobile);
+      if (exists) {
+        toast.error("This mobile number is already registered. Please use a different number or edit existing customer.");
+        return;
+      }
     }
+
     
-    setIsModalOpen(false);
-    setIsEditMode(false);
-    setEditingCustomer(null);
-    resetForm();
-    setFoundCustomer(null);
-    setShowBigWingData(false);
-    fetchCustomers();
-  } catch (error) {
-    if (error.message?.includes('duplicate') || error.message?.includes('already exists')) {
-      toast.error("This mobile number is already registered. Please use a different number.");
-    } else {
-      toast.error("Error saving customer");
-    }
-    console.error("Error saving customer:", error);
-  }
-};
 
-  const createLead = async (customerId) => {
     try {
-      const leadData = {
-        customerId: customerId,
-        channel: formData.channel,
-        sourceId: Number(formData.sourceId),
-        enquiryTypeId: Number(formData.enquiryTypeId),
-        modelId: formData.modelId ? Number(formData.modelId) : undefined,
-        variantId: formData.variantId ? Number(formData.variantId) : undefined,
-        colourId: formData.colourId ? Number(formData.colourId) : undefined,
-        executiveName: formData.executiveName || undefined,
-        interestLevel: formData.interestLevel || undefined,
-        purchaseType: formData.purchaseType || undefined,
-        exchangeValue: formData.exchangeValue,
+      const customerData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        mobile: formData.mobile,
+        altMobile: formData.altMobile,
+        email: formData.email,
+        location: formData.location,
+        address: formData.address,
+        customerType: formData.customerType,
+        dob: formData.dob,
+        anniversary: formData.anniversary,
+        occupation: formData.occupation,
+        gstNo: formData.gstNo,
+        status: formData.status,
         enquiryDate: formData.enquiryDate,
-        remark: formData.remark || undefined,
-        typeOfService: formData.typeOfService || undefined,
-        expectedServiceDate: formData.expectedServiceDate || undefined,
-        pickupDropFlag: formData.pickupDropFlag,
+        vehicleModel: lookupData.models.find(m => String(m.id) === formData.modelId)?.name,
+        color: lookupData.colours.find(c => String(c.id) === formData.colourId)?.name,
+        variant: variants.find(v => String(v.id) === formData.variantId)?.name,
+        interestLevel: formData.interestLevel,
+        purchaseType: formData.purchaseType,
+        branch: lookupData.branches.find((b) => String(b.id) === formData.branchId)?.name,
+        exchangeDetails: formData.exchangeEnabled && formData.exchangeValue ? formData.exchangeValue : undefined,
+        assignedExecutive: formData.executiveName || undefined,
+        remarks: formData.remark || undefined,
       };
+
+      if (isEditMode) {
+        await customerApi.update(editingCustomer.id, customerData);
+        toast.success("Customer updated successfully!");
+      } else {
+        await customerApi.create(customerData);
+        toast.success("Customer created successfully!");
+      }
       
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(leadData),
-      });
-      
-      toast.success("Lead created successfully!");
+      setIsModalOpen(false);
+      setIsEditMode(false);
+      setEditingCustomer(null);
+      resetForm();
+      resetBigWingData();
+      fetchCustomers();
     } catch (error) {
-      console.error("Error creating lead:", error);
-      toast.error("Customer saved but failed to create lead");
+      if (error.message?.includes('duplicate') || error.message?.includes('already exists')) {
+        toast.error("This mobile number is already registered. Please use a different number.");
+      } else {
+        toast.error("Error saving customer");
+      }
+      console.error("Error saving customer:", error);
     }
   };
 
   const checkLocalCustomerExists = async (mobileNumber) => {
-  if (!mobileNumber || mobileNumber.length !== 10) return false;
-  
-  try {
-    const customer = await customerApi.getByMobile(mobileNumber);
-    const customerData = customer?.data ?? customer;
-    if (!customerData) return false;
+    if (!mobileNumber || mobileNumber.length !== 10) return false;
+    
+    try {
+      const customer = await customerApi.getByMobile(mobileNumber);
+      const customerData = customer?.data ?? customer;
+      if (!customerData) return false;
 
-    const resolvedCustomer = Array.isArray(customerData)
-      ? customerData[0]
-      : customerData;
+      const resolvedCustomer = Array.isArray(customerData)
+        ? customerData[0]
+        : customerData;
 
-    if (!resolvedCustomer) return false;
+      if (!resolvedCustomer) return false;
 
-    toast.error(
-      (t) => (
-        <div className="flex flex-col max-w-sm">
-          <div className="flex items-center gap-2 font-semibold text-red-800">
-           
-            Mobile Number Already Registered!
-          </div>
-         
-          
-        </div>
-      ),
-      { duration: 8000 }
-    );
-    return true;
-  } catch (error) {
-    console.error("Error checking local customer:", error);
-    return false;
-  }
-};
+      toast.error("Mobile Number Already Registered!", { duration: 8000 });
+      return true;
+    } catch (error) {
+      console.error("Error checking local customer:", error);
+      return false;
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -574,6 +633,7 @@ const handleSubmit = async (e) => {
       executiveName: "",
       interestLevel: "",
       purchaseType: "",
+      exchangeEnabled: false,
       exchangeValue: "",
       enquiryDate: new Date().toISOString().split("T")[0],
       remark: "",
@@ -584,64 +644,63 @@ const handleSubmit = async (e) => {
     setSelectedModel("");
   };
 
-const handleEdit = (customer) => {
-  setIsEditMode(true);
-  setEditingCustomer(customer);
-  
-  const normalize = (value = '') => String(value).trim().toLowerCase();
-  const customerBranchLabel = customer.branch || customer.referredBranch || "";
+  const handleEdit = (customer) => {
+    setIsEditMode(true);
+    setEditingCustomer(customer);
+    
+    const normalize = (value = '') => String(value).trim().toLowerCase();
+    const customerBranchLabel = customer.branch || customer.referredBranch || "";
 
-  // Find model, variant, colour IDs from names using case-insensitive matching
-  const model = lookupData.models.find(
-    (m) => normalize(m.name) === normalize(customer.vehicleModel)
-  );
-  const colour = lookupData.colours.find(
-    (c) => normalize(c.name) === normalize(customer.color)
-  );
-  const variant = variants.find(
-    (v) => normalize(v.name) === normalize(customer.variant)
-  );
-  const branch = lookupData.branches.find(
-    (b) => normalize(b.name) === normalize(customerBranchLabel)
-  );
-  
-  setFormData({
-    firstName: customer.firstName || customer.name?.split(' ')[0] || "",
-    lastName: customer.lastName || customer.name?.split(' ').slice(1).join(' ') || "",
-    mobile: customer.mobile || customer.contactNo || "",
-    altMobile: customer.altMobile || "",
-    email: customer.email || "",
-    location: customer.location || "",
-    address: customer.address || "",
-    customerType: customer.customerType || "RETAIL",
-    status: customer.status || "Walk in Customer",
-    dob: customer.dob ? customer.dob.split('T')[0] : "",
-    anniversary: customer.anniversary ? customer.anniversary.split('T')[0] : "",
-    occupation: customer.occupation || "",
-    gstNo: customer.gstNo || "",
-    channel: "WALKIN",
-    sourceId: "",
-    enquiryTypeId: "",
-    modelId: model ? String(model.id) : "",
-    variantId: variant ? String(variant.id) : "",
-    colourId: colour ? String(colour.id) : "",
-    branchId: branch ? String(branch.id) : (customer.branchId ? String(customer.branchId) : ""),
-    executiveName: customer.assignedExecutive || "",
-    interestLevel: customer.interestLevel || "",
-    purchaseType: customer.purchaseType || "",
-    exchangeEnabled: Boolean(customer.exchangeDetails && customer.exchangeDetails.trim() !== ""),
-    exchangeValue: customer.exchangeDetails || "",
-    enquiryDate: customer.enquiryDate ? new Date(customer.enquiryDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-    remark: customer.remarks || "",
-    typeOfService: "",
-    expectedServiceDate: "",
-    pickupDropFlag: false,
-  });
-  
-  if (model) setSelectedModel(String(model.id));
-  
-  setIsModalOpen(true);
-};
+    const model = lookupData.models.find(
+      (m) => normalize(m.name) === normalize(customer.vehicleModel)
+    );
+    const colour = lookupData.colours.find(
+      (c) => normalize(c.name) === normalize(customer.color)
+    );
+    const variant = variants.find(
+      (v) => normalize(v.name) === normalize(customer.variant)
+    );
+    const branch = lookupData.branches.find(
+      (b) => normalize(b.name) === normalize(customerBranchLabel)
+    );
+    
+    setFormData({
+      firstName: customer.firstName || customer.name?.split(' ')[0] || "",
+      lastName: customer.lastName || customer.name?.split(' ').slice(1).join(' ') || "",
+      mobile: customer.mobile || customer.contactNo || "",
+      altMobile: customer.altMobile || "",
+      email: customer.email || "",
+      location: customer.location || "",
+      address: customer.address || "",
+      customerType: customer.customerType || "RETAIL",
+      status: customer.status || "Walk in Customer",
+      dob: customer.dob ? customer.dob.split('T')[0] : "",
+      anniversary: customer.anniversary ? customer.anniversary.split('T')[0] : "",
+      occupation: customer.occupation || "",
+      gstNo: customer.gstNo || "",
+      channel: "WALKIN",
+      sourceId: "",
+      enquiryTypeId: "",
+      modelId: model ? String(model.id) : "",
+      variantId: variant ? String(variant.id) : "",
+      colourId: colour ? String(colour.id) : "",
+      branchId: branch ? String(branch.id) : (customer.branchId ? String(customer.branchId) : ""),
+      executiveName: customer.assignedExecutive || "",
+      interestLevel: customer.interestLevel || "",
+      purchaseType: customer.purchaseType || "",
+      exchangeEnabled: Boolean(customer.exchangeDetails && customer.exchangeDetails.trim() !== ""),
+      exchangeValue: customer.exchangeDetails || "",
+      enquiryDate: customer.enquiryDate ? new Date(customer.enquiryDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      remark: customer.remarks || "",
+      typeOfService: "",
+      expectedServiceDate: "",
+      pickupDropFlag: false,
+    });
+    
+    if (model) setSelectedModel(String(model.id));
+    
+    setIsModalOpen(true);
+  };
   
   const handleViewDetails = async (customer) => {
     try {
@@ -649,55 +708,9 @@ const handleEdit = (customer) => {
       setDetailedCustomer(details);
       setIsDetailsModalOpen(true);
       setActiveTab("invoices");
-      await checkCustomerInBigWing(customer.contactNo);
     } catch (error) {
       toast.error("Error fetching details");
     }
-  };
-
-  const handleEnquiryTypeSelect = (type) => {
-    setEnquiryFormData({ ...enquiryFormData, enquiryType: type });
-    setShowEnquiryForm(true);
-  };
-
-  const handleEnquirySubmit = async (e) => {
-    e.preventDefault();
-    if (!/^[0-9]{10}$/.test(enquiryFormData.mobileNumber)) {
-      toast.error("Mobile number must be exactly 10 digits");
-      return;
-    }
-    try {
-      await enquiryApi.create({
-        customerId: selectedCustomer.id,
-        enquiryType: enquiryFormData.enquiryType,
-        mobileNumber: enquiryFormData.mobileNumber,
-        vehicleModel: enquiryFormData.vehicleModelId,
-        leadSources: enquiryFormData.leadSources,
-        executiveName: enquiryFormData.executiveName,
-      });
-      toast.success("Enquiry added successfully!");
-      setShowEnquiryForm(false);
-      setEnquiryFormData({
-        enquiryType: "",
-        vehicleModelId: "",
-        mobileNumber: "",
-        leadSources: [],
-        executiveName: "",
-      });
-      fetchCustomerEnquiries(selectedCustomer.id);
-    } catch (error) {
-      toast.error("Error adding enquiry");
-      console.error("Error adding enquiry:", error);
-    }
-  };
-
-  const handleLeadSourceChange = (source) => {
-    setEnquiryFormData((prev) => ({
-      ...prev,
-      leadSources: prev.leadSources.includes(source)
-        ? prev.leadSources.filter((s) => s !== source)
-        : [...prev.leadSources, source],
-    }));
   };
 
   const handleDelete = (customer) => {
@@ -722,8 +735,7 @@ const handleEdit = (customer) => {
     setIsEditMode(false);
     setEditingCustomer(null);
     resetForm();
-    setFoundCustomer(null);
-    setShowBigWingData(false);
+    resetBigWingData();
     setIsModalOpen(true);
   };
 
@@ -789,10 +801,8 @@ const handleEdit = (customer) => {
     const getTypeColor = (enquiryType) => {
       switch(enquiryType) {
         case 'Walk-In': return 'bg-green-100 text-green-800';
-        case 'BIG_WING': return 'bg-blue-100 text-blue-800';
-        case 'INSURANCE': return 'bg-yellow-100 text-yellow-800';
-        case 'ACCESSORIES': return 'bg-purple-100 text-purple-800';
-        case 'HSRP': return 'bg-orange-100 text-orange-800';
+        case 'Telephonic': return 'bg-blue-100 text-blue-800';
+        case 'Digital': return 'bg-purple-100 text-purple-800';
         default: return 'bg-gray-100 text-gray-800';
       }
     };
@@ -802,6 +812,20 @@ const handleEdit = (customer) => {
       </span>
     );
   };
+
+  const executiveOptions = lookupData.executives
+    .map((ex) => ({
+      value: getExecutiveValue(ex),
+      label: getExecutiveValue(ex),
+    }))
+    .filter((opt) => opt.value);
+
+  if (
+    formData.executiveName &&
+    !executiveOptions.some((opt) => normalizeText(opt.value) === normalizeText(formData.executiveName))
+  ) {
+    executiveOptions.push({ value: formData.executiveName, label: formData.executiveName });
+  }
 
   return (
     <div className="space-y-6">
@@ -896,8 +920,7 @@ const handleEdit = (customer) => {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setFoundCustomer(null);
-          setShowBigWingData(false);
+          resetBigWingData();
         }}
         title={isEditMode ? "Edit Customer" : "New Customer Entry"}
         maxWidth="max-w-5xl"
@@ -906,28 +929,37 @@ const handleEdit = (customer) => {
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-2">
           {showBigWingData && foundCustomer && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-3">
-                  <UserCheck size={20} className="text-green-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-green-800">Customer Found in BigWing CRM</h4>
-                    <p className="text-sm text-green-700 mt-1">
-                      {foundCustomer.firstName} {foundCustomer.lastName} - {foundCustomer.mobile}
-                    </p>
-                    {bigWingEnquiries.length > 0 && (
-                      <p className="text-xs text-green-600 mt-1">
-                        {bigWingEnquiries.length} previous enquiry(s) found
-                      </p>
+              <div className="flex items-center gap-3">
+                <UserCheck size={20} className="text-green-600" />
+                <div>
+                  <h4 className="font-semibold text-green-800">Customer Found in BigWing CRM</h4>
+                  <p className="text-sm text-green-700">
+                    {foundCustomer.firstName} {foundCustomer.lastName} - {foundCustomer.mobile}
+                  </p>
+                  {foundCustomer.enquiryNo && (
+                    <p className="text-sm text-green-700">Enquiry No: {foundCustomer.enquiryNo}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {bigWingCreatedByRole && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-900">
+                        <Award size={12} className="text-purple-600" />
+                        {bigWingCreatedByRole}
+                      </span>
+                    )}
+                    {bigWingEnquiryType && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-800">
+                        <Award size={12} className="text-blue-600" />
+                        {bigWingEnquiryType}
+                      </span>
+                    )}
+                    {bigWingEnquiryDate && (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-800">
+                        <CalendarClock size={12} className="text-slate-600" />
+                        {bigWingEnquiryDate}
+                      </span>
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={autoFillFromBigWing}
-                  className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
-                >
-                  Auto-fill Form
-                </button>
               </div>
             </div>
           )}
@@ -956,13 +988,17 @@ const handleEdit = (customer) => {
                 onChange={(value) => setFormData(prev => ({ ...prev, firstName: value }))}
                 required
                 placeholder="Enter first name"
+                disabled={!!foundCustomer?.firstName}
               />
               <InputField
                 label="Last Name"
                 value={formData.lastName}
                 onChange={(value) => setFormData(prev => ({ ...prev, lastName: value }))}
                 placeholder="Enter last name"
+                disabled={!!foundCustomer?.lastName}
               />
+             
+           
               <InputField
                 label="Address"
                 icon={Home}
@@ -980,27 +1016,32 @@ const handleEdit = (customer) => {
             </div>
           </Section>
 
-          {/* Enquiry Type - Fixed to Walk in Customer (no dropdown, just display) */}
           <Section icon={FileText} title="Enquiry Details" subtitle="Capture lead/enquiry information">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                  Enquiry Type
+                  New Enquiry Type
                 </label>
                 <input
                   type="text"
-                  value="Walk in Customer"
-                  disabled
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600"
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                 />
               </div>
-              <InputField
-                label="Enquiry Date"
-                icon={Calendar}
-                type="date"
-                value={formData.enquiryDate}
-                onChange={(value) => setFormData(prev => ({ ...prev, enquiryDate: value }))}
-              />
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  Enquiry Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.enquiryDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, enquiryDate: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+                />
+              </div>
+
             </div>
           </Section>
 
@@ -1031,88 +1072,81 @@ const handleEdit = (customer) => {
             </div>
           </Section>
 
-<Section icon={Target} title="Interest & Purchase" subtitle="Lead qualification">
-  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-    <div>
-      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-        Interest Level
-      </label>
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { value: "HOT", label: "🔥 Hot", color: "#EF4444" },
-          { value: "WARM", label: "🌤️ Warm", color: "#F59E0B" },
-          { value: "COLD", label: "❄️ Cold", color: "#64748B" },
-        ].map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, interestLevel: opt.value }))}
-            className={`rounded-lg border px-3 py-2 text-[12px] font-bold transition-all ${
-              formData.interestLevel === opt.value
-                ? "text-white shadow-md"
-                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
-            }`}
-            style={formData.interestLevel === opt.value ? { backgroundColor: opt.color, borderColor: opt.color } : {}}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-    <SelectField
-      label="Purchase Type"
-      value={formData.purchaseType}
-      onChange={(value) => {
-        setFormData(prev => ({
-          ...prev,
-          purchaseType: value,
-        }));
-      }}
-      options={[
-        { value: "CASH", label: "Cash" },
-        { value: "FINANCE", label: "Finance" },
-      ]}
-    />
-  </div>
+          <Section icon={Target} title="Interest & Purchase" subtitle="Lead qualification">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  Interest Level
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "HOT", label: "🔥 Hot", color: "#EF4444" },
+                    { value: "WARM", label: "🌤️ Warm", color: "#F59E0B" },
+                    { value: "COLD", label: "❄️ Cold", color: "#64748B" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, interestLevel: opt.value }))}
+                      className={`rounded-lg border px-3 py-2 text-[12px] font-bold transition-all ${
+                        formData.interestLevel === opt.value
+                          ? "text-white shadow-md"
+                          : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                      }`}
+                      style={formData.interestLevel === opt.value ? { backgroundColor: opt.color, borderColor: opt.color } : {}}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <SelectField
+                label="Purchase Type"
+                value={formData.purchaseType}
+                onChange={(value) => setFormData(prev => ({ ...prev, purchaseType: value }))}
+                options={[
+                  { value: "CASH", label: "Cash" },
+                  { value: "FINANCE", label: "Finance" },
+                ]}
+              />
+            </div>
 
-  {/* Exchange Toggle - Always visible, no purchase type requirement */}
-  <div className="mt-4 flex gap-3">
-    <button
-      type="button"
-      onClick={() => setFormData(prev => ({ 
-        ...prev, 
-        exchangeEnabled: !prev.exchangeEnabled,
-        exchangeValue: !prev.exchangeEnabled ? prev.exchangeValue : ""
-      }))}
-      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${
-        formData.exchangeEnabled
-          ? "bg-blue-600 text-white shadow-md"
-          : "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200"
-      }`}
-    >
-      <span className={`flex h-4 w-4 items-center justify-center rounded-full ${formData.exchangeEnabled ? "bg-white text-blue-600" : "border-2 border-gray-300"}`}>
-        {formData.exchangeEnabled && <CheckCircle2 size={10} strokeWidth={3} />}
-      </span>
-      Exchange
-    </button>
-  </div>
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ 
+                  ...prev, 
+                  exchangeEnabled: !prev.exchangeEnabled,
+                  exchangeValue: !prev.exchangeEnabled ? prev.exchangeValue : ""
+                }))}
+                className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${
+                  formData.exchangeEnabled
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200"
+                }`}
+              >
+                <span className={`flex h-4 w-4 items-center justify-center rounded-full ${formData.exchangeEnabled ? "bg-white text-blue-600" : "border-2 border-gray-300"}`}>
+                  {formData.exchangeEnabled && <CheckCircle2 size={10} strokeWidth={3} />}
+                </span>
+                Exchange
+              </button>
+            </div>
 
-  {/* Exchange Details Textarea - Shows when toggle is ON */}
-  {formData.exchangeEnabled && (
-    <div className="mt-4">
-      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-        Exchange Details
-      </label>
-      <textarea
-        value={formData.exchangeValue}
-        onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
-        rows={3}
-        placeholder="Enter exchange vehicle details (e.g., Old Activa - 2018 model, Registration No: KA01AB1234)"
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-      />
-    </div>
-  )}
-</Section>
+            {formData.exchangeEnabled && (
+              <div className="mt-4">
+                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  Exchange Details
+                </label>
+                <textarea
+                  value={formData.exchangeValue}
+                  onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
+                  rows={3}
+                  placeholder="Enter exchange vehicle details"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+                />
+              </div>
+            )}
+          </Section>
 
           <Section icon={User} title="Assignment">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1126,7 +1160,7 @@ const handleEdit = (customer) => {
                 label="Assigned Executive"
                 value={formData.executiveName}
                 onChange={(value) => setFormData(prev => ({ ...prev, executiveName: value }))}
-                options={lookupData.executives.map(ex => ({ value: ex.name, label: ex.name }))}
+                options={executiveOptions}
               />
             </div>
           </Section>
@@ -1146,8 +1180,7 @@ const handleEdit = (customer) => {
               type="button"
               onClick={() => {
                 setIsModalOpen(false);
-                setFoundCustomer(null);
-                setShowBigWingData(false);
+                resetBigWingData();
               }}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
             >
@@ -1164,6 +1197,7 @@ const handleEdit = (customer) => {
         </form>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -1191,6 +1225,7 @@ const handleEdit = (customer) => {
         </div>
       </Modal>
 
+      {/* Customer Details Modal */}
       <Modal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
@@ -1325,17 +1360,17 @@ const handleEdit = (customer) => {
                           <td className="px-4 py-2 text-sm">{enq.vehicleModel || 'N/A'}</td>
                           <td className="px-4 py-2 text-sm">{enq.executiveName || 'N/A'}</td>
                           <td className="px-4 py-2 text-sm">{new Date(enq.createdAt).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                    {(!detailedCustomer?.enquiries || detailedCustomer.enquiries.length === 0) && (
-                      <tr>
-                        <td colSpan="4" className="px-4 py-8 text-center text-gray-500 italic">No enquiries found</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                        </tr>
+                      ))}
+                      {(!detailedCustomer?.enquiries || detailedCustomer.enquiries.length === 0) && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-8 text-center text-gray-500 italic">No enquiries found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
             )}
 
             {activeTab === "bigwing_enquiries" && (
@@ -1359,6 +1394,8 @@ const handleEdit = (customer) => {
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Stage</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Interest</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Executive</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Created By</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Role</th>
                           <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Enquiry Date</th>
                         </tr>
                       </thead>
@@ -1378,8 +1415,8 @@ const handleEdit = (customer) => {
                             <td className="px-4 py-3 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                 enquiry.stage === 'INVOICED' ? 'bg-green-100 text-green-800' :
+                                enquiry.stage === 'BOOKED' ? 'bg-purple-100 text-purple-800' :
                                 enquiry.stage === 'ENQUIRED' ? 'bg-yellow-100 text-yellow-800' :
-                                enquiry.stage === 'CANCELLED' ? 'bg-red-100 text-red-800' :
                                 'bg-gray-100 text-gray-800'
                               }`}>
                                 {enquiry.stage || 'N/A'}
@@ -1396,6 +1433,12 @@ const handleEdit = (customer) => {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-sm">{enquiry.executiveName || 'Not Assigned'}</td>
+                            <td className="px-4 py-3 text-sm">{enquiry.createdBy?.fullName || 'N/A'}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
+                                {enquiry.createdBy?.roles?.join(', ') || 'N/A'}
+                              </span>
+                            </td>
                             <td className="px-4 py-3 text-sm">
                               {enquiry.enquiryDate ? new Date(enquiry.enquiryDate).toLocaleDateString() : 'N/A'}
                             </td>
