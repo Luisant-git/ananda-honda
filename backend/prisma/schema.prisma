@@ -265,6 +265,10 @@ model ServiceJobCard {
   painting           Boolean  @default(false)
   frameNumber        String?
   currentKM          Float?
+  otpNo              String?
+  amcStartDate       DateTime?
+  amcEndDate         DateTime?
+  estimatedDeliveryDate DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

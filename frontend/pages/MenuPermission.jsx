@@ -112,7 +112,8 @@ const MenuPermission = () => {
       'service_payment_mode': 'S - Payment Mode',
       'service_type_of_payment': 'S - Type of Payment',
       'service_type_of_collection': 'S - Type of Collection',
-      'service_type_of_part': 'S - Type of Part',  // Added this
+      'service_type_of_part': 'S - Type of Part',
+      'jobcard_master': 'Service Import',
     };
     return customLabels[module] || module.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };

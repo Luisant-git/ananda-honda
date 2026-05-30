@@ -68,14 +68,25 @@ export class ServiceJobCardService {
     const d = new Date(str);
     if (!isNaN(d.getTime())) return d;
     
-    // Try DD-MM-YYYY or DD/MM/YYYY
-    const parts = str.split(/[-/]/);
+    // Try DD-MM-YYYY or DD/MM/YYYY with optional time
+    const [datePart, timePart] = str.split(' ');
+    const parts = datePart.split(/[-/]/);
     if (parts.length === 3) {
-      // Assuming DD-MM-YYYY
       const day = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1;
       const year = parts[2].length === 2 ? 2000 + parseInt(parts[2], 10) : parseInt(parts[2], 10);
-      const nd = new Date(year, month, day);
+      
+      let hours = 0, minutes = 0, seconds = 0;
+      if (timePart) {
+        const tParts = timePart.split(':');
+        if (tParts.length >= 2) {
+          hours = parseInt(tParts[0], 10) || 0;
+          minutes = parseInt(tParts[1], 10) || 0;
+          seconds = tParts.length >= 3 ? parseInt(tParts[2], 10) || 0 : 0;
+        }
+      }
+      
+      const nd = new Date(year, month, day, hours, minutes, seconds);
       if (!isNaN(nd.getTime())) return nd;
     }
 
@@ -83,7 +94,7 @@ export class ServiceJobCardService {
   }
 
   // ✅ Multi-format Upload
-  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' = 'REVENUE') {
+  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE') {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
@@ -94,7 +105,7 @@ export class ServiceJobCardService {
       const rowArray = allRowsAoa[i] || [];
       const hasJobCardHeader = rowArray.some(cell => {
         const str = String(cell).toLowerCase().trim();
-        return str === 'job card number' || str === 'job card #' || str === 'registration number' || str === 'jobcard no.';
+        return str === 'job card number' || str === 'job card #' || str === 'registration number' || str === 'jobcard no.' || str === 'job card';
       });
       if (hasJobCardHeader) {
         headerRowIdx = i;
@@ -132,6 +143,10 @@ export class ServiceJobCardService {
       let painting = false;
       let currentKM = 0;
       let frameNumber = '';
+      let otpNo = '';
+      let amcStartDate: Date | null = null;
+      let amcEndDate: Date | null = null;
+      let estimatedDeliveryDate: Date | null = null;
 
       let jobCardDate: Date | null = null;
 
@@ -200,6 +215,25 @@ export class ServiceJobCardService {
         serviceName = String(row['Service Type'] || '').trim();
         vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
         frameNumber = String(row['Frame #'] || '').trim();
+      } else if (type === 'ORDER') {
+        const getVal = (key: string) => {
+           const k = Object.keys(row).find(x => x.toLowerCase().trim() === key.toLowerCase().trim());
+           return k ? row[k] : undefined;
+        };
+        jobCardNumber = String(getVal('job card #') || getVal('job card') || getVal('job card number') || '').trim();
+        registrationNumber = String(getVal('vehicle registration no.') || getVal('registration number') || '').trim();
+        status = String(getVal('job card status') || '').trim();
+        const firstName = String(getVal('customer first name') || '').trim();
+        const account = String(getVal('account') || '').trim();
+        customerName = firstName && account && firstName !== account ? `${firstName} ${account}` : (firstName || account);
+        mobileNumber = String(getVal('contact phone') || getVal('account phone') || '').trim();
+        serviceName = String(getVal('service type') || '').trim();
+        vehicleDetails = String(getVal('model variant') || '').trim();
+        jobCardDate = this.parseExcelDate(getVal('created date/time'));
+        otpNo = String(getVal('otp no') || '').trim();
+        amcStartDate = this.parseExcelDate(getVal('amc start date'));
+        amcEndDate = this.parseExcelDate(getVal('amc end date'));
+        estimatedDeliveryDate = this.parseExcelDate(getVal('effective final delivery estimate date'));
       }
 
       if (!jobCardNumber) continue;
@@ -248,6 +282,10 @@ export class ServiceJobCardService {
           painting: painting ? true : undefined,
           currentKM: currentKM || undefined,
           frameNumber: frameNumber || undefined,
+          otpNo: otpNo || undefined,
+          amcStartDate: amcStartDate || undefined,
+          amcEndDate: amcEndDate || undefined,
+          estimatedDeliveryDate: estimatedDeliveryDate || undefined,
           createdAt: finalCreatedAt,
         },
         create: {
@@ -271,6 +309,10 @@ export class ServiceJobCardService {
           painting,
           currentKM,
           frameNumber,
+          otpNo,
+          amcStartDate,
+          amcEndDate,
+          estimatedDeliveryDate,
           createdAt: finalCreatedAt,
         },
       });

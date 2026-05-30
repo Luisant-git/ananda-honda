@@ -1,4 +1,4 @@
-// src/pages/ServiceJobCardMaster.jsx
+// src/pages/ServiceImport.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
@@ -6,7 +6,7 @@ import Modal from '../components/Modal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
 import { Coins, Wrench, Receipt } from 'lucide-react';
 
-const ServiceJobCardMaster = ({ user }) => {
+const ServiceImport = ({ user }) => {
   const [records, setRecords] = useState([]);
   const [search, setSearch] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -42,6 +42,17 @@ const ServiceJobCardMaster = ({ user }) => {
           lubesRevenue: r.lubesRevenue,
           totalRevenue: r.totalRevenue,
           createdAt: r.createdAt,
+          amc: r.amc,
+          oil: r.oil,
+          battery: r.battery,
+          tyre: r.tyre,
+          painting: r.painting,
+          currentKM: r.currentKM,
+          frameNumber: r.frameNumber,
+          otpNo: r.otpNo,
+          amcStartDate: r.amcStartDate,
+          amcEndDate: r.amcEndDate,
+          estimatedDeliveryDate: r.estimatedDeliveryDate,
         }))
       );
     } catch (error) {
@@ -188,7 +199,7 @@ const ServiceJobCardMaster = ({ user }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-brand-text-primary">Service Dealership Master</h1>
+          <h1 className="text-2xl font-bold text-brand-text-primary">Service Import</h1>
           <p className="text-sm text-brand-text-secondary mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
             <span>Manage and import service data reports.</span>
             <span className="text-brand-accent font-medium bg-brand-accent/10 px-2 py-0.5 rounded text-xs flex items-center gap-1">
@@ -224,7 +235,51 @@ const ServiceJobCardMaster = ({ user }) => {
       </div>
 
       {/* Upload Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 1st Order Report */}
+        <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-pink-400 transition-all group">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-xl group-hover:scale-110 transition-transform">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-brand-text-primary">Order Report</h3>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">Order Report</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => handleUpload(e.target.files[0], 'ORDER')}
+              className="hidden"
+              id="upload-order"
+              disabled={!!isUploading}
+            />
+            <label
+              htmlFor="upload-order"
+              className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-border rounded-lg p-6 cursor-pointer hover:bg-pink-50/50 hover:border-pink-400 transition-all ${isUploading === 'ORDER' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isUploading === 'ORDER' ? (
+                <div className="flex items-center gap-2 text-pink-600 font-medium">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Uploading...
+                </div>
+              ) : (
+                <>
+                  <span className="text-brand-text-primary font-bold text-sm">Upload Order Report</span>
+                  <span className="text-xs text-brand-text-secondary text-center mt-1">
+                    <strong className="text-pink-600 font-semibold">Key Data:</strong> Job Card #, Created Date/Time, Vehicle Reg No., Contact Phone, AMC Dates
+                  </span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
         {/* 1. Revenue Report */}
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
           <div className="flex items-center gap-3 mb-4">
@@ -321,7 +376,7 @@ const ServiceJobCardMaster = ({ user }) => {
             </div>
             <div>
               <h3 className="font-bold text-brand-text-primary">Invoice Report</h3>
-              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">3 Order Report</p>
+              <p className="text-[10px] text-brand-text-secondary uppercase tracking-wider">Invoice Report</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -349,7 +404,7 @@ const ServiceJobCardMaster = ({ user }) => {
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Invoice Report</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
-                    <strong className="text-purple-600 font-semibold">Key Data:</strong> Registration, Customer Name, Mobile, Vehicle
+                    <strong className="text-purple-600 font-semibold">Key Data:</strong> Registration, Customer Name, Mobile, Vehicle, Closed Date/ Time
                   </span>
                 </>
               )}
@@ -470,7 +525,7 @@ const ServiceJobCardMaster = ({ user }) => {
               <div>
                 <label className="text-xs text-brand-text-secondary uppercase">Created Date</label>
                 <div className="text-brand-text-primary font-medium">
-                  {selectedJobCard.createdAt ? new Date(selectedJobCard.createdAt).toLocaleDateString('en-GB') : 'N/A'}
+                  {selectedJobCard.createdAt ? new Date(selectedJobCard.createdAt).toLocaleString('en-GB') : 'N/A'}
                 </div>
               </div>
               {selectedJobCard.closedDate && (
@@ -516,6 +571,68 @@ const ServiceJobCardMaster = ({ user }) => {
                 </div>
               </div>
             )}
+
+            {/* Other Details Section */}
+            <div className="border-t border-brand-border pt-4">
+              <h4 className="text-sm font-bold text-brand-text-primary mb-3">Other Details</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {selectedJobCard.otpNo && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">OTP No</label>
+                    <div className="text-brand-text-primary font-medium">{selectedJobCard.otpNo}</div>
+                  </div>
+                )}
+                {selectedJobCard.amcStartDate && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">AMC Start Date</label>
+                    <div className="text-brand-text-primary font-medium">
+                      {new Date(selectedJobCard.amcStartDate).toLocaleDateString('en-GB')}
+                    </div>
+                  </div>
+                )}
+                {selectedJobCard.amcEndDate && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">AMC End Date</label>
+                    <div className="text-brand-text-primary font-medium">
+                      {new Date(selectedJobCard.amcEndDate).toLocaleDateString('en-GB')}
+                    </div>
+                  </div>
+                )}
+                {selectedJobCard.estimatedDeliveryDate && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Est. Delivery Date</label>
+                    <div className="text-brand-text-primary font-medium">
+                      {new Date(selectedJobCard.estimatedDeliveryDate).toLocaleDateString('en-GB')}
+                    </div>
+                  </div>
+                )}
+                {selectedJobCard.currentKM > 0 && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Current KM</label>
+                    <div className="text-brand-text-primary font-medium">{selectedJobCard.currentKM}</div>
+                  </div>
+                )}
+                {selectedJobCard.frameNumber && (
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Frame Number</label>
+                    <div className="text-brand-text-primary font-medium">{selectedJobCard.frameNumber}</div>
+                  </div>
+                )}
+                <div className="col-span-full">
+                  <label className="text-xs text-brand-text-secondary uppercase">Flags</label>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    {selectedJobCard.amc && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">AMC</span>}
+                    {selectedJobCard.oil && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Oil</span>}
+                    {selectedJobCard.battery && <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Battery</span>}
+                    {selectedJobCard.tyre && <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">Tyre</span>}
+                    {selectedJobCard.painting && <span className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded">Painting</span>}
+                    {!selectedJobCard.amc && !selectedJobCard.oil && !selectedJobCard.battery && !selectedJobCard.tyre && !selectedJobCard.painting && (
+                      <span className="text-brand-text-secondary text-sm">No flags</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </Modal>
@@ -549,4 +666,4 @@ const ServiceJobCardMaster = ({ user }) => {
   );
 };
 
-export default ServiceJobCardMaster;
+export default ServiceImport;

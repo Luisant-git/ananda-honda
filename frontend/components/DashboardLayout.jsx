@@ -21,7 +21,7 @@ import EnquiryManagement from '../pages/EnquiryManagement';
 import VehicleEnquiryForm from '../pages/VehicleEnquiryForm';
 import ServiceTypeOfCollection from '../pages/ServiceTypeOfCollection';
 import SalesInvoiceMaster from '../pages/SalesInvoiceMaster';
-import ServiceJobCardMaster from '../pages/ServiceJobCardMaster';
+import ServiceImport from '../pages/ServiceImport';
 import ServiceType from '../pages/ServiceType';
 import FullPaymentReport from '../pages/FullPaymentReport';
 import PartPaymentReport from '../pages/PartPaymentReport';
@@ -65,7 +65,7 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'sales_invoice_master':
         return <SalesInvoiceMaster user={user} />;
       case 'service_jobcard_master':
-        return <ServiceJobCardMaster user={user} />;
+        return <ServiceImport user={user} />;
       case 'service_type':
         return <ServiceType user={user} />;
       case 'enquiry_management':

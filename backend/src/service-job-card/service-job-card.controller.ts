@@ -25,7 +25,7 @@ export class ServiceJobCardController {
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile() file: Express.Multer.File,
-    @Query('type') type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' = 'REVENUE'
+    @Query('type') type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE'
   ) {
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);

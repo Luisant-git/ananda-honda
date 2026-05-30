@@ -133,7 +133,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                   <li>
                     <NavLink
                       view="service_jobcard_master"
-                      label="Service Dealership"
+                      label="Service Import"
                       isSubmenu
                     />
                   </li>
