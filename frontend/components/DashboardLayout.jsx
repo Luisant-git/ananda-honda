@@ -27,11 +27,12 @@ import FullPaymentReport from '../pages/FullPaymentReport';
 import PartPaymentReport from '../pages/PartPaymentReport';
 import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 import ServiceReminderReport from '../pages/ServiceReminderReport';
+import QuickStart from '../pages/QuickStart';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
-  const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'dashboard');
+  const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'quick_start');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -86,6 +87,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <UserManagement />;
       case 'menu_permission':
         return <MenuPermission />;
+      case 'quick_start':
+        return <QuickStart setCurrentView={setCurrentView} user={user} />;
       case 'dashboard':
       default:
         return <Dashboard />;

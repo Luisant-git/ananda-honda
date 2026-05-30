@@ -11,7 +11,7 @@ import { serviceTypeOfPaymentApi } from "../api/serviceTypeOfPaymentApi.js";
 import { serviceTypeOfCollectionApi } from "../api/serviceTypeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
-import hondaLogo from "../assets/honda-logo.svg";
+import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { EmailIcon, LockIcon } from '../components/icons/Icons';
 import { authApi } from '../api/authApi.js';
+import hondaLogo from '../assets/honda.png';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -24,8 +25,8 @@ const Login = ({ onLogin }) => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-brand-bg">
       <div className="w-full max-w-md p-8 space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-brand-text-primary">Ananda Motowings Private Limited</h1>
+        <div className="text-center flex justify-center">
+          <img src={hondaLogo} alt="Ananda Motowings Private Limited" className="h-24 object-contain" />
         </div>
         <div className="bg-brand-surface p-8 rounded-lg shadow-2xl border border-brand-border">
           <h2 className="text-xl font-semibold text-center text-brand-text-secondary mb-6">Sign in to start your session</h2>

@@ -11,7 +11,7 @@ import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
-import hondaLogo from "../assets/honda-logo.svg";
+import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard.js";
 
 const PaymentCollection = ({ user }) => {
