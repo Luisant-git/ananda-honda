@@ -45,4 +45,19 @@ export const vehicleModelApi = {
     if (!response.ok) throw new Error('Failed to delete vehicle model');
     return response.json();
   },
+
+  upload: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to upload vehicle models');
+    }
+    return response.json();
+  },
 };

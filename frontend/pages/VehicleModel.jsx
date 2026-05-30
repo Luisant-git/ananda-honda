@@ -14,6 +14,7 @@ const VehicleModel = ({ user }) => {
   const [modelToDelete, setModelToDelete] = useState(null);
   const [formData, setFormData] = useState({ model: '', status: 'Enable' });
   const [permissions, setPermissions] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchVehicleModels();
@@ -95,6 +96,25 @@ const VehicleModel = ({ user }) => {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      toast.loading('Uploading vehicle models...', { id: 'upload-toast' });
+      const response = await vehicleModelApi.upload(file);
+      toast.success(response.message || 'Vehicle models uploaded successfully!', { id: 'upload-toast' });
+      fetchVehicleModels();
+    } catch (error) {
+      toast.error(error.message || 'Error uploading vehicle models', { id: 'upload-toast' });
+      console.error('Error uploading:', error);
+    } finally {
+      setIsUploading(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Vehicle Model', accessor: 'model' },
@@ -105,14 +125,33 @@ const VehicleModel = ({ user }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">Vehicle Models</h1>
-        {permissions?.master?.vehicle_model?.add && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-          >
-            Add
-          </button>
-        )}
+        <div className="flex gap-4">
+          {permissions?.master?.vehicle_model?.add && (
+            <>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isUploading}
+                />
+                <button
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                  disabled={isUploading}
+                >
+                  {isUploading ? 'Uploading...' : 'Upload Excel'}
+                </button>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+              >
+                Add
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <DataTable 
