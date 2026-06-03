@@ -143,6 +143,7 @@ export class ServiceJobCardService {
       let painting = false;
       let currentKM = 0;
       let frameNumber = '';
+      let invoiceNumber = '';
       let otpNo = '';
       let amcStartDate: Date | null = null;
       let amcEndDate: Date | null = null;
@@ -172,8 +173,6 @@ export class ServiceJobCardService {
         customerName = String(row['Customer Name'] || '').trim();
         mobileNumber = String(row['Customer Mobile'] || '').trim();
         jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
-        closedDate = this.parseExcelDate(row['Job Card Close Date']);
-        status = String(row['Job Card Status'] || '').trim();
         serviceName = String(row['Service Type'] || '').trim();
         vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
         currentKM = parseFloat(row['Current KM'] || 0);
@@ -205,16 +204,28 @@ export class ServiceJobCardService {
           painting = true;
         }
       } else if (type === 'INVOICE') {
-        jobCardNumber = String(row['Job Card #'] || '').trim();
-        jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
-        closedDate = this.parseExcelDate(row['Closed Date/ Time']);
-        status = String(row['Job Card Status'] || '').trim();
-        registrationNumber = String(row['Vehicle Registration No.'] || '').trim();
-        customerName = `${String(row['Customer First Name'] || '').trim()} ${String(row['Customer Last Name'] || '').trim()}`.trim();
-        mobileNumber = String(row['Contact Phone'] || '').trim();
-        serviceName = String(row['Service Type'] || '').trim();
-        vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
-        frameNumber = String(row['Frame #'] || '').trim();
+        const getVal = (key: string) => {
+           const k = Object.keys(row).find(x => x.toLowerCase().trim() === key.toLowerCase().trim());
+           return k ? row[k] : undefined;
+        };
+        jobCardNumber = String(getVal('Job Card #') || '').trim();
+        jobCardDate = this.parseExcelDate(getVal('Job Card Date') || getVal('Date'));
+        closedDate = this.parseExcelDate(getVal('Closed Date/ Time'));
+        status = String(getVal('Job Card Status') || '').trim();
+        registrationNumber = String(getVal('Vehicle Registration No.') || '').trim();
+        customerName = `${String(getVal('Customer First Name') || '').trim()} ${String(getVal('Customer Last Name') || '').trim()}`.trim();
+        mobileNumber = String(getVal('Contact Phone') || '').trim();
+        serviceName = String(getVal('Service Type') || getVal('SR Type') || '').trim();
+        vehicleDetails = String(getVal('Model Name') || getVal('Model Variant') || '').trim();
+        frameNumber = String(getVal('Frame #') || '').trim();
+        invoiceNumber = String(getVal('Invoice Number') || getVal('Invoice #') || getVal('Invoice No') || '').trim();
+        
+        let invAmt = getVal('Total Invoice Amount') || getVal('Invoice Amount') || 0;
+        if (typeof invAmt === 'string') {
+          const match = invAmt.match(/[\d,]+\.?\d*/);
+          invAmt = match ? match[0].replace(/,/g, '') : '0';
+        }
+        totalRevenue = parseFloat(invAmt || 0);
       } else if (type === 'ORDER') {
         const getVal = (key: string) => {
            const k = Object.keys(row).find(x => x.toLowerCase().trim() === key.toLowerCase().trim());
@@ -282,6 +293,7 @@ export class ServiceJobCardService {
           painting: painting ? true : undefined,
           currentKM: currentKM || undefined,
           frameNumber: frameNumber || undefined,
+          invoiceNumber: invoiceNumber || undefined,
           otpNo: otpNo || undefined,
           amcStartDate: amcStartDate || undefined,
           amcEndDate: amcEndDate || undefined,
@@ -309,6 +321,7 @@ export class ServiceJobCardService {
           painting,
           currentKM,
           frameNumber,
+          invoiceNumber,
           otpNo,
           amcStartDate,
           amcEndDate,

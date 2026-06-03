@@ -264,6 +264,7 @@ model ServiceJobCard {
   tyre               Boolean  @default(false)
   painting           Boolean  @default(false)
   frameNumber        String?
+  invoiceNumber      String?
   currentKM          Float?
   otpNo              String?
   amcStartDate       DateTime?

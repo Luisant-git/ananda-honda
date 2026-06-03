@@ -26,8 +26,6 @@ const ServiceWorkshopMaster = ({ user }) => {
           vehicleRegNo: r.registrationNumber || 'N/A',
           vehicleModel: r.vehicleDetails || 'N/A',
           serviceType: r.serviceType?.name || 'N/A',
-          status: r.status || 'N/A',
-          closedDate: r.closedDate ? new Date(r.closedDate).toLocaleDateString('en-GB') : 'N/A',
         }))
       );
     } catch (error) {
@@ -59,8 +57,6 @@ const ServiceWorkshopMaster = ({ user }) => {
     { header: 'Vehicle Reg No', accessor: 'vehicleRegNo' },
     { header: 'Model', accessor: 'vehicleModel' },
     { header: 'Service Type', accessor: 'serviceType' },
-    { header: 'Status', accessor: 'status' },
-    { header: 'Closed Date', accessor: 'closedDate' },
   ];
 
   return (
@@ -107,8 +103,6 @@ const ServiceWorkshopMaster = ({ user }) => {
             <h4 className="text-xs font-bold text-blue-800 uppercase mb-2">Required Columns:</h4>
             <ul className="text-[10px] text-blue-700 space-y-1 list-disc pl-4">
               <li>Job Card Number / Job Card #</li>
-              <li>Job Card Status (e.g. Closed)</li>
-              <li>Job Card Close Date</li>
               <li>Service Type</li>
               <li>Model Name / Frame Number</li>
             </ul>
