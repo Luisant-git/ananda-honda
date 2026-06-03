@@ -2013,6 +2013,18 @@ await fetchData();
         <span className="font-medium text-gray-600">Created Date:</span>
         <span className="ml-2">{serviceJobCardInfo.createdAt ? new Date(serviceJobCardInfo.createdAt).toLocaleDateString('en-GB') : "N/A"}</span>
       </div>
+      {serviceJobCardInfo.invoiceNumber && serviceJobCardInfo.invoiceNumber !== 'N/A' && (
+        <div>
+          <span className="font-medium text-gray-600">Invoice Number:</span>
+          <span className="ml-2 font-semibold">{serviceJobCardInfo.invoiceNumber}</span>
+        </div>
+      )}
+      {serviceJobCardInfo.totalRevenue > 0 && (
+        <div>
+          <span className="font-medium text-gray-600">Total Invoice Amount:</span>
+          <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
+        </div>
+      )}
     </div>
   </div>
 )}

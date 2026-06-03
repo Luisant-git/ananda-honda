@@ -29,6 +29,7 @@ const ServiceImport = ({ user }) => {
           id: r.id,
           sNo: i + 1,
           jobCardNo: r.jobCardNumber || 'N/A',
+          invoiceNumber: r.invoiceNumber || 'N/A',
           customerName: r.customer?.name || `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.customerName || 'N/A',
           mobileNumber: r.mobileNumber || r.phone || r.contactPhone || 'N/A',
           vehicleRegNo: r.registrationNumber || 'N/A',
@@ -360,7 +361,7 @@ const ServiceImport = ({ user }) => {
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Workshop Excel</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
-                    <strong className="text-orange-600 font-semibold">Key Data:</strong> Job Card Status, Close Date, Parts (Oil, Battery, Tyre, etc.)
+                    <strong className="text-orange-600 font-semibold">Key Data:</strong> Parts (Oil, Battery, Tyre, etc.)
                   </span>
                 </>
               )}
@@ -404,7 +405,7 @@ const ServiceImport = ({ user }) => {
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Invoice Report</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
-                    <strong className="text-purple-600 font-semibold">Key Data:</strong> Registration, Customer Name, Mobile, Vehicle, Closed Date/ Time
+                    <strong className="text-purple-600 font-semibold">Key Data:</strong> Closed Date/ Time, Invoice Number, Total Invoice Amount
                   </span>
                 </>
               )}
@@ -494,6 +495,18 @@ const ServiceImport = ({ user }) => {
                 <label className="text-xs text-brand-text-secondary uppercase">Job Card No</label>
                 <div className="text-brand-text-primary font-medium">{selectedJobCard.jobCardNo}</div>
               </div>
+              {selectedJobCard.invoiceNumber && selectedJobCard.invoiceNumber !== 'N/A' && (
+                <>
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Invoice Number</label>
+                    <div className="text-brand-text-primary font-medium">{selectedJobCard.invoiceNumber}</div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-brand-text-secondary uppercase">Total Invoice Amount</label>
+                    <div className="text-brand-text-primary font-bold text-brand-accent">₹{selectedJobCard.totalRevenue || 0}</div>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="text-xs text-brand-text-secondary uppercase">Status</label>
                 <div className="mt-1">
@@ -554,10 +567,12 @@ const ServiceImport = ({ user }) => {
                     <label className="text-xs text-brand-text-secondary uppercase">Lubes</label>
                     <div className="text-brand-text-primary font-medium">₹{selectedJobCard.lubesRevenue || 0}</div>
                   </div>
-                  <div>
-                    <label className="text-xs text-brand-text-secondary uppercase">Total Revenue</label>
-                    <div className="text-brand-text-primary font-bold text-brand-accent">₹{selectedJobCard.totalRevenue || 0}</div>
-                  </div>
+                  {!selectedJobCard.invoiceNumber && selectedJobCard.totalRevenue > 0 && (
+                    <div>
+                      <label className="text-xs text-brand-text-secondary uppercase">Total Revenue</label>
+                      <div className="text-brand-text-primary font-bold text-brand-accent">₹{selectedJobCard.totalRevenue || 0}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
