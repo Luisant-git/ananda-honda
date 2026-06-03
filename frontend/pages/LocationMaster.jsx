@@ -3,8 +3,10 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { locationApi } from '../api/locationApi';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 
 const LocationMaster = ({ user }) => {
+  const [permissions, setPermissions] = useState(null);
   const [locations, setLocations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -23,7 +25,17 @@ const LocationMaster = ({ user }) => {
 
   useEffect(() => {
     fetchLocations();
+    fetchPermissions();
   }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const perms = await menuPermissionApi.get();
+      setPermissions(perms);
+    } catch (error) {
+      console.error('Failed to fetch permissions:', error);
+    }
+  };
 
   const fetchLocations = async () => {
     try {
@@ -132,27 +144,31 @@ const LocationMaster = ({ user }) => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-brand-text-primary">Locations</h1>
         <div className="flex gap-4">
-          <div className="relative">
-            <input
-              type="file"
-              accept=".xlsx, .xls, .csv"
-              onChange={handleFileUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={isUploading}
-            />
+          {permissions?.master?.location_master?.add && (
+            <div className="relative">
+              <input
+                type="file"
+                accept=".xlsx, .xls, .csv"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={isUploading}
+              />
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+                disabled={isUploading}
+              >
+                {isUploading ? 'Uploading...' : 'Upload Excel'}
+              </button>
+            </div>
+          )}
+          {permissions?.master?.location_master?.add && (
             <button
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
-              disabled={isUploading}
+              onClick={() => setIsModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
             >
-              {isUploading ? 'Uploading...' : 'Upload Excel'}
+              Add Location
             </button>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-          >
-            Add Location
-          </button>
+          )}
         </div>
       </div>
 
@@ -161,8 +177,12 @@ const LocationMaster = ({ user }) => {
         data={locations} 
         actionButtons={(location) => (
           <div className="flex gap-2">
-            <button onClick={() => handleEdit(location)} className="text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => handleDelete(location)} className="text-red-600 hover:underline">Delete</button>
+            {permissions?.master?.location_master?.edit && (
+              <button onClick={() => handleEdit(location)} className="text-blue-600 hover:underline">Edit</button>
+            )}
+            {permissions?.master?.location_master?.delete && (
+              <button onClick={() => handleDelete(location)} className="text-red-600 hover:underline">Delete</button>
+            )}
           </div>
         )}
       />
