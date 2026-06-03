@@ -12,10 +12,10 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg", maxHei
       onClick={onClose}
     >
       <div 
-        className={`bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full ${maxWidth} mx-auto border border-brand-border ${maxHeight}`}
+        className={`bg-brand-surface text-brand-text-primary rounded-lg shadow-2xl w-full ${maxWidth} mx-auto border border-brand-border flex flex-col overflow-hidden ${maxHeight}`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 border-b border-brand-border">
+        <div className="flex justify-between items-center p-4 border-b border-brand-border shrink-0">
           <h3 className="text-xl font-semibold text-brand-text-primary">{title}</h3>
           <button 
             onClick={onClose} 
@@ -24,7 +24,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-lg", maxHei
             <CloseIcon />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-10rem)]">
+        <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
       </div>

@@ -19,7 +19,7 @@ import {
 const InputField = ({ label, value, onChange, icon: Icon, type = "text", required = false, placeholder = "", disabled = false, maxLength }) => {
   return (
     <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+      <label className="flex items-center gap-1.5 block text-sm font-medium text-brand-text-secondary mb-1">
         {Icon && <Icon size={12} />}
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -27,7 +27,7 @@ const InputField = ({ label, value, onChange, icon: Icon, type = "text", require
         type={type}
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-50"
+        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 disabled:cursor-not-allowed disabled:bg-gray-50"
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -60,7 +60,7 @@ const Section = ({ icon: Icon, title, subtitle, required, children }) => {
 const SelectField = ({ label, value, onChange, options, disabled = false, required = false }) => {
   return (
     <div>
-      <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+      <label className="block text-sm font-medium text-brand-text-secondary mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
@@ -69,7 +69,7 @@ const SelectField = ({ label, value, onChange, options, disabled = false, requir
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           required={required}
-          className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 pr-8 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-gray-50"
+          className="w-full appearance-none bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 pr-8 disabled:cursor-not-allowed disabled:bg-gray-50"
         >
           <option value="">Select...</option>
           {options.map((opt) => (
@@ -926,7 +926,7 @@ const fetchPermissions = async () => {
         maxWidth="max-w-5xl"
         maxHeight="max-h-[90vh]"
       >
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-2">
+        <form onSubmit={handleSubmit} className="space-y-6 px-2">
           {showBigWingData && foundCustomer && (
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-3">
@@ -964,8 +964,15 @@ const fetchPermissions = async () => {
             </div>
           )}
 
-          <Section icon={User} title="Customer Information" subtitle="Personal and contact details" required>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <InputField
+                label="Name"
+                value={formData.firstName}
+                onChange={(value) => setFormData(prev => ({ ...prev, firstName: value }))}
+                required
+                placeholder="Enter name"
+                disabled={!!foundCustomer?.firstName}
+              />
               <div className="relative">
                 <InputField
                   label="Mobile Number"
@@ -983,70 +990,38 @@ const fetchPermissions = async () => {
                 )}
               </div>
               <InputField
-                label="First Name"
-                value={formData.firstName}
-                onChange={(value) => setFormData(prev => ({ ...prev, firstName: value }))}
-                required
-                placeholder="Enter first name"
-                disabled={!!foundCustomer?.firstName}
-              />
-              <InputField
-                label="Last Name"
-                value={formData.lastName}
-                onChange={(value) => setFormData(prev => ({ ...prev, lastName: value }))}
-                placeholder="Enter last name"
-                disabled={!!foundCustomer?.lastName}
-              />
-             
-           
-              <InputField
-                label="Address"
-                icon={Home}
-                value={formData.address}
-                onChange={(value) => setFormData(prev => ({ ...prev, address: value }))}
-                placeholder="Enter address"
-              />
-              <InputField
                 label="Location"
                 icon={MapPin}
                 value={formData.location}
                 onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                 placeholder="Enter location"
               />
-            </div>
-          </Section>
-
-          <Section icon={FileText} title="Enquiry Details" subtitle="Capture lead/enquiry information">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                   New Enquiry Type
                 </label>
                 <input
                   type="text"
                   value={formData.status}
                   onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                   Enquiry Date
                 </label>
                 <input
                   type="date"
                   value={formData.enquiryDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, enquiryDate: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+                  disabled
+                  className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed"
                 />
               </div>
 
-            </div>
-          </Section>
-
-          <Section icon={Bike} title="Vehicle Interest" subtitle="Vehicle the customer is interested in">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <SelectField
                 label="Model"
                 value={formData.modelId}
@@ -1069,13 +1044,9 @@ const fetchPermissions = async () => {
                 onChange={(value) => setFormData(prev => ({ ...prev, colourId: value }))}
                 options={lookupData.colours.map(c => ({ value: String(c.id), label: c.name }))}
               />
-            </div>
-          </Section>
 
-          <Section icon={Target} title="Interest & Purchase" subtitle="Lead qualification">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                   Interest Level
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1088,7 +1059,7 @@ const fetchPermissions = async () => {
                       key={opt.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, interestLevel: opt.value }))}
-                      className={`rounded-lg border px-3 py-2 text-[12px] font-bold transition-all ${
+                      className={`rounded-lg border px-1 py-2 text-[11px] font-bold transition-all ${
                         formData.interestLevel === opt.value
                           ? "text-white shadow-md"
                           : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
@@ -1109,47 +1080,28 @@ const fetchPermissions = async () => {
                   { value: "FINANCE", label: "Finance" },
                 ]}
               />
-            </div>
-
-            <div className="mt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ 
-                  ...prev, 
-                  exchangeEnabled: !prev.exchangeEnabled,
-                  exchangeValue: !prev.exchangeEnabled ? prev.exchangeValue : ""
-                }))}
-                className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${
-                  formData.exchangeEnabled
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200"
-                }`}
-              >
-                <span className={`flex h-4 w-4 items-center justify-center rounded-full ${formData.exchangeEnabled ? "bg-white text-blue-600" : "border-2 border-gray-300"}`}>
-                  {formData.exchangeEnabled && <CheckCircle2 size={10} strokeWidth={3} />}
-                </span>
-                Exchange
-              </button>
-            </div>
-
-            {formData.exchangeEnabled && (
-              <div className="mt-4">
-                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                  Exchange Details
-                </label>
-                <textarea
-                  value={formData.exchangeValue}
-                  onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
-                  rows={3}
-                  placeholder="Enter exchange vehicle details"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                />
+              
+              <div className="flex flex-col justify-end">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ 
+                    ...prev, 
+                    exchangeEnabled: !prev.exchangeEnabled,
+                    exchangeValue: !prev.exchangeEnabled ? prev.exchangeValue : ""
+                  }))}
+                  className={`flex h-[42px] items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-all ${
+                    formData.exchangeEnabled
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200"
+                  }`}
+                >
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full ${formData.exchangeEnabled ? "bg-white text-blue-600" : "border-2 border-gray-300"}`}>
+                    {formData.exchangeEnabled && <CheckCircle2 size={10} strokeWidth={3} />}
+                  </span>
+                  Exchange
+                </button>
               </div>
-            )}
-          </Section>
 
-          <Section icon={User} title="Assignment">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <SelectField
                 label="Branch"
                 value={formData.branchId}
@@ -1162,36 +1114,63 @@ const fetchPermissions = async () => {
                 onChange={(value) => setFormData(prev => ({ ...prev, executiveName: value }))}
                 options={executiveOptions}
               />
-            </div>
-          </Section>
+          </div>
 
-          <Section icon={Sparkles} title="Notes & Remarks">
+          {formData.exchangeEnabled && (
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Exchange Details
+              </label>
+              <textarea
+                value={formData.exchangeValue}
+                onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
+                rows={2}
+                placeholder="Enter exchange vehicle details"
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+              />
+            </div>
+          )}
+
+          <div className="mt-2 mb-4">
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Notes & Remarks
+            </label>
             <textarea
               value={formData.remark}
               onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))}
-              rows={3}
+              rows={2}
               placeholder="Add any additional notes about this customer/lead..."
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
             />
-          </Section>
+          </div>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
+          <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
               onClick={() => {
                 setIsModalOpen(false);
                 resetBigWingData();
               }}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
-              <X size={14} /> Cancel
+              Cancel
             </button>
             <button
               type="submit"
               disabled={isCheckingCustomer}
-              className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <Save size={14} /> {isEditMode ? "Update Customer" : "Create Customer"}
+              {isCheckingCustomer ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {isEditMode ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                isEditMode ? "Update" : "Submit"
+              )}
             </button>
           </div>
         </form>
