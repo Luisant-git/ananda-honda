@@ -11,8 +11,8 @@ import { typeOfCollectionApi } from "../api/typeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
-import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard.js";
+import { locationApi } from "../api/locationApi.js";
 
 const PaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -21,6 +21,7 @@ const PaymentCollection = ({ user }) => {
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [typeOfCollections, setTypeOfCollections] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -57,6 +58,8 @@ const PaymentCollection = ({ user }) => {
     name: "",
     contactNo: "",
     address: "",
+    pincode: "",
+    location: "",
     status: "Walk in Customer",
   });
   const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
@@ -66,10 +69,10 @@ const PaymentCollection = ({ user }) => {
     fetchPaymentModes();
     fetchTypeOfPayments();
     fetchTypeOfCollections();
-    fetchVehicleModels();
     fetchPayments();
     fetchPermissions();
     fetchDeletedPayments();
+    fetchLocations();
   }, []);
 
 
@@ -235,6 +238,15 @@ useEffect(() => {
       setVehicleModels(data.filter((model) => model.status === "Enable"));
     } catch (error) {
       console.error("Error fetching vehicle models:", error);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const data = await locationApi.getAll();
+      setLocations(data);
+    } catch (error) {
+      console.error("Error fetching locations:", error);
     }
   };
 
@@ -410,6 +422,7 @@ useEffect(() => {
         name: "",
         contactNo: "",
         address: "",
+        pincode: "",
         status: "Walk in Customer",
       });
       fetchPayments(1);
@@ -517,6 +530,7 @@ const handleCustomerSelect = (customer) => {
       name: customer.name,
       contactNo: customer.contactNo,
       address: customer.address || "N/A",
+      pincode: customer.pincode || "",
       status: "Imported from Invoice",
     });
     setSalesInvoiceInfo(customer.invoiceData);
@@ -542,6 +556,7 @@ const handleCustomerSelect = (customer) => {
     name: customer.name,
     contactNo: customer.contactNo,
     address: "Imported from Service Master Card",
+    pincode: customer.pincode || "",
     status: "Service Dealer Customer",
   });
   setSalesInvoiceInfo(null);
@@ -1142,6 +1157,42 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         rows={2}
                         required
                       ></textarea>
+                    </div>
+                    <div>
+                      <SearchableDropdown
+                        label="Location"
+                        value={newCustomerData.location || ""}
+                        onChange={(value) => {
+                          const selectedLoc = locations.find(loc => loc.officename === value);
+                          setNewCustomerData(prev => ({ 
+                            ...prev, 
+                            location: value,
+                            pincode: selectedLoc ? selectedLoc.pincode : prev.pincode 
+                          }));
+                        }}
+                        options={locations.map(loc => ({
+                          value: loc.officename,
+                          label: `${loc.officename} - ${loc.district}`
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <SearchableDropdown
+                        label="Pincode"
+                        value={newCustomerData.pincode || ""}
+                        onChange={(value) => {
+                          const selectedLoc = locations.find(loc => loc.pincode === value);
+                          setNewCustomerData(prev => ({ 
+                            ...prev, 
+                            pincode: value,
+                            location: selectedLoc && !prev.location ? selectedLoc.officename : prev.location 
+                          }));
+                        }}
+                        options={Array.from(new Set(locations.map(loc => loc.pincode))).filter(Boolean).map(pincode => ({
+                          value: pincode,
+                          label: String(pincode)
+                        }))}
+                      />
                     </div>
                     <div>
                       <label className="text-sm text-brand-text-secondary">

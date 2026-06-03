@@ -15,6 +15,7 @@ model Customer {
   contactNo String
   address   String
   location  String?
+  pincode   String?
   status    String
 
   enquiryDate       DateTime?  
@@ -297,6 +298,18 @@ model ServiceTypeOfPart {
   statusDate    DateTime?  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id           Int      @id @default(autoincrement())
+  regionname   String
+  divisionname String
+  officename   String
+  pincode      String
+  district     String
+  statename    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ServiceReminderLog {

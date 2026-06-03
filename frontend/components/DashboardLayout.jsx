@@ -28,6 +28,7 @@ import PartPaymentReport from '../pages/PartPaymentReport';
 import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 import ServiceReminderReport from '../pages/ServiceReminderReport';
 import QuickStart from '../pages/QuickStart';
+import LocationMaster from '../pages/LocationMaster';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -69,6 +70,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ServiceImport user={user} />;
       case 'service_type':
         return <ServiceType user={user} />;
+      case 'location_master':
+        return <LocationMaster user={user} />;
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':

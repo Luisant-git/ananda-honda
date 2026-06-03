@@ -11,6 +11,7 @@ type CustomerPayload = {
   location?: string;
   status?: string;
   branch?: string;
+  pincode?: string;
 
   enquiryDate?: string;
   vehicleModel?: string;
@@ -45,6 +46,7 @@ export class CustomerService {
     contactNo,
     address: data.address || '',
     location: data.location || null,
+    pincode: data.pincode || null,
     status: data.status || 'Walk in Customer',
     branch: data.branch || undefined,
 
@@ -101,6 +103,7 @@ export class CustomerService {
   contactNo?: string;
   address?: string;
   location?: string;
+  pincode?: string;
   status?: string;
   branch?: string;
 
@@ -156,6 +159,8 @@ export class CustomerService {
       updateData.assignedExecutive = data.assignedExecutive;
     if (data.location !== undefined)
       updateData.location = data.location;
+    if (data.pincode !== undefined)
+      updateData.pincode = data.pincode;
     if (data.remarks !== undefined)
       updateData.remarks = data.remarks;
 

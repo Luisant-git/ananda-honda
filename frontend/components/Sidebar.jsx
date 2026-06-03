@@ -173,6 +173,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                   </li>
                 }
                 {permissions.master.create_enquiry && <li><NavLink view="vehicle_enquiry_form" label="Create Enquiry" isSubmenu /></li>}
+                <li><NavLink view="location_master" label="Locations" isSubmenu /></li>
               </NavGroup>
             )}
 

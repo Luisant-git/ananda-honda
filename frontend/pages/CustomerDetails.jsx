@@ -8,6 +8,7 @@ import { vehicleCatalogueApi } from "../api/vehicleCatalogueApi.js";
 import { salesExecutiveApi } from "../api/salesExecutiveApi.js";
 import SearchableDropdown from "../components/SearchableDropdown.jsx";
 import { menuPermissionApi } from "../api/menuPermissionApi";
+import { locationApi } from "../api/locationApi.js";
 
 import { 
   User, Phone, MapPin, Sparkles, CheckCircle2, Save, X,
@@ -149,6 +150,7 @@ const CustomerDetails = ({ user }) => {
     colours: [],
     executives: [],
     branches: [],
+    locations: [],
   });
   const [selectedModel, setSelectedModel] = useState("");
   const [variants, setVariants] = useState([]);
@@ -210,11 +212,12 @@ const CustomerDetails = ({ user }) => {
 
   const fetchLookupData = async () => {
     try {
-      const [models, colours, executives, branches] = await Promise.all([
+      const [models, colours, executives, branches, locs] = await Promise.all([
         vehicleCatalogueApi.getVehicleModels(),
         vehicleCatalogueApi.getVehicleColours(),
         vehicleCatalogueApi.getSalesExecutives(),
         salesExecutiveApi.getBranches(),
+        locationApi.getAll(),
       ]);
       
       setLookupData({
@@ -224,6 +227,7 @@ const CustomerDetails = ({ user }) => {
         colours: colours.data || [],
         executives: executives.data || [],
         branches: branches.data || [],
+        locations: locs || [],
       });
     } catch (error) {
       console.error("Error fetching lookup data:", error);
@@ -394,6 +398,7 @@ const fetchPermissions = async () => {
         email: rawEmail,
         address: rawAddress,
         location: rawLocation,
+        pincode: prev.pincode,
         modelId: modelId || prev.modelId,
         branchId: branchId || prev.branchId,
         colourId: colourId || prev.colourId,
@@ -548,6 +553,7 @@ const fetchPermissions = async () => {
         altMobile: formData.altMobile,
         email: formData.email,
         location: formData.location,
+        pincode: formData.pincode,
         address: formData.address,
         customerType: formData.customerType,
         dob: formData.dob,
@@ -621,6 +627,7 @@ const fetchPermissions = async () => {
       altMobile: "",
       email: "",
       location: "",
+      pincode: "",
       address: "",
       customerType: "RETAIL",
       dob: "",
@@ -676,6 +683,7 @@ const fetchPermissions = async () => {
       altMobile: customer.altMobile || "",
       email: customer.email || "",
       location: customer.location || "",
+      pincode: customer.pincode || "",
       address: customer.address || "",
       customerType: customer.customerType || "RETAIL",
       status: customer.status || "Walk in Customer",
@@ -994,12 +1002,37 @@ const fetchPermissions = async () => {
                   </div>
                 )}
               </div>
-              <InputField
+              <SearchableDropdown
                 label="Location"
-                icon={MapPin}
                 value={formData.location}
-                onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
-                placeholder="Enter location"
+                onChange={(value) => {
+                  const selectedLoc = lookupData.locations.find(loc => loc.officename === value);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    location: value,
+                    pincode: selectedLoc ? selectedLoc.pincode : prev.pincode 
+                  }));
+                }}
+                options={lookupData.locations.map(loc => ({
+                  value: loc.officename,
+                  label: `${loc.officename} - ${loc.district}`
+                }))}
+              />
+              <SearchableDropdown
+                label="Pincode"
+                value={formData.pincode}
+                onChange={(value) => {
+                  const selectedLoc = lookupData.locations.find(loc => loc.pincode === value);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    pincode: value,
+                    location: selectedLoc && !prev.location ? selectedLoc.officename : prev.location 
+                  }));
+                }}
+                options={Array.from(new Set(lookupData.locations.map(loc => loc.pincode))).filter(Boolean).map(pincode => ({
+                  value: pincode,
+                  label: String(pincode)
+                }))}
               />
               
               <div>
@@ -1293,11 +1326,15 @@ const fetchPermissions = async () => {
             )}
 
             {activeTab === "enquiries" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-200 pb-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 border-b border-gray-200 pb-6">
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Location</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.location || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold">Pincode</p>
+                    <p className="text-gray-800 font-medium">{detailedCustomer?.pincode || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Vehicle Model</p>
@@ -1307,9 +1344,6 @@ const fetchPermissions = async () => {
                     <p className="text-xs text-gray-500 uppercase font-bold">Variant</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.variant || 'N/A'}</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-200 pb-4">
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Color</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.color || 'N/A'}</p>
@@ -1322,16 +1356,14 @@ const fetchPermissions = async () => {
                     <p className="text-xs text-gray-500 uppercase font-bold">Purchase Type</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.purchaseType || 'N/A'}</p>
                   </div>
-                </div>
-
-                <div className="border-b border-gray-200 pb-4">
-                  <p className="text-xs text-gray-500 uppercase font-bold">Exchange Details</p>
-                  <p className="text-gray-800 font-medium">{detailedCustomer?.exchangeDetails || 'N/A'}</p>
-                </div>
-
-                <div className="border-b border-gray-200 pb-4">
-                  <p className="text-xs text-gray-500 uppercase font-bold">Remarks</p>
-                  <p className="text-gray-800 font-medium">{detailedCustomer?.remarks || 'N/A'}</p>
+                  <div className="col-span-1 md:col-span-3 lg:col-span-4">
+                    <p className="text-xs text-gray-500 uppercase font-bold">Exchange Details</p>
+                    <p className="text-gray-800 font-medium">{detailedCustomer?.exchangeDetails || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-1 md:col-span-3 lg:col-span-4">
+                    <p className="text-xs text-gray-500 uppercase font-bold">Remarks</p>
+                    <p className="text-gray-800 font-medium">{detailedCustomer?.remarks || 'N/A'}</p>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
