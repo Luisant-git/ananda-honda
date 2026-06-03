@@ -116,7 +116,7 @@ const CustomerDetails = ({ user }) => {
     executiveName: "",
     interestLevel: "",
     purchaseType: "",
-    exchangeEnabled: false,
+    exchangeEnabled: null,
     exchangeValue: "",
     enquiryDate: new Date().toISOString().split("T")[0],
     remark: "",
@@ -518,6 +518,11 @@ const fetchPermissions = async () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (formData.exchangeEnabled === null || formData.exchangeEnabled === undefined) {
+      toast.error("Please specify if Exchange is required (Yes or No).");
+      return;
+    }
+
     if (!/^\d{10}$/.test(formData.mobile)) {
       toast.error("Mobile number must be exactly 10 digits");
       return;
@@ -633,7 +638,7 @@ const fetchPermissions = async () => {
       executiveName: "",
       interestLevel: "",
       purchaseType: "",
-      exchangeEnabled: false,
+      exchangeEnabled: null,
       exchangeValue: "",
       enquiryDate: new Date().toISOString().split("T")[0],
       remark: "",
@@ -1081,25 +1086,48 @@ const fetchPermissions = async () => {
                 ]}
               />
               
-              <div className="flex flex-col justify-end">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ 
-                    ...prev, 
-                    exchangeEnabled: !prev.exchangeEnabled,
-                    exchangeValue: !prev.exchangeEnabled ? prev.exchangeValue : ""
-                  }))}
-                  className={`flex h-[42px] items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-all ${
-                    formData.exchangeEnabled
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-500 ring-1 ring-gray-200 hover:bg-gray-200"
-                  }`}
-                >
-                  <span className={`flex h-4 w-4 items-center justify-center rounded-full ${formData.exchangeEnabled ? "bg-white text-blue-600" : "border-2 border-gray-300"}`}>
-                    {formData.exchangeEnabled && <CheckCircle2 size={10} strokeWidth={3} />}
-                  </span>
+              <div className="flex flex-col justify-start">
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
                   Exchange
-                </button>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, exchangeEnabled: true }))}
+                    className={`rounded-lg border px-1 py-2 text-[12px] font-bold transition-all ${
+                      formData.exchangeEnabled === true
+                        ? "bg-brand-accent text-white shadow-md border-brand-accent"
+                        : "border-gray-300 bg-white text-brand-text-secondary hover:bg-gray-50"
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, exchangeEnabled: false, exchangeValue: "" }))}
+                    className={`rounded-lg border px-1 py-2 text-[12px] font-bold transition-all ${
+                      formData.exchangeEnabled === false
+                        ? "bg-gray-500 text-white shadow-md border-gray-500"
+                        : "border-gray-300 bg-white text-brand-text-secondary hover:bg-gray-50"
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+                {formData.exchangeEnabled && (
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                      Exchange Details
+                    </label>
+                    <textarea
+                      value={formData.exchangeValue}
+                      onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
+                      rows={2}
+                      placeholder="Enter exchange vehicle details"
+                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+                    />
+                  </div>
+                )}
               </div>
 
               <SelectField
@@ -1114,34 +1142,18 @@ const fetchPermissions = async () => {
                 onChange={(value) => setFormData(prev => ({ ...prev, executiveName: value }))}
                 options={executiveOptions}
               />
-          </div>
-
-          {formData.exchangeEnabled && (
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-                Exchange Details
-              </label>
-              <textarea
-                value={formData.exchangeValue}
-                onChange={(e) => setFormData(prev => ({ ...prev, exchangeValue: e.target.value }))}
-                rows={2}
-                placeholder="Enter exchange vehicle details"
-                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-              />
-            </div>
-          )}
-
-          <div className="mt-2 mb-4">
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Notes & Remarks
-            </label>
-            <textarea
-              value={formData.remark}
-              onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))}
-              rows={2}
-              placeholder="Add any additional notes about this customer/lead..."
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-            />
+              <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                  Notes & Remarks
+                </label>
+                <textarea
+                  value={formData.remark}
+                  onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))}
+                  rows={3}
+                  placeholder="Add any additional notes about this customer/lead..."
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+                />
+              </div>
           </div>
 
           <div className="flex justify-end gap-4 pt-4">
