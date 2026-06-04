@@ -1925,10 +1925,20 @@ useEffect(() => {
       .filter(Boolean)
       .map((jc) => jc.toString().toLowerCase());
 
+    const vehicleRegNos = [
+      customer.jobCardData?.registrationNumber,
+      customer.activeJobCard?.registrationNumber,
+      customer.closedJobCard?.registrationNumber,
+      customer.invoiceData?.vehicleRegNo
+    ]
+      .filter(Boolean)
+      .map((reg) => reg.toString().toLowerCase());
+
     return (
       customer.name.toLowerCase().includes(normalizedSearch) ||
-      customer.contactNo.includes(searchTerm) ||
-      jobCardNumbers.some((jcNumber) => jcNumber.includes(normalizedSearch))
+      (customer.contactNo && customer.contactNo.includes(searchTerm)) ||
+      jobCardNumbers.some((jcNumber) => jcNumber.includes(normalizedSearch)) ||
+      vehicleRegNos.some((regNumber) => regNumber.includes(normalizedSearch))
     );
   });
 
@@ -2208,7 +2218,7 @@ useEffect(() => {
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedCustomerId(""); setLoadedCustomer(null); setFilteredPayments(payments); }}
                   onFocus={() => setShowDropdown(true)}
-                  placeholder="Search by name,contact number or Job card number"
+                  placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"
                   className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
                 />
                 {showDropdown && (

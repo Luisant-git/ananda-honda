@@ -156,15 +156,36 @@ useEffect(() => {
       serviceJobCardApi.getAll() // Add this
     ]);
     
-    // Get unique contacts from invoices and job cards
     const invoiceContacts = new Set(invoiceData.map(inv => inv.contactInfo));
     const jobCardContacts = new Set(jobCardData.map(jc => jc.mobileNumber));
     
-    const enrichedCustomerData = customerData.map(c => ({
-      ...c,
-      hasInvoice: invoiceContacts.has(c.contactNo),
-      hasJobCard: jobCardContacts.has(c.contactNo)
-    }));
+    const invoicesByContact = {};
+    invoiceData.forEach(inv => {
+      if (!invoicesByContact[inv.contactInfo]) invoicesByContact[inv.contactInfo] = [];
+      invoicesByContact[inv.contactInfo].push(inv);
+    });
+
+    const jobCardsByContact = {};
+    jobCardData.forEach(jc => {
+      if (!jobCardsByContact[jc.mobileNumber]) jobCardsByContact[jc.mobileNumber] = [];
+      jobCardsByContact[jc.mobileNumber].push(jc);
+    });
+
+    const enrichedCustomerData = customerData.map(c => {
+      const cInvoices = invoicesByContact[c.contactNo] || [];
+      const cJobCards = jobCardsByContact[c.contactNo] || [];
+      
+      return {
+        ...c,
+        hasInvoice: invoiceContacts.has(c.contactNo),
+        hasJobCard: jobCardContacts.has(c.contactNo),
+        searchVRegNos: [
+          ...cInvoices.map(inv => inv.vehicleRegNo),
+          ...cJobCards.map(jc => jc.registrationNumber)
+        ].filter(Boolean).map(n => n.toLowerCase()),
+        searchJcNos: cJobCards.map(jc => jc.jobCardNumber).filter(Boolean).map(n => n.toLowerCase())
+      };
+    });
 
     const customerContacts = new Set(customerData.map(c => c.contactNo));
     const external = [];
@@ -173,13 +194,20 @@ useEffect(() => {
     // Customers only in Sales Invoice
     invoiceData.forEach(inv => {
       if (!customerContacts.has(inv.contactInfo) && !seenContacts.has(inv.contactInfo)) {
+        const cInvoices = invoicesByContact[inv.contactInfo] || [];
+        const cJobCards = jobCardsByContact[inv.contactInfo] || [];
         external.push({
           id: `inv-${inv.id}`,
           name: inv.customerName,
           contactNo: inv.contactInfo,
           address: inv.address || "N/A",
           isInvoice: true,
-          invoiceData: inv
+          invoiceData: inv,
+          searchVRegNos: [
+            ...cInvoices.map(i => i.vehicleRegNo),
+            ...cJobCards.map(jc => jc.registrationNumber)
+          ].filter(Boolean).map(n => n.toLowerCase()),
+          searchJcNos: cJobCards.map(jc => jc.jobCardNumber).filter(Boolean).map(n => n.toLowerCase())
         });
         seenContacts.add(inv.contactInfo);
       }
@@ -188,13 +216,20 @@ useEffect(() => {
     // Customers only in Service Dealership Master
     jobCardData.forEach(jc => {
       if (!customerContacts.has(jc.mobileNumber) && !seenContacts.has(jc.mobileNumber)) {
+        const cInvoices = invoicesByContact[jc.mobileNumber] || [];
+        const cJobCards = jobCardsByContact[jc.mobileNumber] || [];
         external.push({
           id: `jc-${jc.id}`,
           name: jc.customerName || "Unknown",
           contactNo: jc.mobileNumber,
           address: "Imported from Service Master",
           isJobCard: true,
-          jobCardData: jc
+          jobCardData: jc,
+          searchVRegNos: [
+            ...cInvoices.map(i => i.vehicleRegNo),
+            ...cJobCards.map(j => j.registrationNumber)
+          ].filter(Boolean).map(n => n.toLowerCase()),
+          searchJcNos: cJobCards.map(j => j.jobCardNumber).filter(Boolean).map(n => n.toLowerCase())
         });
         seenContacts.add(jc.mobileNumber);
       }
@@ -507,9 +542,15 @@ useEffect(() => {
   );
 
   const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.contactNo.includes(searchTerm)
+    (customer) => {
+      const term = searchTerm.toLowerCase();
+      return (
+        customer.name.toLowerCase().includes(term) ||
+        (customer.contactNo && customer.contactNo.includes(searchTerm)) ||
+        (customer.searchVRegNos && customer.searchVRegNos.some(v => v.includes(term))) ||
+        (customer.searchJcNos && customer.searchJcNos.some(jc => jc.includes(term)))
+      );
+    }
   );
 
 const handleCustomerSelect = (customer) => {
@@ -1041,7 +1082,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                     setFilteredPayments(payments);
                   }}
                   onFocus={() => setShowDropdown(true)}
-                  placeholder="Search by name or contact number"
+                  placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"
                   className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
                 />
                 {showDropdown && (
