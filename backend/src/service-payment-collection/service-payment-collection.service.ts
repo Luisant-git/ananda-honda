@@ -44,6 +44,36 @@ async create(data: {
   const receiptNo = `SRV${nextNumber.toString().padStart(4, '0')}`;
 
   let paymentSessions: any[] = [];
+  let computedTotalAmt: number | null = data.totalAmt !== undefined && data.totalAmt !== null ? data.totalAmt : null;
+
+  // Compute totalAmt from the job card's payment history for completed entries
+  if (data.jobCardNumber) {
+    const existingJobCard = await this.prisma.serviceJobCard.findUnique({
+      where: {
+        jobCardNumber: data.jobCardNumber
+      }
+    });
+
+    if (existingJobCard) {
+      const previousPaymentSum = await this.prisma.servicePaymentCollection.aggregate({
+        where: {
+          jobCardNumber: data.jobCardNumber,
+          deletedAt: null,
+          cancelledAt: null
+        },
+        _sum: {
+          recAmt: true,
+        }
+      });
+
+      const previousTotal = previousPaymentSum._sum.recAmt || 0;
+      const computedFromHistory = previousTotal + data.recAmt;
+
+      if (data.paymentStatus === 'completed') {
+        computedTotalAmt = computedFromHistory;
+      }
+    }
+  }
 
   // If status is completed, mark all previous pending payments as completed
   if (data.paymentStatus === 'completed') {
@@ -75,7 +105,7 @@ async create(data: {
     data: {
       date: new Date(data.date),
       customerId: data.customerId,
-      totalAmt: data.totalAmt || null,
+      totalAmt: computedTotalAmt || null,
       recAmt: data.recAmt,
       paymentType: data.paymentType,
       paymentStatus: data.paymentStatus || 'completed',
@@ -355,10 +385,41 @@ async completePartPayment(id: number, data: {
       }),
       this.prisma.servicePaymentCollection.count({ where })
     ]);
+
+    // Compute cumulative totalAmt per job card so displayed totals reflect prior receipts
+    const jobCardNumbers = Array.from(new Set(data
+      .map(item => item.jobCardNumber)
+      .filter(Boolean) as string[]));
+
+    const cumulativeTotalsById: Record<number, number> = {};
+    if (jobCardNumbers.length > 0) {
+      const jobCardPayments = await this.prisma.servicePaymentCollection.findMany({
+        where: {
+          jobCardNumber: { in: jobCardNumbers },
+          deletedAt: null,
+          cancelledAt: null
+        },
+        orderBy: [
+          { date: 'asc' },
+          { id: 'asc' }
+        ]
+      });
+
+      const runningTotals: Record<string, number> = {};
+      for (const payment of jobCardPayments) {
+        const card = payment.jobCardNumber || '';
+        runningTotals[card] = (runningTotals[card] || 0) + (payment.recAmt || 0);
+        if (payment.id) {
+          cumulativeTotalsById[payment.id] = runningTotals[card];
+        }
+      }
+    }
     
-    // Ensure selectedParts is always an array for backward compatibility
     const dataWithSelectedParts = data.map(item => ({
       ...item,
+      totalAmt: item.jobCardNumber
+        ? cumulativeTotalsById[item.id] ?? item.totalAmt
+        : item.totalAmt,
       selectedParts: item.selectedParts || []
     }));
     

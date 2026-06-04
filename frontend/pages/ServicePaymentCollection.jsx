@@ -96,10 +96,20 @@ const ServicePaymentCollection = ({ user }) => {
   };
 
   const isClosedJobCard = isJobCardClosed(serviceJobCardInfo?.status);
+  // Calculate total only for current job card payments
   const totalReceivedAmount = isClosedJobCard ? 0 : pendingPayments.reduce((sum, p) => sum + p.recAmt, 0);
- 
-const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-const [selectedPayment, setSelectedPayment] = useState(null);
+
+  const getPaymentTotalAmount = (payment) => {
+    if (!payment) return 0;
+    if (payment.totalAmt !== undefined && payment.totalAmt !== null) {
+      return payment.totalAmt;
+    }
+    const sessionsTotal = (payment.paymentSessions || []).reduce((sum, session) => sum + (session.amount || 0), 0);
+    return sessionsTotal + (payment.recAmt || 0);
+  };
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
 const [isManualJobCard, setIsManualJobCard] = useState(false);
 const [manualJobCardData, setManualJobCardData] = useState({
@@ -691,7 +701,9 @@ useEffect(() => {
         setIsManualJobCard(false);
       } else if (formData.jobCardNumber.trim()) {
         setIsManualJobCard(true);
-       toast(`Job card "${formData.jobCardNumber}" not found. You can create a new one.`, { duration: 3000 });
+        setServiceJobCardInfo(null);
+        setPendingPayments([]);
+        toast(`Job card "${formData.jobCardNumber}" not found. You can create a new one.`, { duration: 3000 });
       }
       setIsCheckingJobCard(false);
     }
@@ -802,8 +814,8 @@ useEffect(() => {
 const handleView = async (payment) => {
   // Start with the payment data
   let updatedPayment = { ...payment };
-  
-  // If there's a job card number, fetch additional details
+
+  // If there's a job card number, fetch additional invoice details
   if (payment.jobCardNumber && payment.jobCardNumber !== 'N/A') {
     try {
       const allJobCards = await serviceJobCardApi.getAll();
@@ -957,8 +969,8 @@ const fetchLastPaymentDetails = async (customerId) => {
       ...prev,
       serviceTypeId: serviceTypeId,
       serviceType: serviceTypeName || prev.serviceType,
-      jobCardNumber: isManualJobCard || isJobCardClosed(serviceJobCardInfo.status)
-        ? ""
+      jobCardNumber: isManualJobCard
+        ? prev.jobCardNumber
         : (serviceJobCardInfo.jobCardNumber || prev.jobCardNumber),
       vehicleNumber: serviceJobCardInfo.registrationNumber || prev.vehicleNumber,
     }));
@@ -1031,7 +1043,7 @@ const fetchLastPaymentDetails = async (customerId) => {
 
     setFormData((prev) => ({
       ...prev,
-      jobCardNumber: isManualJobCard ? "" : (jc.jobCardNumber || prev.jobCardNumber),
+      jobCardNumber: isManualJobCard ? prev.jobCardNumber : (jc.jobCardNumber || prev.jobCardNumber),
       vehicleNumber: jc.registrationNumber || prev.vehicleNumber,
       serviceTypeId: serviceTypeId || prev.serviceTypeId,
       serviceType: serviceTypeName || prev.serviceType,
@@ -1356,6 +1368,7 @@ const handleCreateJobCard = async () => {
       return;
     }
     const startIndex = (page - 1) * itemsPerPage;
+
     const formattedData = response.data.map((payment, index) => ({
       sNo: startIndex + index + 1,
       id: payment.id,
@@ -1365,7 +1378,9 @@ const handleCreateJobCard = async () => {
       name: payment.customer.name,
       contactNo: payment.customer.contactNo,
       address: payment.customer.address,
-      totalAmt: payment.totalAmt || "N/A",
+      totalAmt: payment.totalAmt !== undefined && payment.totalAmt !== null
+        ? payment.totalAmt
+        : payment.recAmt || "N/A",
       recAmt: payment.recAmt,
       paymentType: payment.paymentType,
       paymentStatus: payment.paymentStatus,
@@ -1607,8 +1622,6 @@ const handleSubmit = async (e) => {
     // Handle job card creation
     let finalJobCardNumber = formData.jobCardNumber;
     let createdJobCardId = null;
-    let closedJobCardInvoiceTotal = undefined;
-    let jobCardTotalRevenue = 0;
 
     if (formData.paymentType === "full payment" && formData.jobCardNumber) {
       try {
@@ -1618,11 +1631,6 @@ const handleSubmit = async (e) => {
         if (existingJobCard) {
           finalJobCardNumber = existingJobCard.jobCardNumber;
           createdJobCardId = existingJobCard.id;
-          jobCardTotalRevenue = existingJobCard.totalRevenue || 0;
-
-          if (isJobCardClosed(existingJobCard.status)) {
-            closedJobCardInvoiceTotal = existingJobCard.totalRevenue;
-          }
         } else {
           const newJobCard = await serviceJobCardApi.create({
             jobCardNumber: formData.jobCardNumber,
@@ -1635,7 +1643,6 @@ const handleSubmit = async (e) => {
           });
           finalJobCardNumber = newJobCard.jobCardNumber;
           createdJobCardId = newJobCard.id;
-          jobCardTotalRevenue = newJobCard.totalRevenue || 0;
           toast.success('New job card created successfully!');
           fetchCustomers();
         }
@@ -1646,17 +1653,9 @@ const handleSubmit = async (e) => {
       }
     }
 
-    // Calculate total amount for completed payments
-    const totalAmt = formData.paymentStatus === 'completed'
-      ? (closedJobCardInvoiceTotal !== undefined && closedJobCardInvoiceTotal !== null)
-        ? closedJobCardInvoiceTotal
-        : pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + parseFloat(formData.recAmt)
-      : undefined;
-
     const submitData = {
       date: formData.date,
       customerId: customerId,
-      totalAmt: totalAmt,
       recAmt: parseFloat(formData.recAmt),
       paymentType: formData.paymentType,
       paymentStatus: formData.paymentStatus,
@@ -1758,38 +1757,53 @@ const handleSubmit = async (e) => {
   }
 };
   
-  const fetchCustomerPayments = (customerId) => {
-    if (!customerId) {
-      setPendingPayments([]);
-      return;
-    }
-    // Fetch ALL payments for this customer (both pending and completed)
-    const allCustomerPayments = payments.filter(
-      (p) => p.customerId === customerId
+const fetchCustomerPayments = (customerId, jobCardNumber) => {
+  if (!customerId) {
+    setPendingPayments([]);
+    return;
+  }
+  
+  // Filter by BOTH customerId AND jobCardNumber
+  if (jobCardNumber && jobCardNumber !== 'N/A') {
+    const jobCardPayments = payments.filter(
+      (p) => p.customerId === customerId && p.jobCardNumber === jobCardNumber
     );
-    setPendingPayments(allCustomerPayments);
-  };
+    setPendingPayments(jobCardPayments);
+  } else {
+    setPendingPayments([]);
+  }
+};
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (isPaymentModalOpen && loadedCustomer) {
-        try {
-          const response = await servicePaymentCollectionApi.getAll(1, 1000, loadedCustomer.id);
-          setCustomerHistory(response.data || []);
-        } catch (error) {
-          console.error("Error fetching customer history:", error);
-        }
+useEffect(() => {
+  const fetchHistory = async () => {
+    if (isPaymentModalOpen && loadedCustomer) {
+      try {
+        const response = await servicePaymentCollectionApi.getAll(1, 1000, loadedCustomer.id);
+        setCustomerHistory(response.data || []);
+      } catch (error) {
+        console.error("Error fetching customer history:", error);
       }
-    };
-    fetchHistory();
-
-    if (isPaymentModalOpen && !isEditMode && loadedCustomer) {
-      // Fetch ALL payments for this customer (not just pending)
-      const allPayments = payments.filter((p) => p.customerId === loadedCustomer.id);
-      setPendingPayments(allPayments);
     }
-  }, [isPaymentModalOpen, formData.paymentType, loadedCustomer, payments]);
+  };
+  fetchHistory();
 
+  if (isPaymentModalOpen && !isEditMode && loadedCustomer) {
+    // Get the current job card number from formData
+    const currentJobCardNumber = formData.jobCardNumber;
+    
+    if (currentJobCardNumber && currentJobCardNumber !== 'N/A') {
+      // Filter payments for THIS SPECIFIC job card only
+      const jobCardPayments = payments.filter(
+        (p) => p.customerId === loadedCustomer.id && p.jobCardNumber === currentJobCardNumber
+      );
+      setPendingPayments(jobCardPayments);
+      console.log('Payments for job card:', currentJobCardNumber, jobCardPayments);
+    } else {
+      // No job card number yet (new service entry)
+      setPendingPayments([]);
+    }
+  }
+}, [isPaymentModalOpen, formData.paymentType, loadedCustomer, payments, formData.jobCardNumber]);
 
   // Add this useEffect to refresh job card status when modal opens
 useEffect(() => {
@@ -2384,7 +2398,21 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Row 1: Basic Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
-            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label><select value={formData.paymentType} onChange={(e) => { const newPaymentType = e.target.value; setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required><option value="full payment">Full Payment</option><option value="part payment">Part Payment</option></select></div>
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label>
+              <select 
+                value={formData.paymentType} 
+                onChange={(e) => { 
+                  const newPaymentType = e.target.value; 
+                  setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); 
+                  if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, formData.jobCardNumber); 
+                }} 
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" 
+                required
+              >
+                <option value="full payment">Full Payment</option>
+                <option value="part payment">Part Payment</option>
+              </select>
+            </div>
 
             {/* Row 2: Vehicle Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={formData.paymentType === "part payment"} /></div>
@@ -2415,6 +2443,8 @@ useEffect(() => {
           setFormData({ ...formData, jobCardNumber: newJobCardNumber });
           setIsManualJobCard(false);
           setFoundJobCard(null);
+          setServiceJobCardInfo(null);
+          setPendingPayments([]);
         }}
         className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
         placeholder="Enter Job Card Number (will auto-fetch if exists)"
@@ -2784,12 +2814,10 @@ useEffect(() => {
       <label className="text-xs text-brand-text-secondary uppercase">Received Amount</label>
       <div className="text-brand-text-primary font-medium text-lg">₹{selectedPayment.recAmt}</div>
     </div>
-    {selectedPayment.totalAmt !== 'N/A' && selectedPayment.totalAmt && (
-      <div>
-        <label className="text-xs text-brand-text-secondary uppercase">Total Amount</label>
-        <div className="text-brand-text-primary font-medium">₹{selectedPayment.totalAmt}</div>
-      </div>
-    )}
+    <div>
+      <label className="text-xs text-brand-text-secondary uppercase">Total Amount</label>
+      <div className="text-brand-text-primary font-medium">₹{selectedPayment.totalAmt !== undefined && selectedPayment.totalAmt !== null && selectedPayment.totalAmt !== 'N/A' ? selectedPayment.totalAmt : getPaymentTotalAmount(selectedPayment)}</div>
+    </div>
     {/* Invoice Information - Only show if available from job card */}
     {selectedPayment.invoiceNumber && selectedPayment.invoiceNumber !== 'N/A' && (
       <div>
