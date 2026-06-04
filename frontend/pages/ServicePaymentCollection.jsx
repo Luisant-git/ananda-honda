@@ -108,6 +108,16 @@ const ServicePaymentCollection = ({ user }) => {
     return sessionsTotal + (payment.recAmt || 0);
   };
 
+  const getPaymentTypeLabel = (paymentType) => {
+    if (!paymentType) return 'N/A';
+    if (paymentType === 'part payment') return 'Payment for Parts';
+    if (paymentType === 'advance payment') return 'Advance payment';
+    return paymentType
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
@@ -1384,6 +1394,7 @@ const handleCreateJobCard = async () => {
         : payment.recAmt || "N/A",
       recAmt: payment.recAmt,
       paymentType: payment.paymentType,
+      paymentTypeLabel: getPaymentTypeLabel(payment.paymentType),
       paymentStatus: payment.paymentStatus,
       vehicleNumber: payment.vehicleNumber || "N/A",
       paymentMode: payment.paymentMode.paymentMode,
@@ -1433,6 +1444,7 @@ const handleCreateJobCard = async () => {
         totalAmt: payment.totalAmt || "N/A",
         recAmt: payment.recAmt,
         paymentType: payment.paymentType,
+        paymentTypeLabel: getPaymentTypeLabel(payment.paymentType),
         paymentStatus: payment.paymentStatus,
         vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
@@ -2079,7 +2091,7 @@ useEffect(() => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
-    { header: "Payment Type", accessor: "paymentType" },
+    { header: "Payment Type", accessor: "paymentTypeLabel" },
     { header: "Status", accessor: "paymentStatus" },
     { header: "Vehicle No", accessor: "vehicleNumber" },
     { header: "Total Amt", accessor: "totalAmt" },
@@ -2410,7 +2422,8 @@ useEffect(() => {
                 required
               >
                 <option value="full payment">Full Payment</option>
-                <option value="part payment">Part Payment</option>
+                <option value="part payment">Payment for Parts</option>
+                <option value="advance payment">Advance payment</option>
               </select>
             </div>
 
@@ -2635,7 +2648,7 @@ useEffect(() => {
                           <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
                           <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
                           {payment.paymentType === 'part payment' && (
-                            <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Part Payment</span>
+                            <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Payment for Parts</span>
                           )}
                           {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
                             <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
@@ -2798,7 +2811,7 @@ useEffect(() => {
     </div>
     <div>
       <label className="text-xs text-brand-text-secondary uppercase">Payment Type</label>
-      <div className="text-brand-text-primary font-medium">{selectedPayment.paymentType}</div>
+      <div className="text-brand-text-primary font-medium">{getPaymentTypeLabel(selectedPayment.paymentType)}</div>
     </div>
     <div>
       <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
