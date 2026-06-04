@@ -92,7 +92,7 @@ const ServicePaymentCollection = ({ user }) => {
  
   const isJobCardClosed = (status) => {
     const normalizedStatus = (status || '').toString().toLowerCase().trim();
-    return ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(normalizedStatus);
+    return /closed|completed|cancelled|canceled|close/.test(normalizedStatus);
   };
 
   const isClosedJobCard = isJobCardClosed(serviceJobCardInfo?.status);
@@ -349,12 +349,13 @@ const handleCustomerSelect = async (customer) => {
       if (customerJobCards.length > 0) {
         const activeJobCard = customerJobCards.find(jc => {
           const status = (jc.status || '').toString().toLowerCase();
-          return status === 'pending' || status === 'open';
+          const isClosed = /closed|completed|cancelled|canceled|close/.test(status);
+          return !isClosed && /pending|open/.test(status);
         });
         
         const closedJobCard = customerJobCards.find(jc => {
           const status = (jc.status || '').toString().toLowerCase();
-          return ['closed', 'completed', 'cancelled', 'canceled'].includes(status);
+          return /closed|completed|cancelled|canceled|close/.test(status);
         });
         
         if (activeJobCard) {
@@ -1184,8 +1185,8 @@ const fetchCustomers = async () => {
     allJobCards.forEach(jc => {
       const normalizedContact = normalizeContact(jc.mobileNumber);
       const status = (jc.status || '').toString().toLowerCase().trim();
-      const isActive = status === 'pending' || status === 'open';
-      const isClosed = ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(status);
+      const isClosed = /closed|completed|cancelled|canceled|close/.test(status);
+      const isActive = !isClosed && /pending|open/.test(status);
       
       if (normalizedContact) {
         if (customerMap.has(normalizedContact)) {
@@ -2214,33 +2215,32 @@ useEffect(() => {
         {customer.hasJobCard && (
           <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">Service Dealership</span>
         )}
-        {customer.hasActiveJobCard && customer.activeJobCard && (() => {
+        {customer.hasActiveJobCard && customer.activeJobCard ? (() => {
           const status = (customer.activeJobCard.status || '').toString().toLowerCase();
           const trimmed = status.trim();
-          const label = trimmed === 'pending' ? 'Job Card Pending'
-            : trimmed === 'open' ? 'Job Card Open'
-            : trimmed === 'completed' ? 'Job Card Completed'
-            : trimmed === 'cancelled' || trimmed === 'canceled' ? 'Job Card Cancelled'
-            : trimmed === 'closed' || trimmed === 'close' ? 'Job Card Closed'
+          const label = trimmed.includes('pending') ? 'Job Card Pending'
+            : trimmed.includes('open') ? 'Job Card Open'
+            : trimmed.includes('completed') ? 'Job Card Completed'
+            : trimmed.includes('cancelled') || trimmed.includes('canceled') ? 'Job Card Cancelled'
+            : trimmed.includes('closed') || trimmed.includes('close') ? 'Job Card Closed'
             : `Job Card ${customer.activeJobCard.status}`;
-          const bg = trimmed === 'pending' ? 'bg-yellow-100 text-yellow-700'
-            : trimmed === 'open' ? 'bg-blue-100 text-blue-700'
-            : trimmed === 'completed' ? 'bg-green-100 text-green-700'
-            : trimmed === 'cancelled' || trimmed === 'canceled' ? 'bg-red-100 text-red-600'
-            : trimmed === 'closed' || trimmed === 'close' ? 'bg-red-100 text-red-600'
+          const bg = trimmed.includes('pending') ? 'bg-yellow-100 text-yellow-700'
+            : trimmed.includes('open') ? 'bg-blue-100 text-blue-700'
+            : trimmed.includes('completed') ? 'bg-green-100 text-green-700'
+            : trimmed.includes('cancelled') || trimmed.includes('canceled') ? 'bg-red-100 text-red-600'
+            : trimmed.includes('closed') || trimmed.includes('close') ? 'bg-red-100 text-red-600'
             : 'bg-gray-100 text-gray-700';
           return (
             <span className={`text-[10px] ${bg} px-2 py-0.5 rounded-full font-bold uppercase`}>
               {label}
             </span>
           );
-        })()}
-        {customer.hasClosedJobCard && !customer.hasActiveJobCard && customer.closedJobCard && (() => {
+        })() : customer.hasClosedJobCard && customer.closedJobCard && (() => {
           const status = (customer.closedJobCard.status || '').toString().toLowerCase();
           const trimmed = status.trim();
-          const label = trimmed === 'closed' || trimmed === 'close' ? 'Job Card Closed'
-            : trimmed === 'completed' ? 'Job Card Completed'
-            : trimmed === 'cancelled' || trimmed === 'canceled' ? 'Job Card Cancelled'
+          const label = trimmed.includes('closed') || trimmed.includes('close') ? 'Job Card Closed'
+            : trimmed.includes('completed') ? 'Job Card Completed'
+            : trimmed.includes('cancelled') || trimmed.includes('canceled') ? 'Job Card Cancelled'
             : `Job Card ${customer.closedJobCard.status}`;
           const bg = 'bg-red-100 text-red-600';
           return (
@@ -2361,13 +2361,13 @@ useEffect(() => {
         <span className="font-medium text-gray-600">Created Date:</span>
         <span className="ml-2">{serviceJobCardInfo.createdAt ? new Date(serviceJobCardInfo.createdAt).toLocaleDateString('en-GB') : "N/A"}</span>
       </div>
-      {serviceJobCardInfo.invoiceNumber && serviceJobCardInfo.invoiceNumber !== 'N/A' && (
+      {!isJobCardClosed(serviceJobCardInfo.status) && serviceJobCardInfo.invoiceNumber && serviceJobCardInfo.invoiceNumber !== 'N/A' && (
         <div>
           <span className="font-medium text-gray-600">Invoice Number:</span>
           <span className="ml-2 font-semibold">{serviceJobCardInfo.invoiceNumber}</span>
         </div>
       )}
-      {serviceJobCardInfo.totalRevenue > 0 && (
+      {!isJobCardClosed(serviceJobCardInfo.status) && serviceJobCardInfo.totalRevenue > 0 && (
         <div>
           <span className="font-medium text-gray-600">Total Invoice Amount:</span>
           <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
