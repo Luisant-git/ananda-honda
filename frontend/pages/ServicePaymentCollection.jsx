@@ -1188,11 +1188,33 @@ const submitData = {
       type.paymentModeId === parseInt(formData.paymentModeId)
   );
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.contactNo.includes(searchTerm)
-  );
+  const filteredCustomers = customers.filter((customer) => {
+    const searchStr = searchTerm.toLowerCase();
+    const matchName = customer.name?.toLowerCase().includes(searchStr);
+    const matchContact = customer.contactNo?.toLowerCase().includes(searchStr);
+    
+    const matchJobCard = (jc) => {
+      if (!jc) return false;
+      const jcNo = jc.jobCardNumber?.toLowerCase() || '';
+      const regNo = jc.registrationNumber?.toLowerCase() || '';
+      return jcNo.includes(searchStr) || regNo.includes(searchStr);
+    };
+
+    const matchInvoice = (inv) => {
+      if (!inv) return false;
+      const regNo = inv.vehicleRegNo?.toLowerCase() || '';
+      return regNo.includes(searchStr);
+    };
+
+    return (
+      matchName ||
+      matchContact ||
+      matchJobCard(customer.activeJobCard) ||
+      matchJobCard(customer.closedJobCard) ||
+      matchJobCard(customer.jobCardData) ||
+      matchInvoice(customer.invoiceData)
+    );
+  });
 const handleCustomerSelect = async (customer) => {
   if (customer === "new") {
     setSelectedCustomerId("new");
@@ -1818,7 +1840,7 @@ await fetchData();
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedCustomerId(""); setLoadedCustomer(null); setFilteredPayments(payments); }}
                   onFocus={() => setShowDropdown(true)}
-                  placeholder="Search by name or contact number"
+                  placeholder="Search by name, contact, job card or vehicle reg no"
                   className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
                 />
                 {showDropdown && (
