@@ -94,6 +94,9 @@ const ServicePaymentCollection = ({ user }) => {
     const normalizedStatus = (status || '').toString().toLowerCase().trim();
     return ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes(normalizedStatus);
   };
+
+  const isClosedJobCard = isJobCardClosed(serviceJobCardInfo?.status);
+  const totalReceivedAmount = isClosedJobCard ? 0 : pendingPayments.reduce((sum, p) => sum + p.recAmt, 0);
  
 const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 const [selectedPayment, setSelectedPayment] = useState(null);
@@ -2344,13 +2347,13 @@ useEffect(() => {
         <span className="font-medium text-gray-600">Created Date:</span>
         <span className="ml-2">{serviceJobCardInfo.createdAt ? new Date(serviceJobCardInfo.createdAt).toLocaleDateString('en-GB') : "N/A"}</span>
       </div>
-      {serviceJobCardInfo.invoiceNumber && serviceJobCardInfo.invoiceNumber !== 'N/A' && (
+      {!isClosedJobCard && serviceJobCardInfo.invoiceNumber && serviceJobCardInfo.invoiceNumber !== 'N/A' && (
         <div>
           <span className="font-medium text-gray-600">Invoice Number:</span>
           <span className="ml-2 font-semibold">{serviceJobCardInfo.invoiceNumber}</span>
         </div>
       )}
-      {serviceJobCardInfo.totalRevenue > 0 && (
+      {!isClosedJobCard && serviceJobCardInfo.totalRevenue > 0 && (
         <div>
           <span className="font-medium text-gray-600">Total Invoice Amount:</span>
           <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
@@ -2589,44 +2592,48 @@ useEffect(() => {
             </div>
 
             {/* Previous Payments Info - Full Width (for BOTH part and full payment) */}
-            {pendingPayments.length > 0 && (
+            {(pendingPayments.length > 0 || isClosedJobCard) && (
               <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <label className="block text-sm font-medium text-blue-900 mb-2">
                   Previous Payments for this customer {formData.paymentType === "full payment" && "(All Payments)"}
                 </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {pendingPayments.map((payment) => (
-                    <div key={payment.id} className="flex justify-between text-sm border-b border-blue-100 pb-2">
-                      <div className="flex gap-4">
-                        <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
-                        <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
-                        {payment.paymentType === 'part payment' && (
-                          <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Part Payment</span>
-                        )}
-                        {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
-                          <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
-                        )}
+                {!isClosedJobCard ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {pendingPayments.map((payment) => (
+                      <div key={payment.id} className="flex justify-between text-sm border-b border-blue-100 pb-2">
+                        <div className="flex gap-4">
+                          <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
+                          <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
+                          {payment.paymentType === 'part payment' && (
+                            <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Part Payment</span>
+                          )}
+                          {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
+                            <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
+                          )}
+                        </div>
+                        <div className="flex gap-4">
+                          <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
+                          <span className={`text-xs px-2 rounded-full ${
+                            payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {payment.paymentStatus}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-4">
-                        <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
-                        <span className={`text-xs px-2 rounded-full ${
-                          payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {payment.paymentStatus}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-brand-text-secondary">This job card is closed. Previous payments are hidden.</p>
+                )}
                 <div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold">
                   <span className="text-blue-900">Total Amount Received:</span>
-                  <span className="text-blue-900">₹{pendingPayments.reduce((sum, p) => sum + p.recAmt, 0)}</span>
+                  <span className="text-blue-900">₹{totalReceivedAmount}</span>
                 </div>
               </div>
             )}
 
             {/* Total Paid Amount Info - Full Width */}
-            {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && (
+            {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && !isClosedJobCard && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Total Paid Amount <span className="text-red-500">*</span></label>
                 <input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" readOnly />
