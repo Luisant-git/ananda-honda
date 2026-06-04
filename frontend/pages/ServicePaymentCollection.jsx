@@ -590,8 +590,6 @@ const fetchCustomers = async () => {
       hasJobCard: jobCardContacts.has(c.contactNo),
       hasActiveJobCard: activeJobCardContacts.has(c.contactNo),
       hasClosedJobCard: closedJobCardContacts.has(c.contactNo),
-      allJobCards: allJobCards.filter(jc => jc.mobileNumber === c.contactNo),
-      allInvoices: invoiceData.filter(inv => inv.contactInfo === c.contactNo),
       activeJobCard: allJobCards.find(jc => {
         const status = (jc.status || '').toString().toLowerCase();
         return jc.mobileNumber === c.contactNo && (status === 'pending' || status === 'open');
@@ -616,8 +614,6 @@ const fetchCustomers = async () => {
           address: inv.address || "N/A",
           isInvoice: true,
           invoiceData: inv,
-          allJobCards: allJobCards.filter(jc => jc.mobileNumber === inv.contactInfo),
-          allInvoices: invoiceData.filter(i => i.contactInfo === inv.contactInfo),
           hasActiveJobCard: activeJobCardContacts.has(inv.contactInfo),
           hasClosedJobCard: closedJobCardContacts.has(inv.contactInfo),
           activeJobCard: allJobCards.find(jc => {
@@ -643,8 +639,6 @@ const fetchCustomers = async () => {
           address: "Imported from Service Master",
           isJobCard: true,
           jobCardData: jc,
-          allJobCards: allJobCards.filter(j => j.mobileNumber === jc.mobileNumber),
-          allInvoices: invoiceData.filter(i => i.contactInfo === jc.mobileNumber),
           hasActiveJobCard: ['pending', 'open'].includes((jc.status || '').toString().toLowerCase().trim()),
           hasClosedJobCard: ['closed', 'completed', 'cancelled', 'canceled', 'close'].includes((jc.status || '').toString().toLowerCase().trim()),
           activeJobCard: (['pending', 'open'].includes((jc.status || '').toString().toLowerCase().trim())) ? jc : null,
@@ -1195,26 +1189,9 @@ const submitData = {
   );
 
   const filteredCustomers = customers.filter(
-    (customer) => {
-      const term = searchTerm.toLowerCase();
-      if (customer.name.toLowerCase().includes(term)) return true;
-      if (customer.contactNo.includes(term)) return true;
-      
-      if (customer.allJobCards && customer.allJobCards.some(jc => 
-        jc.jobCardNumber?.toLowerCase().includes(term) || 
-        jc.registrationNumber?.toLowerCase().includes(term)
-      )) {
-        return true;
-      }
-      
-      if (customer.allInvoices && customer.allInvoices.some(inv => 
-        inv.vehicleRegNo?.toLowerCase().includes(term)
-      )) {
-        return true;
-      }
-
-      return false;
-    }
+    (customer) =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.contactNo.includes(searchTerm)
   );
 const handleCustomerSelect = async (customer) => {
   if (customer === "new") {
@@ -1841,7 +1818,7 @@ await fetchData();
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedCustomerId(""); setLoadedCustomer(null); setFilteredPayments(payments); }}
                   onFocus={() => setShowDropdown(true)}
-                  placeholder="Search by name, contact, job card, or vehicle no"
+                  placeholder="Search by name or contact number"
                   className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
                 />
                 {showDropdown && (
