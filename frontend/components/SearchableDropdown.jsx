@@ -62,13 +62,14 @@ const SearchableDropdown = ({
         placeholder={placeholder}
         className={`w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent ${className}`}
         required={required}
+        autoComplete="new-password"
       />
       {isOpen && (
         <div className="absolute z-50 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
           {filteredOptions.length > 0 ? (
-            filteredOptions.map((option) => (
+            filteredOptions.map((option, index) => (
               <div
-                key={option.value}
+                key={`${option.value}-${index}`}
                 onClick={() => handleSelect(option)}
                 className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
               >
