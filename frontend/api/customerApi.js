@@ -67,6 +67,16 @@ export const customerApi = {
     return response.json();
   },
 
+  getWalkinDashboardStats: async (fromDate, toDate) => {
+    const url = new URL(`${API_URL}/stats/walkin-dashboard`);
+    if (fromDate) url.searchParams.append('fromDate', fromDate);
+    if (toDate) url.searchParams.append('toDate', toDate);
+    const response = await fetch(url.toString(), { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch walkin dashboard stats');
+    return response.json();
+  },
+
+
 getByPhoneNumber: async (phoneNo) => {
     // Check if BigWing API URL is configured
    

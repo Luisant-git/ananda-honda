@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { dashboardApi } from '../api/dashboardApi';
+import { customerApi } from '../api/customerApi';
 import { menuPermissionApi } from '../api/menuPermissionApi';
 import ServiceBusinessDashboard from './ServiceBusinessDashboard';
+import WalkinDashboard from './WalkinDashboard';
+
 const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
   const [chartData, setChartData] = useState({ modes: [] });
@@ -25,7 +28,7 @@ useEffect(() => {
     const perms = res.permissions || res;
     setPermissions(perms);
 
-if (perms?.dashboard?.sales === true) setActiveTab('sales');
+if (perms?.dashboard?.sales === true) setActiveTab('walkin'); // Walkin is related to Sales, making it first if sales access is there
 else if (perms?.dashboard?.service === true) setActiveTab('services');
 else if (perms?.dashboard?.service_business === true) setActiveTab('service_business');
 else setActiveTab(null);
@@ -40,13 +43,15 @@ else setActiveTab(null);
     }
     setLoading(true);
     try {
-      let data;
+      let data = { modes: [], totalCount: 0 };
       if (activeTab === 'sales') {
         data = await dashboardApi.getDashboardStats(fromDate, toDate);
       } else if (activeTab === 'services') {
         data = await dashboardApi.getServicesDashboardStats(fromDate, toDate);
       } else if (activeTab === 'service_business') {
         data = await dashboardApi.getBusinessDashboardStats(fromDate, toDate);
+      } else if (activeTab === 'walkin') {
+        data = await customerApi.getWalkinDashboardStats(fromDate, toDate);
       }
       setChartData(data);
       setExpandedMode(null); // collapse any expanded row
@@ -66,13 +71,15 @@ else setActiveTab(null);
     setExpandedMode(null);
     setLoading(true);
     try {
-      let data;
+      let data = { modes: [], totalCount: 0 };
       if (activeTab === 'sales') {
         data = await dashboardApi.getDashboardStats('', '');
       } else if (activeTab === 'services') {
         data = await dashboardApi.getServicesDashboardStats('', '');
       } else if (activeTab === 'service_business') {
         data = await dashboardApi.getBusinessDashboardStats('', '');
+      } else if (activeTab === 'walkin') {
+        data = await customerApi.getWalkinDashboardStats('', '');
       }
       setChartData(data);
       setLoading(false);
@@ -340,6 +347,12 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
   <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
     <div className="flex border-b border-brand-border">
       {permissions?.dashboard?.sales && (
+        <button onClick={() => handleTabChange('walkin')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'walkin' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+          Walk-in Dashboard
+        </button>
+      )}
+
+      {permissions?.dashboard?.sales && (
         <button onClick={() => handleTabChange('sales')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'sales' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
           Sales Dashboard
         </button>
@@ -361,49 +374,52 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
 )}
 
       {/* Date Filter Section */}
-      <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+      <div className="bg-brand-surface p-3 rounded-lg shadow-sm border border-brand-border flex flex-wrap items-end gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-brand-text-secondary mb-1">From:</label>
+            <label className="text-xs font-medium text-brand-text-secondary mb-1">From:</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-brand-text-secondary mb-1">To:</label>
+            <label className="text-xs font-medium text-brand-text-secondary mb-1">To:</label>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={fetchDashboardData}
-              disabled={loading}
-              className="w-full bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
-            >
-              {loading ? 'Loading...' : 'Load'}
-            </button>
-            <button
-              onClick={handleReset}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
-            >
-              Reset
-            </button>
-          </div>
+        </div>
+        <div className="flex gap-2 mb-0.5">
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="bg-brand-accent hover:bg-brand-accent-hover text-white text-sm font-semibold py-1.5 px-4 rounded disabled:opacity-50 transition-colors"
+          >
+            {loading ? '...' : 'Load'}
+          </button>
+          <button
+            onClick={handleReset}
+            className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-1.5 px-4 rounded transition-colors"
+          >
+            Reset
+          </button>
         </div>
       </div>
       
+      {/* Walk-in Dashboard */}
+      {activeTab === 'walkin' && <WalkinDashboard data={chartData} />}
+
       {/* Summary Cards */}
-      {activeTab !== 'service_business' && renderSummaryCards(chartData.modes, chartData.totalCount)}
+      {activeTab !== 'service_business' && activeTab !== 'walkin' && renderSummaryCards(chartData?.modes || [], chartData?.totalCount || 0)}
       
       {/* Data Table */}
-      {activeTab !== 'service_business' && renderTable(chartData.modes)}
+      {activeTab !== 'service_business' && activeTab !== 'walkin' && renderTable(chartData?.modes || [])}
 
       {/* Service Business Dashboard */}
       {activeTab === 'service_business' && <ServiceBusinessDashboard data={chartData} />}

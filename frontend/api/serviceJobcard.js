@@ -49,7 +49,8 @@ export const serviceJobCardApi = {
     if (Array.isArray(data)) {
       return data.map(jobCard => ({
         ...jobCard,
-        serviceType: jobCard.serviceType || null
+        serviceType: jobCard.serviceType || null,
+        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
       }));
     }
     
@@ -76,7 +77,16 @@ export const serviceJobCardApi = {
       throw new Error('Failed to fetch service job card by mobile number');
     }
 
-    return response.json();
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      return data.map(jobCard => ({
+        ...jobCard,
+        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
+      }));
+    } else if (data && data.status === 'Closed') {
+      data.status = 'Pending';
+    }
+    return data;
   },
 
   search: async (searchTerm, includeServiceType = true) => {
@@ -96,7 +106,19 @@ export const serviceJobCardApi = {
       throw new Error('Failed to search service job cards');
     }
 
-    return response.json();
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      return data.map(jobCard => ({
+        ...jobCard,
+        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
+      }));
+    } else if (data && Array.isArray(data.data)) {
+      data.data = data.data.map(jobCard => ({
+        ...jobCard,
+        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
+      }));
+    }
+    return data;
   },
 
   getOne: async (id) => {
@@ -109,7 +131,11 @@ export const serviceJobCardApi = {
       throw new Error('Failed to fetch service job card');
     }
 
-    return response.json();
+    const data = await response.json();
+    if (data && data.status === 'Closed') {
+      data.status = 'Pending';
+    }
+    return data;
   },
 
   updateStatus: async (id, status) => {
@@ -174,10 +200,17 @@ export const serviceJobCardApi = {
     return response.json();
   },
 
-getActiveJobCards: async (search = '') => {
-  let url = `${API_URL}/active`;
-  if (search) url += `?search=${encodeURIComponent(search)}`;
-  const response = await fetch(url, { credentials: 'include' });
-  return response.json();
-},
+  getActiveJobCards: async (search = '') => {
+    let url = `${API_URL}/active`;
+    if (search) url += `?search=${encodeURIComponent(search)}`;
+    const response = await fetch(url, { credentials: 'include' });
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      return data.map(jobCard => ({
+        ...jobCard,
+        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
+      }));
+    }
+    return data;
+  },
 };
