@@ -1328,9 +1328,14 @@ const fetchPermissions = async () => {
             {activeTab === "enquiries" && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 border-b border-gray-200 pb-6">
-                  <div>
+                  <div className="col-span-1 md:col-span-2">
                     <p className="text-xs text-gray-500 uppercase font-bold">Location</p>
-                    <p className="text-gray-800 font-medium">{detailedCustomer?.location || 'N/A'}</p>
+                    <p className="text-gray-800 font-medium">
+                      {detailedCustomer?.location ? (() => {
+                        const locMatch = lookupData.locations.find(l => l.officename === detailedCustomer.location);
+                        return locMatch?.district ? `${detailedCustomer.location} - ${locMatch.district}` : detailedCustomer.location;
+                      })() : 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Pincode</p>
