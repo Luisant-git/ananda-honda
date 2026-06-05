@@ -259,4 +259,134 @@ async getDetails(id: number) {
       serviceJobCards,
     };
   }
+
+  async getDashboardStats(fromDateStr?: string, toDateStr?: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fromDate = fromDateStr ? new Date(fromDateStr) : undefined;
+    const toDate = toDateStr ? new Date(toDateStr) : undefined;
+    if (toDate) {
+      toDate.setHours(23, 59, 59, 999);
+    }
+
+    const dateFilter = fromDate && toDate ? {
+      createdAt: {
+        gte: fromDate,
+        lte: toDate,
+      }
+    } : {};
+
+    const totalEnquiry = await this.prisma.customer.count({
+      where: dateFilter,
+    });
+    
+    const todaysEnquiry = await this.prisma.customer.count({
+      where: {
+        createdAt: {
+          gte: today,
+        },
+      },
+    });
+    
+    const allocatedEnquiries = await this.prisma.customer.count({
+      where: {
+        ...dateFilter,
+        AND: [
+          { assignedExecutive: { not: null } },
+          { assignedExecutive: { not: '' } },
+        ],
+      },
+    });
+
+    const executivesList = await this.prisma.customer.groupBy({
+      by: ['assignedExecutive'],
+      _count: {
+        assignedExecutive: true,
+      },
+      where: {
+        ...dateFilter,
+        AND: [
+          { assignedExecutive: { not: null } },
+          { assignedExecutive: { not: '' } },
+        ],
+      },
+      orderBy: {
+        _count: {
+          assignedExecutive: 'desc'
+        }
+      }
+    });
+
+    const bookedList = await this.prisma.salesInvoice.groupBy({
+      by: ['assignedTo'],
+      _count: {
+        assignedTo: true,
+      },
+      where: {
+        ...dateFilter,
+        AND: [
+          { assignedTo: { not: null } },
+          { assignedTo: { not: '' } },
+        ],
+      },
+    });
+
+    const totalBookedCustomers = await this.prisma.salesInvoice.count({
+      where: {
+        ...dateFilter,
+        AND: [
+          { assignedTo: { not: null } },
+          { assignedTo: { not: '' } },
+        ],
+      },
+    });
+
+    // Merge enquiries and bookings by executive name
+    const executiveMap = new Map<string, { executiveName: string; count: number; bookedCount: number }>();
+
+    const normalizeName = (name: string) => name.trim().replace(/[\s.]+$/, '').toUpperCase();
+    const cleanDisplay = (name: string) => name.trim().replace(/[\s.]+$/, '');
+
+    executivesList.forEach((item) => {
+      if (item.assignedExecutive) {
+        const normalized = normalizeName(item.assignedExecutive);
+        if (executiveMap.has(normalized)) {
+          executiveMap.get(normalized)!.count += item._count.assignedExecutive;
+        } else {
+          executiveMap.set(normalized, {
+            executiveName: cleanDisplay(item.assignedExecutive),
+            count: item._count.assignedExecutive,
+            bookedCount: 0,
+          });
+        }
+      }
+    });
+
+    bookedList.forEach((item) => {
+      if (item.assignedTo) {
+        const normalized = normalizeName(item.assignedTo);
+        if (executiveMap.has(normalized)) {
+          executiveMap.get(normalized)!.bookedCount += item._count.assignedTo;
+        } else {
+          executiveMap.set(normalized, {
+            executiveName: cleanDisplay(item.assignedTo),
+            count: 0,
+            bookedCount: item._count.assignedTo,
+          });
+        }
+      }
+    });
+
+    const salesExecutiveList = Array.from(executiveMap.values()).sort((a, b) => b.count - a.count);
+
+    return {
+      totalEnquiry,
+      todaysEnquiry,
+      allocatedEnquiries,
+      totalBookedCustomers,
+      totalSalesExecutive: salesExecutiveList.length,
+      salesExecutiveList,
+    };
+  }
 }

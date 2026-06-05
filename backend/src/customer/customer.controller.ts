@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 
 type CustomerRequestDto = {
@@ -35,6 +35,14 @@ export class CustomerController {
   @Get()
   findAll() {
     return this.customerService.findAll();
+  }
+
+  @Get('stats/walkin-dashboard')
+  getWalkinDashboardStats(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.customerService.getDashboardStats(fromDate, toDate);
   }
 
   // ✅ PUT THIS ROUTE BEFORE THE :id ROUTE!
