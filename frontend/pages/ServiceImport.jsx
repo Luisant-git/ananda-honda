@@ -36,7 +36,7 @@ const ServiceImport = ({ user }) => {
           vehicleModel: r.vehicleDetails || r.modelName || 'N/A',
           serviceType: r.serviceType?.name || r.serviceType || r.servicetype || r.service_type || 'N/A',
           customerComplaint: r.complaint || r.customerComplaint || 'N/A',
-          status: r.status === 'Closed' ? 'Pending' : (r.status || 'N/A'),
+          status: r.status || 'N/A',
           closedDate: r.closedDate,
           labourRevenue: r.labourRevenue,
           partsRevenue: r.partsRevenue,

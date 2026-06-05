@@ -49,8 +49,7 @@ export const serviceJobCardApi = {
     if (Array.isArray(data)) {
       return data.map(jobCard => ({
         ...jobCard,
-        serviceType: jobCard.serviceType || null,
-        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
+        serviceType: jobCard.serviceType || null
       }));
     }
     
@@ -77,16 +76,7 @@ export const serviceJobCardApi = {
       throw new Error('Failed to fetch service job card by mobile number');
     }
 
-    const data = await response.json();
-    if (Array.isArray(data)) {
-      return data.map(jobCard => ({
-        ...jobCard,
-        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
-      }));
-    } else if (data && data.status === 'Closed') {
-      data.status = 'Pending';
-    }
-    return data;
+    return response.json();
   },
 
   search: async (searchTerm, includeServiceType = true) => {
@@ -106,19 +96,7 @@ export const serviceJobCardApi = {
       throw new Error('Failed to search service job cards');
     }
 
-    const data = await response.json();
-    if (Array.isArray(data)) {
-      return data.map(jobCard => ({
-        ...jobCard,
-        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
-      }));
-    } else if (data && Array.isArray(data.data)) {
-      data.data = data.data.map(jobCard => ({
-        ...jobCard,
-        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
-      }));
-    }
-    return data;
+    return response.json();
   },
 
   getOne: async (id) => {
@@ -131,11 +109,7 @@ export const serviceJobCardApi = {
       throw new Error('Failed to fetch service job card');
     }
 
-    const data = await response.json();
-    if (data && data.status === 'Closed') {
-      data.status = 'Pending';
-    }
-    return data;
+    return response.json();
   },
 
   updateStatus: async (id, status) => {
@@ -204,13 +178,6 @@ export const serviceJobCardApi = {
     let url = `${API_URL}/active`;
     if (search) url += `?search=${encodeURIComponent(search)}`;
     const response = await fetch(url, { credentials: 'include' });
-    const data = await response.json();
-    if (Array.isArray(data)) {
-      return data.map(jobCard => ({
-        ...jobCard,
-        status: jobCard.status === 'Closed' ? 'Pending' : jobCard.status
-      }));
-    }
-    return data;
+    return response.json();
   },
 };

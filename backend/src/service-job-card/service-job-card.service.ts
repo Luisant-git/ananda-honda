@@ -233,7 +233,7 @@ export class ServiceJobCardService {
         };
         jobCardNumber = String(getVal('job card #') || getVal('job card') || getVal('job card number') || '').trim();
         registrationNumber = String(getVal('vehicle registration no.') || getVal('registration number') || '').trim();
-        status = String(getVal('job card status') || '').trim();
+        status = 'Pending';
         const firstName = String(getVal('customer first name') || '').trim();
         const account = String(getVal('account') || '').trim();
         customerName = firstName && account && firstName !== account ? `${firstName} ${account}` : (firstName || account);
