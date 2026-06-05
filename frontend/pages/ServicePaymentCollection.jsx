@@ -275,7 +275,7 @@ const handleCustomerSelect = async (customer) => {
     return;
   }
   
-  if (customer.isInvoice) {
+  if (customer.source === 'invoice') {
     setSelectedCustomerId("new");
     setSearchTerm(customer.name);
     setIsNewCustomer(true);
@@ -331,7 +331,7 @@ const handleCustomerSelect = async (customer) => {
     return;
   }
   
-  if (customer.isJobCard) {
+  if (customer.source === 'jobcard') {
     setSelectedCustomerId("new");
     setSearchTerm(customer.name);
     setIsNewCustomer(true);
@@ -1391,8 +1391,8 @@ const fetchCustomers = async () => {
       
       // Add proper badges
       const badges = [];
-      if (customer.hasInvoice || customer.isInvoice) badges.push('Invoice');
-      if (customer.hasJobCard || customer.isJobCard) badges.push('Service Dealership');
+      if (customer.hasInvoice || customer.source === 'invoice') badges.push('Invoice');
+      if (customer.hasJobCard || customer.source === 'jobcard') badges.push('Service Dealership');
       
       return {
         ...customer,
