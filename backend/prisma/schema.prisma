@@ -95,6 +95,7 @@ model PaymentCollection {
   customerId      Int
   recAmt          Float
   paymentModeId   Int
+  paymentType     String   @default("booking")
   typeOfPaymentId Int?
   typeOfCollectionId Int?
   vehicleModelId  Int?

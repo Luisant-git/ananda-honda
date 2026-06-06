@@ -46,6 +46,7 @@ const PaymentCollection = ({ user }) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     recAmt: "",
+    paymentType: "booking",
     paymentModeId: "",
     typeOfPaymentId: "",
     typeOfCollectionId: "",
@@ -69,6 +70,7 @@ const PaymentCollection = ({ user }) => {
     fetchPaymentModes();
     fetchTypeOfPayments();
     fetchTypeOfCollections();
+    fetchVehicleModels();
     fetchPayments();
     fetchPermissions();
     fetchDeletedPayments();
@@ -305,6 +307,7 @@ useEffect(() => {
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
         recAmt: payment.recAmt,
+        paymentType: payment.paymentType || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
@@ -345,6 +348,7 @@ useEffect(() => {
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
         recAmt: payment.recAmt,
+        paymentType: payment.paymentType || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || "N/A",
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || "N/A",
@@ -416,6 +420,7 @@ useEffect(() => {
         date: formData.date,
         customerId: customerId,
         recAmt: parseFloat(formData.recAmt),
+        paymentType: formData.paymentType,
         paymentModeId: parseInt(formData.paymentModeId),
         typeOfPaymentId: formData.typeOfPaymentId
           ? parseInt(formData.typeOfPaymentId)
@@ -446,6 +451,7 @@ useEffect(() => {
       setFormData({
         date: new Date().toISOString().split("T")[0],
         recAmt: "",
+        paymentType: "booking",
         paymentModeId: "",
         typeOfPaymentId: "",
         typeOfCollectionId: "",
@@ -480,6 +486,7 @@ useEffect(() => {
     setFormData({
       date: new Date(payment.date).toISOString().split("T")[0],
       recAmt: payment.recAmt.toString(),
+      paymentType: payment.paymentType || "booking",
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || "",
       typeOfCollectionId: payment.typeOfCollectionId?.toString() || "",
@@ -576,10 +583,9 @@ const handleCustomerSelect = (customer) => {
     });
     setSalesInvoiceInfo(customer.invoiceData);
     setServiceJobCardInfo(null);
-    // Auto-fill vehicle model and reference number
+    // Auto-fill vehicle model
     setFormData(prev => ({
       ...prev,
-      refNo: customer.invoiceData.referenceNo || prev.refNo,
       vehicleModelId: vehicleModels.find(m => 
         customer.invoiceData.vehicleModel && 
         (m.model.toLowerCase() === customer.invoiceData.vehicleModel.toLowerCase() ||
@@ -631,7 +637,6 @@ const handleCustomerSelect = (customer) => {
   // Set form data with vehicle model
   setFormData(prev => ({
     ...prev,
-    refNo: jc.referenceNo || prev.refNo,
     vehicleModelId: matchedModelId || prev.vehicleModelId,
   }));
   
@@ -658,7 +663,6 @@ const handleCustomerSelect = (customer) => {
       if (info) {
         setFormData(prev => ({
           ...prev,
-          refNo: info.referenceNo || prev.refNo,
           vehicleModelId: vehicleModels.find(m => 
             info.vehicleModel && 
             (m.model.toLowerCase() === info.vehicleModel.toLowerCase() ||
@@ -700,7 +704,6 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
     
     setFormData(prev => ({
       ...prev,
-      refNo: jc.referenceNo || prev.refNo,
       vehicleModelId: matchedModelId || prev.vehicleModelId,
     }));
   }
@@ -887,6 +890,10 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
               payment.typeOfPayment || "N/A"
             }</div>
           </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
+            <div><strong>Payment Type:</strong> ${payment.paymentType || "N/A"}</div>
+          </div>
           
           <div style="border: 1px solid #000; padding: 15px; margin-bottom: 30px; font-size: 14px;">
             <div>Issued Subject to Realisation of Cheque.</div>
@@ -953,6 +960,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Amount", accessor: "recAmt" },
+    { header: "Payment Type", accessor: "paymentType" },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "Deleted By", accessor: "deletedBy" },
     { header: "Deleted At", accessor: "deletedAt" },
@@ -974,8 +982,9 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
     { header: "Amount", accessor: "recAmt" },
+    { header: "Payment Type", accessor: "paymentType" },
     { header: "PaymentMode", accessor: "paymentMode" },
-    { header: "PaymentType", accessor: "typeOfPayment" },
+    { header: "Type of Payment Mode", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
     { header: "Ref No", accessor: "refNo" },
@@ -1432,99 +1441,117 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         title={isEditMode ? "Edit Sales Payment" : "Sales Payment Entry"}
+        maxWidth="max-w-4xl"
       >
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              required
-              disabled
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Received Amount <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.recAmt}
-              onChange={(e) =>
-                setFormData({ ...formData, recAmt: e.target.value })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              required
-            />
-          </div>
-          <SearchableDropdown
-            label="Payment Mode"
-            value={formData.paymentModeId}
-            onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })}
-            options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))}
-            required
-          />
-          <SearchableDropdown
-            label="Type of Payment Mode"
-            value={formData.typeOfPaymentId}
-            onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })}
-            options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))}
-          />
-          <SearchableDropdown
-            label="Type of Collection"
-            value={formData.typeOfCollectionId}
-            onChange={(value) => {
-              const selectedType = typeOfCollections.find(type => type.id === parseInt(value));
-              setFormData({ ...formData, typeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId });
-            }}
-            options={typeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
-          />
-          {(() => {
-            const selectedTypeOfCollection = typeOfCollections.find(
-              (type) => type.id === parseInt(formData.typeOfCollectionId)
-            );
-            return !selectedTypeOfCollection?.disableVehicleModel && (
-              <SearchableDropdown
-                label="Vehicle Model"
-                value={formData.vehicleModelId}
-                onChange={(value) => setFormData({ ...formData, vehicleModelId: value })}
-                options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))}
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                required
+                disabled
               />
-            );
-          })()}
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Reference Number
-            </label>
-            <input
-              type="text"
-              value={formData.refNo}
-              onChange={(e) =>
-                setFormData({ ...formData, refNo: e.target.value })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Received Amount <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.recAmt}
+                onChange={(e) =>
+                  setFormData({ ...formData, recAmt: e.target.value })
+                }
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Payment Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.paymentType}
+                onChange={(e) => setFormData({ ...formData, paymentType: e.target.value })}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                required
+              >
+                <option value="booking">Booking</option>
+                <option value="advance payment">Advance payment</option>
+                <option value="final payment">Final payment</option>
+              </select>
+            </div>
+            <SearchableDropdown
+              label="Payment Mode"
+              value={formData.paymentModeId}
+              onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })}
+              options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))}
+              required
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Remarks
-            </label>
-            <textarea
-              value={formData.remarks}
-              onChange={(e) =>
-                setFormData({ ...formData, remarks: e.target.value })
-              }
-              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              rows={2}
-            ></textarea>
+            <SearchableDropdown
+              label="Type of Payment Mode"
+              value={formData.typeOfPaymentId}
+              onChange={(value) => setFormData({ ...formData, typeOfPaymentId: value })}
+              options={filteredTypeOfPayments.map(type => ({ value: type.id.toString(), label: type.typeOfMode }))}
+            />
+            <SearchableDropdown
+              label="Type of Collection"
+              value={formData.typeOfCollectionId}
+              onChange={(value) => {
+                const selectedType = typeOfCollections.find(type => type.id === parseInt(value));
+                setFormData({ ...formData, typeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId });
+              }}
+              options={typeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
+            />
+            {(() => {
+              const selectedTypeOfCollection = typeOfCollections.find(
+                (type) => type.id === parseInt(formData.typeOfCollectionId)
+              );
+              return !selectedTypeOfCollection?.disableVehicleModel && (
+                <SearchableDropdown
+                  label="Vehicle Model"
+                  value={formData.vehicleModelId}
+                  onChange={(value) => setFormData({ ...formData, vehicleModelId: value })}
+                  options={vehicleModels.map(model => ({ value: model.id.toString(), label: model.model }))}
+                />
+              );
+            })()}
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Reference Number
+              </label>
+              <input
+                type="text"
+                value={formData.refNo}
+                onChange={(e) =>
+                  setFormData({ ...formData, refNo: e.target.value })
+                }
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                Remarks
+              </label>
+              <textarea
+                value={formData.remarks}
+                onChange={(e) =>
+                  setFormData({ ...formData, remarks: e.target.value })
+                }
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                rows={2}
+              ></textarea>
+            </div>
           </div>
           <div className="flex justify-end gap-4 pt-4">
             <button
