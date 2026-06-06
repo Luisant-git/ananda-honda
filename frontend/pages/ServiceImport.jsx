@@ -5,6 +5,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
 import { Coins, Wrench, Receipt } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const ServiceImport = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -104,59 +105,108 @@ const ServiceImport = ({ user }) => {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = [
-      'Job Card #',
-      'Vehicle Registration No.',
-      'Customer First Name',
-      'Customer Last Name',
-      'Contact Phone',
-      'Model Name',
-      'Service Type',
-      'Job Card Status'
-    ];
-    const sampleRow = [
-      'SJC00001',
-      'KA01KT6124',
-      'KRISHNA',
-      'KISHORE',
-      '8610380807',
-      'CB350C OBD2B',
-      'Paid Service',
-      'Pending'
-    ];
-    const csv = headers.join(',') + '\n' + sampleRow.join(',');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'service_job_card_template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Template downloaded successfully');
+  const downloadTemplate = (type) => {
+    let data = [];
+    let filename = '';
+
+    if (type === 'ORDER') {
+      data = [{
+        'Job Card #': 'JC001',
+        'Vehicle Registration No.': 'KA01AB1234',
+        'Customer First Name': 'John',
+        'Account': 'Doe',
+        'Contact Phone': '9876543210',
+        'Service Type': 'Paid Service',
+        'Model Variant': 'Activa 6G',
+        'Created Date/Time': '2026-01-15 10:30',
+        'OTP No': '123456',
+        'AMC Start Date': '2026-01-01',
+        'AMC End Date': '2027-01-01',
+        'Effective Final Delivery Estimate Date': '2026-01-16 17:00'
+      }];
+      filename = 'order_report_template.xlsx';
+    } else if (type === 'REVENUE') {
+      data = [{
+        'Job Card Number': 'JC001',
+        'Registration Number': 'KA01AB1234',
+        'Customer Name': 'John Doe',
+        'Service Type': 'Paid Service',
+        'Job Card Date': '2026-01-15',
+        'Job Card Closed Date': '2026-01-16',
+        'Job Card Status': 'Closed',
+        'Labour Revenue': 500,
+        'Parts Revenue': 1200,
+        'Lubes Revenue': 300,
+        'Accessories Revenue': 0,
+        'Total Job Card Revenue': 2000,
+        'AMC Service': 'No',
+        'Current KMs': 15000,
+        'Frame Number': 'MDH123456789',
+        'Model Name': 'Activa 6G'
+      }];
+      filename = 'revenue_report_template.xlsx';
+    } else if (type === 'WORKSHOP') {
+      data = [{
+        'Job Card Number': 'JC001',
+        'Customer Name': 'John Doe',
+        'Customer Mobile': '9876543210',
+        'Job Card Date': '2026-01-15',
+        'Service Type': 'Paid Service',
+        'Model Name': 'Activa 6G',
+        'Current KM': 15000,
+        'Frame Number': 'MDH123456789',
+        'Part Category': 'Oil',
+        'Part Description': 'Engine Oil 10W30'
+      }];
+      filename = 'workshop_sheet_template.xlsx';
+    } else if (type === 'INVOICE') {
+      data = [{
+        'Job Card #': 'JC001',
+        'Job Card Date': '2026-01-15',
+        'Closed Date/ Time': '2026-01-16 16:00',
+        'Job Card Status': 'Closed',
+        'Vehicle Registration No.': 'KA01AB1234',
+        'Customer First Name': 'John',
+        'Customer Last Name': 'Doe',
+        'Contact Phone': '9876543210',
+        'Service Type': 'Paid Service',
+        'Model Name': 'Activa 6G',
+        'Frame #': 'MDH123456789',
+        'Invoice Number': 'INV-2026-001',
+        'Total Invoice Amount': 2000
+      }];
+      filename = 'invoice_report_template.xlsx';
+    }
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, filename);
+    toast.success(`${filename} downloaded successfully`);
   };
 
-  const downloadCSV = () => {
+  const downloadExcel = () => {
     try {
-      const headers = columns.map(col => col.header).join(',');
-      const rows = records.map(row => columns.map(col => {
-        const val = row[col.accessor];
-        if (col.accessor === 'createdAt' && val) {
-          return `"${new Date(val).toISOString().split('T')[0]}"`;
-        }
-        return `"${(val || '').toString().replace(/"/g, '""')}"`;
-      }).join(',')).join('\n');
-      const content = headers + '\n' + rows;
-      const blob = new Blob([content], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `service_job_cards_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success('CSV file downloaded successfully!');
+      const exportData = records.map(row => {
+        const rowData = {};
+        columns.forEach(col => {
+          let val = row[col.accessor];
+          if (col.accessor === 'createdAt' && val) {
+            val = new Date(val).toISOString().split('T')[0];
+          }
+          rowData[col.header] = val || '';
+        });
+        return rowData;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Service Job Cards");
+      XLSX.writeFile(wb, `service_job_cards_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success('Excel file downloaded successfully!');
     } catch (error) {
-      toast.error('Error downloading CSV file');
+      toast.error('Error downloading Excel file');
     }
   };
 
@@ -210,18 +260,12 @@ const ServiceImport = ({ user }) => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={downloadTemplate}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
-          >
-            Download Template
-          </button>
           {records.length > 0 && (
             <button
-              onClick={downloadCSV}
+              onClick={downloadExcel}
               className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
             >
-              Export CSV
+              Export Excel
             </button>
           )}
           {records.length > 0 && (
@@ -278,6 +322,14 @@ const ServiceImport = ({ user }) => {
                 </>
               )}
             </label>
+            <div className="text-center">
+              <button
+                onClick={(e) => { e.preventDefault(); downloadTemplate('ORDER'); }}
+                className="text-pink-600 hover:text-pink-800 text-xs font-semibold hover:underline"
+              >
+                Download Sample Excel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -322,6 +374,14 @@ const ServiceImport = ({ user }) => {
                 </>
               )}
             </label>
+            <div className="text-center">
+              <button
+                onClick={(e) => { e.preventDefault(); downloadTemplate('REVENUE'); }}
+                className="text-blue-600 hover:text-blue-800 text-xs font-semibold hover:underline"
+              >
+                Download Sample Excel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -366,6 +426,14 @@ const ServiceImport = ({ user }) => {
                 </>
               )}
             </label>
+            <div className="text-center">
+              <button
+                onClick={(e) => { e.preventDefault(); downloadTemplate('WORKSHOP'); }}
+                className="text-orange-600 hover:text-orange-800 text-xs font-semibold hover:underline"
+              >
+                Download Sample Excel
+              </button>
+            </div>
           </div>
         </div>
 
@@ -410,6 +478,14 @@ const ServiceImport = ({ user }) => {
                 </>
               )}
             </label>
+            <div className="text-center">
+              <button
+                onClick={(e) => { e.preventDefault(); downloadTemplate('INVOICE'); }}
+                className="text-purple-600 hover:text-purple-800 text-xs font-semibold hover:underline"
+              >
+                Download Sample Excel
+              </button>
+            </div>
           </div>
         </div>
       </div>

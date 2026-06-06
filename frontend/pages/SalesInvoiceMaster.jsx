@@ -4,6 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { salesInvoiceApi } from '../api/salesInvoiceApi.js';
 import { FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const SalesInvoiceMaster = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -72,38 +73,52 @@ const SalesInvoiceMaster = ({ user }) => {
   };
 
   const downloadTemplate = () => {
-    const headers = ['Reference No', 'Customer First Name', 'Customer Middle Name', 'Customer Last Name', 'Mobile Phone #', 'Permanent Reg No', 'Model Name', 'Assigned To (DSE) Name', 'Actual Deliver date', 'Address Line 1', 'Address Line 2', 'City', 'State', 'Zip Code'];
-    const csv = headers.join(',') + '\nREF001,John,,Doe,9876543210,KA01AB1234,Activa 125,Vinushree,2024-01-15,Silk Board,6th Mile,Bengaluru,Karnataka,560068';
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sales_invoice_template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const data = [
+      {
+        'Reference No': 'REF001',
+        'Customer First Name': 'John',
+        'Customer Middle Name': '',
+        'Customer Last Name': 'Doe',
+        'Mobile Phone #': '9876543210',
+        'Permanent Reg No': 'KA01AB1234',
+        'Model Name': 'Activa 125',
+        'Assigned To (DSE) Name': 'Vinushree',
+        'Actual Deliver date': '2024-01-15',
+        'Address Line 1': 'Silk Board',
+        'Address Line 2': '6th Mile',
+        'City': 'Bengaluru',
+        'State': 'Karnataka',
+        'Zip Code': '560068'
+      }
+    ];
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "sales_invoice_template.xlsx");
   };
 
-  const downloadCSV = () => {
+  const downloadExcel = () => {
     try {
-      const headers = columns.map(col => col.header).join(',');
-      const rows = records.map(row => columns.map(col => {
-        const val = row[col.accessor];
-        if (col.accessor === 'actualDeliverDate' && val) {
-          return `"${new Date(val).toISOString().split('T')[0]}"`;
-        }
-        return `"${val || ''}"`;
-      }).join(',')).join('\n');
-      const content = headers + '\n' + rows;
-      const blob = new Blob([content], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sales_invoices_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success('CSV file downloaded successfully!');
+      const exportData = records.map(row => {
+        const rowData = {};
+        columns.forEach(col => {
+          let val = row[col.accessor];
+          if (col.accessor === 'actualDeliverDate' && val) {
+            val = new Date(val).toISOString().split('T')[0];
+          }
+          rowData[col.header] = val || '';
+        });
+        return rowData;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Sales Invoices");
+      XLSX.writeFile(wb, `sales_invoices_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success('Excel file downloaded successfully!');
     } catch (error) {
-      toast.error('Error downloading CSV file');
+      toast.error('Error downloading Excel file');
     }
   };
 
@@ -134,10 +149,10 @@ const SalesInvoiceMaster = ({ user }) => {
           </button>
           {records.length > 0 && (
             <button
-              onClick={downloadCSV}
+              onClick={downloadExcel}
               className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
             >
-              Export CSV
+              Export Excel
             </button>
           )}
           {records.length > 0 && (
