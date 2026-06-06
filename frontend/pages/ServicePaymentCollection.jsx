@@ -851,7 +851,6 @@ useEffect(() => {
           setFoundJobCard(null);
           setPendingPayments([]);
           // Don't clear the job card number here - user might want to create a new one
-          toast(`Job card "${formData.jobCardNumber}" not found for ${loadedCustomer.name}. You can create a new one.`, { duration: 3000 });
         }
       } catch (error) {
         console.error('Error fetching job card:', error);
@@ -2684,33 +2683,15 @@ useEffect(() => {
           setPendingPayments([]);
         }}
         className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-        placeholder="Enter Job Card Number (will auto-fetch if exists)"
+        placeholder="JC-BWKA0105-02-2526-000000"
         required={formData.paymentType === "full payment"}
       />
       
       {/* Show status message */}
-      {formData.jobCardNumber && ["full payment", "advance payment"].includes(formData.paymentType) && (
-        <div className="flex items-center gap-2 text-sm">
-          {isCheckingJobCard ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-brand-accent"></div>
-              <span className="text-brand-text-secondary">Checking job card...</span>
-            </div>
-          ) : foundJobCard ? (
-            <div className="flex items-center gap-2">
-              <span className="text-green-600">✓</span>
-              <span className="text-green-600">Job card found! Details auto-filled.</span>
-            </div>
-          ) : isManualJobCard && formData.jobCardNumber ? (
-            <div className="flex items-center gap-2">
-              <span className="text-amber-600">⚠️</span>
-              <span className="text-amber-600">
-                {formData.paymentType === "full payment"
-                  ? "Job card not found. Will create new one on submission."
-                  : "Job card not found. Advance payment will save without an existing job card."}
-              </span>
-            </div>
-          ) : null}
+      {formData.jobCardNumber && ["full payment", "advance payment"].includes(formData.paymentType) && foundJobCard && !isCheckingJobCard && (
+        <div className="flex items-center gap-2 text-sm mt-1">
+          <span className="text-green-600">✓</span>
+          <span className="text-green-600">Job card found! Details auto-filled.</span>
         </div>
       )}
     </div>
