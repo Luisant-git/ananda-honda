@@ -56,6 +56,23 @@ export const serviceJobCardApi = {
     return data;
   },
 
+
+    update: async (id, data) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PATCH',  // or 'PUT' - check your backend controller
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update job card');
+    }
+    
+    return response.json();
+  },
+  
   getByMobileNumber: async (mobileNumber, includeServiceType = true) => {
     const params = new URLSearchParams();
     
