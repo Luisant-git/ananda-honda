@@ -197,6 +197,10 @@ export class ServiceRemainderTemplateService {
     return this.prisma.serviceReminderLog.delete({ where: { id } });
   }
 
+  async clearAll() {
+    return this.prisma.serviceReminderLog.deleteMany({});
+  }
+
   async resendReminder(id: number) {
     const reminder = await this.getReminderById(id);
     

@@ -36,6 +36,12 @@ export class SalesInvoiceService {
       if (!customerName) {
         customerName = String(row['Customer Name'] || row['customer_name'] || row['CustomerName'] || '').trim();
       }
+      
+      const accountVal = String(row['Account'] || row['account'] || '').trim();
+      if (!customerName && accountVal) customerName = 'N/A';
+      
+      let contactInfo = String(row['Mobile Phone #'] || row['Contact Info'] || row['contact_info'] || row['ContactInfo'] || row['Contact'] || '').trim();
+      if (!contactInfo && accountVal) contactInfo = 'N/A';
 
       // Mapping for Address
       const address1 = String(row['Address Line 1'] || '').trim();
@@ -46,7 +52,7 @@ export class SalesInvoiceService {
 
       return {
         customerName,
-        contactInfo: String(row['Mobile Phone #'] || row['Contact Info'] || row['contact_info'] || row['ContactInfo'] || row['Contact'] || '').trim(),
+        contactInfo,
         referenceNo: String(row['Reference No'] || row['ReferenceNo'] || row['ref_no'] || '').trim() || null,
         vehicleRegNo: String(row['Permanent Reg No'] || row['Vehicle Reg No'] || row['vehicle_reg_no'] || row['VehicleRegNo'] || '').trim() || null,
         vehicleModel: String(row['Model Name'] || row['Vehicle Model'] || row['vehicle_model'] || row['VehicleModel'] || '').trim() || null,
@@ -57,6 +63,7 @@ export class SalesInvoiceService {
         state: state || null,
         zipCode: zipCode || null,
         actualDeliverDate,
+        account: accountVal || null,
       };
     }).filter(r => r.customerName && r.contactInfo);
 

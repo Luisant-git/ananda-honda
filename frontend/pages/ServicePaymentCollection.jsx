@@ -11,6 +11,7 @@ import { serviceTypeOfPaymentApi } from "../api/serviceTypeOfPaymentApi.js";
 import { serviceTypeOfCollectionApi } from "../api/serviceTypeOfCollectionApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
+import ConfirmModal from '../components/ConfirmModal';
 import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
@@ -41,6 +42,7 @@ const ServicePaymentCollection = ({ user }) => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -2101,6 +2103,19 @@ useEffect(() => {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await servicePaymentCollectionApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      setPayments([]);
+      setFilteredPayments([]);
+      fetchPayments(1);
+    } catch {
+      toast.error('Error clearing records');
+    }
+  };
+
   const filteredTypeOfPayments = typeOfPayments.filter(
     (type) =>
       !formData.paymentModeId ||
@@ -2392,11 +2407,21 @@ useEffect(() => {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection</h1>
-        {permissions?.payment_collection?.service?.view_deleted && (
-          <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
-            {showDeleted ? "Show Active" : "Show Trash"}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {/* {user?.role === 'DEVELOPER' && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+            >
+              Clear All Data
+            </button>
+          )} */}
+          {permissions?.payment_collection?.service?.view_deleted && (
+            <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
+              {showDeleted ? "Show Active" : "Show Trash"}
+            </button>
+          )}
+        </div>
       </div>
 
       {!showDeleted && (
@@ -3246,6 +3271,7 @@ useEffect(() => {
     </div>
   )}
 </Modal>
+
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Delete">
         <div className="space-y-4"><p className="text-brand-text-primary">Are you sure you want to delete service payment <strong>{paymentToDelete?.receiptNo}</strong>?</p><div className="flex justify-end gap-4"><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Cancel</button><button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold">Delete</button></div></div>
       </Modal>
@@ -3253,6 +3279,15 @@ useEffect(() => {
       <Modal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} title="Confirm Cancel Payment">
         <div className="space-y-4"><p className="text-brand-text-primary">Are you sure you want to cancel service payment <strong>{paymentToCancel?.receiptNo}</strong>? The amount will be set to ₹0.</p><div className="flex justify-end gap-4"><button onClick={() => setIsCancelModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">No</button><button onClick={handleCancel} className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold">Yes, Cancel Payment</button></div></div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL service payment collection records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };

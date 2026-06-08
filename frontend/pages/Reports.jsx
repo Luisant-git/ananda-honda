@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
+import ConfirmModal from '../components/ConfirmModal';
 import { paymentCollectionApi } from '../api/paymentCollectionApi.js';
 
-const Reports = () => {
+const Reports = ({ user }) => {
   const [reportData, setReportData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
     fetchReportData();
@@ -43,6 +45,17 @@ const Reports = () => {
       setFilteredData(formattedData);
     } catch (error) {
       console.error('Error fetching report data:', error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await paymentCollectionApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      fetchReportData();
+    } catch {
+      toast.error('Error clearing records');
     }
   };
 
@@ -206,7 +219,17 @@ const Reports = () => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Sales Payment Collection Report</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Sales Payment Collection Report</h1>
+        {/* {user?.role === 'DEVELOPER' && (
+          <button
+            onClick={() => setIsClearModalOpen(true)}
+            className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+          >
+            Clear All Data
+          </button>
+        )} */}
+      </div>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="flex flex-col gap-4">
@@ -268,6 +291,15 @@ const Reports = () => {
           data={filteredData} 
         />
       </div>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL sales payment collection records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };

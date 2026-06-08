@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
+import hondaLogo from '../assets/honda.png';
+import ConfirmModal from '../components/ConfirmModal';
 import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";
 import { paymentCollectionApi } from "../api/paymentCollectionApi.js";
@@ -38,6 +40,7 @@ const PaymentCollection = ({ user }) => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -539,6 +542,19 @@ useEffect(() => {
     } catch (error) {
       toast.error("Error cancelling sales payment");
       console.error("Error cancelling sales payment:", error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await paymentCollectionApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      setPayments([]);
+      setFilteredPayments([]);
+      fetchPayments(1);
+    } catch {
+      toast.error('Error clearing records');
     }
   };
 
@@ -1053,7 +1069,16 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
           Sales Payment Collection
         </h1>
-{permissions?.payment_collection?.sales?.view_deleted && (
+        <div className="flex gap-2">
+          {/* {user?.role === 'DEVELOPER' && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+            >
+              Clear All Data
+            </button>
+          )} */}
+          {permissions?.payment_collection?.sales?.view_deleted && (
           <button
             onClick={() => {
               setShowDeleted(!showDeleted);
@@ -1068,6 +1093,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
             {showDeleted ? "Show Active" : "Show Trash"}
           </button>
         )}
+        </div>
       </div>
 
 
@@ -1635,6 +1661,15 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL sales payment collection records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };

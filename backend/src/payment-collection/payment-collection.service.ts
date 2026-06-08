@@ -169,6 +169,10 @@ export class PaymentCollectionService {
     });
   }
 
+  async clearAll() {
+    return this.prisma.paymentCollection.deleteMany({});
+  }
+
   async restore(id: number) {
     return this.prisma.paymentCollection.update({
       where: { id },

@@ -75,13 +75,13 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':
-        return <Reports />;
+        return <Reports user={user} />;
       case 'service_reports':
-        return <ServiceReports />;
+        return <ServiceReports user={user} />;
       case 'full_payment_report':
-        return <FullPaymentReport />;
+        return <FullPaymentReport user={user} />;
       case 'part_payment_report':
-       return <PartPaymentReport />;
+       return <PartPaymentReport user={user} />;
       case 'service_reminder_report':  
         return <ServiceReminderReport user={user} />;
       case 'change_password':

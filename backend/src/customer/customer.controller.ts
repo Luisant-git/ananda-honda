@@ -73,6 +73,11 @@ export class CustomerController {
     return this.customerService.update(+id, updateCustomerDto);
   }
 
+  @Delete('clear/all')
+  async clearAll() {
+    return await this.customerService.clearAll();
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {

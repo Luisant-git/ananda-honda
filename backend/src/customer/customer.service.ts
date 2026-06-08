@@ -185,6 +185,10 @@ export class CustomerService {
     });
   }
 
+  async clearAll() {
+    return this.prisma.customer.deleteMany({});
+  }
+
 async getDetails(id: number) {
     const customer = await this.prisma.customer.findUnique({
       where: { id },

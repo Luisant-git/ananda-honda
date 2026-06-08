@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { serviceReminderApi } from '../api/serviceReminderApi';
 
 const ServiceReminderReport = ({ user }) => {
@@ -17,6 +18,7 @@ const ServiceReminderReport = ({ user }) => {
   const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
   const [selectedReminder, setSelectedReminder] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
     fetchReminders();
@@ -89,6 +91,18 @@ const ServiceReminderReport = ({ user }) => {
     setStatusFilter('all');
     setServiceTypeFilter('all');
     fetchReminders();
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await serviceReminderApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      fetchReminders();
+      fetchSummary();
+    } catch {
+      toast.error('Error clearing records');
+    }
   };
 
   const handleManualTrigger = async () => {
@@ -295,6 +309,14 @@ const columns = [
           Service Reminder Report
         </h1>
         <div className="flex gap-2">
+          {/* {user?.role === 'DEVELOPER' && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 text-sm"
+            >
+              Clear All Data
+            </button>
+          )} */}
           {/* <button
             onClick={handleManualTrigger}
             className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
@@ -490,6 +512,15 @@ const columns = [
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL service reminder records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };

@@ -570,6 +570,10 @@ async completePartPayment(id: number, data: {
     });
   }
 
+  async clearAll() {
+    return this.prisma.servicePaymentCollection.deleteMany({});
+  }
+
   async restore(id: number) {
     return this.prisma.servicePaymentCollection.update({
       where: { id },
