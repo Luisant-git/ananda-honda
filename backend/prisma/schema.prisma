@@ -236,6 +236,7 @@ model SalesInvoice {
   state           String?
   zipCode         String?
   actualDeliverDate DateTime?
+  account         String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   reminderLogs     ServiceReminderLog[]
