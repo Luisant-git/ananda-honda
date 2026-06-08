@@ -158,6 +158,7 @@ export class SalesInvoiceService {
   }
 
   async clearAll() {
+    await this.prisma.serviceReminderLog.deleteMany({});
     return this.prisma.salesInvoice.deleteMany({});
   }
 }
