@@ -2687,13 +2687,7 @@ useEffect(() => {
         required={formData.paymentType === "full payment"}
       />
       
-      {/* Show status message */}
-      {formData.jobCardNumber && ["full payment", "advance payment"].includes(formData.paymentType) && foundJobCard && !isCheckingJobCard && (
-        <div className="flex items-center gap-2 text-sm mt-1">
-          <span className="text-green-600">✓</span>
-          <span className="text-green-600">Job card found! Details auto-filled.</span>
-        </div>
-      )}
+    
     </div>
   </div>
 )}
