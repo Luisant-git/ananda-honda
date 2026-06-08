@@ -66,7 +66,6 @@ const QuickStart = ({ setCurrentView, user }) => {
         { view: 'customer_details', label: 'Customer Details', desc: 'Manage CRM contacts and leads.', icon: <Users className="w-8 h-8 text-green-600" />, perm: 'master.customer_details', bgColor: 'bg-green-50 hover:bg-green-100 border-green-200' },
         { view: 'sales_invoice_master', label: 'Sales Invoice Master', desc: 'Manage sales invoices.', icon: <FileText className="w-8 h-8 text-purple-600" />, perm: 'master.sales_invoice_master', bgColor: 'bg-purple-50 hover:bg-purple-100 border-purple-200' },
         { view: 'service_jobcard_master', label: 'Service Import', desc: 'Import Jobcards and Invoices.', icon: <Upload className="w-8 h-8 text-pink-600" />, perm: 'master.jobcard_master', bgColor: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
-        { view: 'vehicle_enquiry_form', label: 'Create Enquiry', desc: 'Create a new vehicle enquiry.', icon: <PenTool className="w-8 h-8 text-orange-600" />, perm: 'master.create_enquiry', bgColor: 'bg-orange-50 hover:bg-orange-100 border-orange-200' },
       ]
     },
     {
@@ -87,7 +86,6 @@ const QuickStart = ({ setCurrentView, user }) => {
         { view: 'full_payment_report', label: 'Service Full Payment Report', desc: 'View completed service payments.', icon: <FileBarChart className="w-8 h-8 text-amber-600" />, perm: 'reports.full_payment_report', bgColor: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
         { view: 'part_payment_report', label: 'Service Part Payment Report', desc: 'View partial service payments.', icon: <FileBarChart className="w-8 h-8 text-yellow-600" />, perm: 'reports.part_payment_report', bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' },
         { view: 'service_reminder_report', label: 'Service Reminder Report', desc: 'View upcoming service reminders.', icon: <FileBarChart className="w-8 h-8 text-emerald-600" />, perm: 'reports.service_reminder_report', bgColor: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
-        { view: 'enquiry_management', label: 'Enquiry Report', desc: 'View and manage all enquiries.', icon: <FileBarChart className="w-8 h-8 text-cyan-600" />, perm: 'reports.enquiry_report', bgColor: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200' },
       ]
     },
     {

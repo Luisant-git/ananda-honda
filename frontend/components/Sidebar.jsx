@@ -172,7 +172,6 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                     />
                   </li>
                 }
-                {permissions.master.create_enquiry && <li><NavLink view="vehicle_enquiry_form" label="Create Enquiry" isSubmenu /></li>}
                 {permissions?.master?.location_master && <li><NavLink view="location_master" label="Locations" isSubmenu /></li>}
               </NavGroup>
             )}
@@ -187,7 +186,6 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             {/* Reports - Main Parent */}
             {(permissions?.reports?.payment_collection_report || 
               permissions?.reports?.service_payment_collection_report || 
-              permissions?.reports?.enquiry_report ||
               permissions?.reports?.full_payment_report ||
               permissions?.reports?.part_payment_report ||
               permissions?.reports?.service_reminder_report) && (
@@ -239,11 +237,6 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {/* Service Reminder Report */}
                 {permissions?.reports?.service_reminder_report && (
                   <li><NavLink view="service_reminder_report" label="Service Reminder Report" isSubmenu /></li>
-                )}
-                
-                {/* Enquiry Report */}
-                {permissions?.reports?.enquiry_report && (
-                  <li><NavLink view="enquiry_management" label="Enquiry Report" isSubmenu /></li>
                 )}
                 
               </NavGroup>
