@@ -48,6 +48,8 @@ const ServicePaymentCollection = ({ user }) => {
   const [serviceTypeOfCollections, setServiceTypeOfCollections] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
   
+  const CLOSING_TOLERANCE_RUPEES = 2.0; // Must match backend logic
+
   // Part selection states
   const [isPartDropdownOpen, setIsPartDropdownOpen] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState('');
@@ -1722,7 +1724,8 @@ const checkAndUpdateJobCardStatus = async (jobCardNumber, customerId, paymentTyp
     console.log('Job Card Check:', { jobCardNumber, invoiceAmount, totalPaid });
 
     // If total paid meets or exceeds invoice amount, close the job card
-    if (totalPaid >= invoiceAmount) {
+    const isEffectivelyPaid = (totalPaid >= invoiceAmount) || (invoiceAmount - totalPaid <= CLOSING_TOLERANCE_RUPEES);
+    if (isEffectivelyPaid) {
       await serviceJobCardApi.update(jobCard.id, {
         ...jobCard,
         status: 'Closed'
@@ -2634,14 +2637,14 @@ useEffect(() => {
             {/* Row 1: Basic Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label>
-              <select 
-                value={formData.paymentType} 
-                onChange={(e) => { 
-                  const newPaymentType = e.target.value; 
-                  setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" }); 
-                  if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, newPaymentType, formData.jobCardNumber); 
-                }} 
-                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" 
+              <select
+                value={formData.paymentType}
+                onChange={(e) => {
+                  const newPaymentType = e.target.value;
+                  setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" });
+                  if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, newPaymentType, formData.jobCardNumber);
+                }}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                 required
               >
                 <option value="full payment">Full Payment</option>
@@ -2663,34 +2666,34 @@ useEffect(() => {
               })()}
             </div>
 
-{/* Row 3: Service Info - Job Card Number */}
-{["full payment", "advance payment"].includes(formData.paymentType) && (
-  <div>
-    <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-      Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}
-    </label>
-    
-    <div className="space-y-2">
-      <input
-        type="text"
-        value={formData.jobCardNumber}
-        onChange={(e) => {
-          const newJobCardNumber = e.target.value.toUpperCase();
-          setFormData({ ...formData, jobCardNumber: newJobCardNumber });
-          setIsManualJobCard(false);
-          setFoundJobCard(null);
-          setServiceJobCardInfo(null);
-          setPendingPayments([]);
-        }}
-        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
-        placeholder="JC-BWKA0105-02-2526-000000"
-        required={formData.paymentType === "full payment"}
-      />
-      
-    
-    </div>
-  </div>
-)}
+            {/* Row 3: Service Info - Job Card Number */}
+            {["full payment", "advance payment"].includes(formData.paymentType) && (
+              <div>
+                <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                  Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}
+                </label>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={formData.jobCardNumber}
+                    onChange={(e) => {
+                      const newJobCardNumber = e.target.value.toUpperCase();
+                      setFormData({ ...formData, jobCardNumber: newJobCardNumber });
+                      setIsManualJobCard(false);
+                      setFoundJobCard(null);
+                      setServiceJobCardInfo(null);
+                      setPendingPayments([]);
+                    }}
+                    className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+                    placeholder="JC-BWKA0105-02-2526-000000"
+                    required={formData.paymentType === "full payment"}
+                  />
+
+
+                </div>
+              </div>
+            )}
 
             <SearchableDropdown
               label="Type of Service"
@@ -2733,7 +2736,7 @@ useEffect(() => {
 
             {/* Row 6: Reference Number */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
-            
+
             {/* Part Selection for Part Payment */}
             {formData.paymentType === "part payment" && (
               <div className="relative part-dropdown">
@@ -2809,10 +2812,10 @@ useEffect(() => {
             {formData.paymentType === "part payment" && (
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label>
-                <select 
-                  value={formData.paymentStatus} 
-                  onChange={handlePaymentStatusChange} 
-                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" 
+                <select
+                  value={formData.paymentStatus}
+                  onChange={handlePaymentStatusChange}
+                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                   required
                 >
                   <option value="pending">Pending</option>
@@ -2837,82 +2840,82 @@ useEffect(() => {
               <textarea value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" rows={2}></textarea>
             </div>
 
-           {/* Previous Payments Info - Full Width (for BOTH part and full payment) */}
-{(pendingPayments.length > 0 || isClosedJobCard) && (
-  <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
-    <label className="block text-sm font-medium text-blue-900 mb-2">
-      Payment Session Summary {formData.vehicleNumber ? `(Vehicle: ${formData.vehicleNumber})` : ''}
-    </label>
-    {!isClosedJobCard ? (
-      <div className="space-y-2 max-h-48 overflow-y-auto">
-        {/* Only show saved/submitted payments - NO "New Entry" preview */}
-        {pendingPayments.length > 0 ? (
-          pendingPayments.map((payment) => (
-            <div key={payment.id} className="flex justify-between text-sm border-b border-blue-100 pb-2">
-              <div className="flex gap-4">
-                <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
-                <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
-                {payment.paymentType === 'part payment' && (
-                  <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Payment for Parts</span>
+            {/* Previous Payments Info - Full Width (for BOTH part and full payment) */}
+            {(pendingPayments.length > 0 || (isClosedJobCard && serviceJobCardInfo)) && (
+              <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <label className="block text-sm font-medium text-blue-900 mb-2">
+                  Payment Session Summary {formData.vehicleNumber ? `(Vehicle: ${formData.vehicleNumber})` : ''}
+                </label>
+                {!isClosedJobCard ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {/* Only show saved/submitted payments - NO "New Entry" preview */}
+                    {pendingPayments.length > 0 ? (
+                      pendingPayments.map((payment) => (
+                        <div key={payment.id} className="flex justify-between text-sm border-b border-blue-100 pb-2">
+                          <div className="flex gap-4">
+                            <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
+                            <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
+                            {payment.paymentType === 'part payment' && (
+                              <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Payment for Parts</span>
+                            )}
+                            {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
+                              <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-4">
+                            <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
+                            <span className={`text-xs px-2 rounded-full ${
+                              payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {payment.paymentStatus}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-blue-600 text-center py-2">No previous payments recorded</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-brand-text-secondary">This job card is closed. Previous payments are hidden.</p>
                 )}
-                {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
-                  <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
-                )}
+
+                {/* Calculate total received and balance */}
+                {!isClosedJobCard && (() => { // <-- Added !isClosedJobCard condition here
+                  const totalReceived = pendingPayments.reduce((sum, p) => sum + p.recAmt, 0);
+                  const invoiceAmount = serviceJobCardInfo?.totalRevenue || 0;
+                  const balanceAmount = invoiceAmount - totalReceived;
+
+                  return (
+                    <>
+                      <div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold">
+                        <span className="text-blue-900">Total Amount Received:</span>
+                        <span className="text-blue-900">₹{totalReceived}</span>
+                      </div>
+
+                      {/* Show Invoice Amount and Balance if job card exists and has invoice amount */}
+                      {serviceJobCardInfo && invoiceAmount > 0 && (
+                        <>
+                          <div className="flex justify-between text-sm mt-1">
+                            <span className="text-blue-700">Total Invoice Amount:</span>
+                            <span className="text-blue-700 font-semibold">₹{invoiceAmount}</span>
+                          </div>
+                          <div className={`flex justify-between font-bold mt-1 pt-1 border-t border-blue-200 ${balanceAmount > CLOSING_TOLERANCE_RUPEES ? 'text-orange-600' : 'text-green-600'}`}>
+                            <span>Balance to Pay:</span>
+                            <span>₹{balanceAmount > CLOSING_TOLERANCE_RUPEES ? balanceAmount.toFixed(2) : '0.00'}</span>
+                          </div>
+                          {balanceAmount <= CLOSING_TOLERANCE_RUPEES && (
+                            <div className="text-green-600 text-xs mt-1 text-center font-semibold">
+                              ✓ Fully Paid! Job card will be closed automatically.
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
-              <div className="flex gap-4">
-                <span className="font-medium text-blue-900">₹{payment.recAmt}</span>
-                <span className={`text-xs px-2 rounded-full ${
-                  payment.paymentStatus === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {payment.paymentStatus}
-                </span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-blue-600 text-center py-2">No previous payments recorded</p>
-        )}
-      </div>
-    ) : (
-      <p className="text-sm text-brand-text-secondary">This job card is closed. Previous payments are hidden.</p>
-    )}
-    
-    {/* Calculate total received and balance */}
-    {(() => {
-      const totalReceived = pendingPayments.reduce((sum, p) => sum + p.recAmt, 0);
-      const invoiceAmount = serviceJobCardInfo?.totalRevenue || 0;
-      const balanceAmount = invoiceAmount - totalReceived;
-      
-      return (
-        <>
-          <div className="border-t border-blue-300 pt-2 mt-2 flex justify-between font-bold">
-            <span className="text-blue-900">Total Amount Received:</span>
-            <span className="text-blue-900">₹{totalReceived}</span>
-          </div>
-          
-          {/* Show Invoice Amount and Balance if job card exists and has invoice amount */}
-          {serviceJobCardInfo && invoiceAmount > 0 && !isClosedJobCard && (
-            <>
-              <div className="flex justify-between text-sm mt-1">
-                <span className="text-blue-700">Total Invoice Amount:</span>
-                <span className="text-blue-700 font-semibold">₹{invoiceAmount}</span>
-              </div>
-              <div className={`flex justify-between font-bold mt-1 pt-1 border-t border-blue-200 ${balanceAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                <span>Balance to Pay:</span>
-                <span>₹{balanceAmount > 0 ? balanceAmount : 0}</span>
-              </div>
-              {balanceAmount <= 0 && (
-                <div className="text-green-600 text-xs mt-1 text-center font-semibold">
-                  ✓ Fully Paid! Job card will be closed automatically.
-                </div>
-              )}
-            </>
-          )}
-        </>
-      );
-    })()}
-  </div>
-)}
+            )}
 
             {/* Total Paid Amount Info - Full Width */}
             {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && !isClosedJobCard && (

@@ -271,26 +271,21 @@ export class ServiceJobCardService {
 
       const finalCreatedAt = jobCardDate || closedDate || new Date();
 
-      await this.prisma.serviceJobCard.upsert({
+      const existingJobCard = await this.prisma.serviceJobCard.findUnique({
         where: { jobCardNumber },
-        update: {
+      });
+
+      if (existingJobCard) {
+        const updateData: any = {
           registrationNumber: registrationNumber || undefined,
           customerName: customerName || undefined,
           mobileNumber: mobileNumber || undefined,
           vehicleDetails: vehicleDetails || undefined,
           serviceId: serviceId || undefined,
-          status: status || undefined,
-          closedDate: closedDate || undefined,
           labourRevenue: labourRevenue || undefined,
           partsRevenue: partsRevenue || undefined,
           lubesRevenue: lubesRevenue || undefined,
           accessoriesRevenue: accessoriesRevenue || undefined,
-          totalRevenue: totalRevenue || undefined,
-          amc: amc ? true : undefined,
-          oil: oil ? true : undefined,
-          battery: battery ? true : undefined,
-          tyre: tyre ? true : undefined,
-          painting: painting ? true : undefined,
           currentKM: currentKM || undefined,
           frameNumber: frameNumber || undefined,
           invoiceNumber: invoiceNumber || undefined,
@@ -298,9 +293,36 @@ export class ServiceJobCardService {
           amcStartDate: amcStartDate || undefined,
           amcEndDate: amcEndDate || undefined,
           estimatedDeliveryDate: estimatedDeliveryDate || undefined,
-          createdAt: finalCreatedAt,
-        },
-        create: {
+          updatedAt: new Date(),
+        };
+
+        // 🚩 Prevent reverting 'Closed' status to 'Pending' from old reports
+        const isAlreadyClosed = existingJobCard.status.toLowerCase() === 'closed';
+        if (!isAlreadyClosed) {
+          updateData.status = status || undefined;
+          updateData.closedDate = closedDate || undefined;
+        }
+
+        // Revenue: INVOICE type is authoritative. For others, only update if existing is empty.
+        if (type === 'INVOICE') {
+          updateData.totalRevenue = totalRevenue;
+        } else if (!existingJobCard.totalRevenue || existingJobCard.totalRevenue === 0) {
+          updateData.totalRevenue = totalRevenue || undefined;
+        }
+
+        if (amc) updateData.amc = true;
+        if (oil) updateData.oil = true;
+        if (battery) updateData.battery = true;
+        if (tyre) updateData.tyre = true;
+        if (painting) updateData.painting = true;
+
+        await this.prisma.serviceJobCard.update({
+          where: { jobCardNumber },
+          data: updateData,
+        });
+      } else {
+        await this.prisma.serviceJobCard.create({
+          data: {
           jobCardNumber,
           registrationNumber: registrationNumber || 'N/A',
           customerName: customerName || 'N/A',
@@ -330,7 +352,8 @@ export class ServiceJobCardService {
         },
       });
 
-      imported++;
+        imported++;
+      }
     }
 
     console.log('DEBUG UNIQUE PART CATEGORIES SEEN IN UPLOAD:', Array.from(seenPartCategories));
@@ -494,67 +517,66 @@ export class ServiceJobCardService {
     }
   }
 
- // ✅ Update entire record
-async update(id: number, data: {
-  jobCardNumber?: string;
-  registrationNumber?: string;
-  customerName?: string;
-  mobileNumber?: string;
-  vehicleDetails?: string;
-  serviceType?: string;
-  status?: string;
-}) {
-  try {
-    const numericId = Number(id);
-    
-    if (isNaN(numericId)) {
-      throw new BadRequestException('Invalid ID format');
-    }
-
-    const existingRecord = await this.prisma.serviceJobCard.findUnique({
-      where: { id: numericId },
-    });
-
-    if (!existingRecord) {
-      throw new NotFoundException(`Service job card with ID ${id} not found`);
-    }
-
-    let serviceId: number | null = null; // Changed from undefined to null
-
-    if (data.serviceType) {
-      const service = await this.prisma.serviceType.findFirst({
-        where: { name: data.serviceType },
-      });
-
-      if (!service) {
-        throw new BadRequestException(`ServiceType not found: ${data.serviceType}`);
+  // ✅ Update entire record
+  async update(id: number, data: {
+    jobCardNumber?: string;
+    registrationNumber?: string;
+    customerName?: string;
+    mobileNumber?: string;
+    vehicleDetails?: string;
+    serviceType?: string;
+    status?: string;
+  }) {
+    try {
+      const numericId = Number(id);
+      
+      if (isNaN(numericId)) {
+        throw new BadRequestException('Invalid ID format');
       }
 
-      serviceId = service.id;
-    }
+      const existingRecord = await this.prisma.serviceJobCard.findUnique({
+        where: { id: numericId },
+      });
 
-    const updateData: any = {};
-    if (data.jobCardNumber !== undefined) updateData.jobCardNumber = data.jobCardNumber;
-    if (data.registrationNumber !== undefined) updateData.registrationNumber = data.registrationNumber;
-    if (data.customerName !== undefined) updateData.customerName = data.customerName;
-    if (data.mobileNumber !== undefined) updateData.mobileNumber = data.mobileNumber;
-    if (data.vehicleDetails !== undefined) updateData.vehicleDetails = data.vehicleDetails;
-    if (serviceId !== null) updateData.serviceId = serviceId; // Check for null instead of undefined
-    if (data.status !== undefined) updateData.status = data.status;
+      if (!existingRecord) {
+        throw new NotFoundException(`Service job card with ID ${id} not found`);
+      }
 
-    return this.prisma.serviceJobCard.update({
-      where: { id: numericId },
-      data: updateData,
-      include: { serviceType: true },
-    });
-  } catch (error) {
-    if (error instanceof NotFoundException || error instanceof BadRequestException) {
-      throw error;
+      let serviceId: number | null = null;
+
+      if (data.serviceType) {
+        const service = await this.prisma.serviceType.findFirst({
+          where: { name: data.serviceType },
+        });
+
+        if (!service) {
+          throw new BadRequestException(`ServiceType not found: ${data.serviceType}`);
+        }
+
+        serviceId = service.id;
+      }
+
+      const updateData: any = {};
+      if (data.jobCardNumber !== undefined) updateData.jobCardNumber = data.jobCardNumber;
+      if (data.registrationNumber !== undefined) updateData.registrationNumber = data.registrationNumber;
+      if (data.customerName !== undefined) updateData.customerName = data.customerName;
+      if (data.mobileNumber !== undefined) updateData.mobileNumber = data.mobileNumber;
+      if (data.vehicleDetails !== undefined) updateData.vehicleDetails = data.vehicleDetails;
+      if (serviceId !== null) updateData.serviceId = serviceId;
+      if (data.status !== undefined) updateData.status = data.status;
+
+      return this.prisma.serviceJobCard.update({
+        where: { id: numericId },
+        data: updateData,
+        include: { serviceType: true },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`Error updating service job card: ${error.message}`);
     }
-    throw new BadRequestException(`Error updating service job card: ${error.message}`);
   }
-}
- // ✅ Update entire record
   
   // ✅ Delete
   async remove(id: number) {

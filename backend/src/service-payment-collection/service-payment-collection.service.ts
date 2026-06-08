@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PdfService } from '../pdf/pdf.service';
 
+const CLOSING_TOLERANCE_RUPEES = 2.0; // Allow a deficit of up to 2 rupees for job card closing
+
 @Injectable()
 export class ServicePaymentCollectionService {
   private readonly logger = new Logger(ServicePaymentCollectionService.name);
@@ -92,7 +94,7 @@ async create(data: {
   });
 
   const previousTotal = previousSumAgg._sum.recAmt || 0;
-  computedTotalAmt = previousTotal + data.recAmt;
+  computedTotalAmt = Math.round((previousTotal + data.recAmt) * 100) / 100; // Keep precise for cumulative total
 
   const currentStatus = data.paymentStatus || (data.paymentType === 'part payment' ? 'pending' : 'completed');
 
@@ -188,9 +190,11 @@ async create(data: {
         });
 
         const paidAmount = totalPaid._sum.recAmt || 0;
+        
+        // Close the job card if paid amount meets or exceeds invoice amount, or is within tolerance
+        const isEffectivelyPaid = (paidAmount >= invoiceAmount) || (invoiceAmount - paidAmount <= CLOSING_TOLERANCE_RUPEES);
 
-        // Close the job card only if paid amount meets or exceeds invoice amount
-        if (paidAmount >= invoiceAmount && jobCard.status !== 'Closed') {
+        if (isEffectivelyPaid && jobCard.status !== 'Closed') {
           await this.prisma.serviceJobCard.update({
             where: {
               jobCardNumber: data.jobCardNumber
@@ -200,7 +204,7 @@ async create(data: {
               closedDate: new Date()
             }
           });
-          this.logger.log(`Job card ${data.jobCardNumber} closed automatically. Paid: ${paidAmount}, Invoice: ${invoiceAmount}`);
+          this.logger.log(`Job card ${data.jobCardNumber} closed automatically. Paid: ${paidAmount}, Invoice: ${invoiceAmount} (Tolerance: ${CLOSING_TOLERANCE_RUPEES})`);
         } else if (paidAmount < invoiceAmount) {
           this.logger.log(`Job card ${data.jobCardNumber} NOT closed. Paid: ${paidAmount}, Need: ${invoiceAmount}, Status: ${jobCard.status}`);
         }
@@ -350,7 +354,9 @@ async completePartPayment(id: number, data: {
 
         const paidAmount = totalPaid._sum.recAmt || 0;
 
-        if (paidAmount >= invoiceAmount && jobCard.status !== 'Closed') {
+        // Close the job card if paid amount meets or exceeds invoice amount, or is within tolerance
+        const isEffectivelyPaid = (paidAmount >= invoiceAmount) || (invoiceAmount - paidAmount <= CLOSING_TOLERANCE_RUPEES);
+        if (isEffectivelyPaid && jobCard.status !== 'Closed') {
           await this.prisma.serviceJobCard.update({
             where: {
               jobCardNumber: updatedPayment.jobCardNumber
@@ -360,7 +366,7 @@ async completePartPayment(id: number, data: {
               closedDate: new Date()
             }
           });
-          this.logger.log(`Job card ${updatedPayment.jobCardNumber} closed automatically. Paid: ${paidAmount}, Invoice: ${invoiceAmount}`);
+          this.logger.log(`Job card ${updatedPayment.jobCardNumber} closed automatically. Paid: ${paidAmount}, Invoice: ${invoiceAmount} (Tolerance: ${CLOSING_TOLERANCE_RUPEES})`);
         }
       } else {
         this.logger.log(`Job card ${updatedPayment.jobCardNumber} has no invoice amount (₹0). Status remains ${jobCard.status}`);
@@ -458,7 +464,7 @@ async completePartPayment(id: number, data: {
           ? `jc:${p.jobCardNumber}` 
           : `cv:${p.customerId}:${p.vehicleNumber}`;
         
-        runningTotals[key] = (runningTotals[key] || 0) + (p.recAmt || 0);
+        runningTotals[key] = Math.round(((runningTotals[key] || 0) + (p.recAmt || 0)) * 100) / 100; // Keep precise for cumulative total
         cumulativeTotalsById[p.id] = runningTotals[key];
       }
     }
