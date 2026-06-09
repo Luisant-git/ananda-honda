@@ -309,14 +309,14 @@ const columns = [
           Service Reminder Report
         </h1>
         <div className="flex gap-2">
-          {/* {user?.role === 'DEVELOPER' && (
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 text-sm"
             >
               Clear All Data
             </button>
-          )} */}
+          )}
           {/* <button
             onClick={handleManualTrigger}
             className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm"

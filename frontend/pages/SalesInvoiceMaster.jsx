@@ -12,6 +12,8 @@ const SalesInvoiceMaster = ({ user }) => {
   const [search, setSearch] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -212,10 +214,13 @@ const SalesInvoiceMaster = ({ user }) => {
 
   const handleSearch = () => fetchRecords(search);
 
-  const handleDelete = async (record) => {
+  const handleDelete = async () => {
+    if (!recordToDelete) return;
     try {
-      await salesInvoiceApi.delete(record.id);
+      await salesInvoiceApi.delete(recordToDelete.id);
       toast.success('Record deleted');
+      setIsDeleteModalOpen(false);
+      setRecordToDelete(null);
       fetchRecords();
     } catch {
       toast.error('Error deleting record');
@@ -323,7 +328,7 @@ const SalesInvoiceMaster = ({ user }) => {
               Export Excel
             </button>
           )}
-          {records.length > 0 && (
+          {(records.length > 0 && user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
@@ -435,7 +440,10 @@ const SalesInvoiceMaster = ({ user }) => {
               View
             </button>
             <button
-              onClick={() => handleDelete(record)}
+              onClick={() => {
+                setRecordToDelete(record);
+                setIsDeleteModalOpen(true);
+              }}
               className="text-red-600 hover:underline text-sm"
             >
               Delete
@@ -811,6 +819,22 @@ const SalesInvoiceMaster = ({ user }) => {
         title="Confirm Import"
         message={`Are you sure you want to import ${previewResult?.validRows?.length || 0} valid records to the database?`}
         confirmText="Yes, Import"
+      />
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setRecordToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Confirm Delete"
+        message={
+          <span>
+            Are you sure you want to delete sales invoice <strong>{recordToDelete?.customerName}</strong>?
+          </span>
+        }
+        confirmText="Delete"
+        isDestructive={true}
       />
     </div>
   );

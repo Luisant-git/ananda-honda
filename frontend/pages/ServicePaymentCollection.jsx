@@ -2408,14 +2408,14 @@ useEffect(() => {
       <div className="flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection</h1>
         <div className="flex gap-2">
-          {/* {user?.role === 'DEVELOPER' && (
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
             >
               Clear All Data
             </button>
-          )} */}
+          )}
           {permissions?.payment_collection?.service?.view_deleted && (
             <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
               {showDeleted ? "Show Active" : "Show Trash"}

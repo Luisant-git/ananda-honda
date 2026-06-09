@@ -858,14 +858,14 @@ const fetchPermissions = async () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Customer Details</h1>
         <div className="flex gap-2">
-          {/* {user?.role === 'DEVELOPER' && (
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm"
             >
               Clear All Data
             </button>
-          )} */}
+          )}
           <button
             onClick={downloadXML}
             className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg text-sm"

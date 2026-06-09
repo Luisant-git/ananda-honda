@@ -1070,14 +1070,14 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
           Sales Payment Collection
         </h1>
         <div className="flex gap-2">
-          {/* {user?.role === 'DEVELOPER' && (
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
             >
               Clear All Data
             </button>
-          )} */}
+          )}
           {permissions?.payment_collection?.sales?.view_deleted && (
           <button
             onClick={() => {

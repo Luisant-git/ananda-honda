@@ -267,14 +267,14 @@ const PartPaymentReport = ({ user }) => {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Part Payment Collection Report</h1>
-        {/* {user?.role === 'DEVELOPER' && (
+        {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
           <button
             onClick={() => setIsClearModalOpen(true)}
             className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
           >
             Clear All Data
           </button>
-        )} */}
+        )}
       </div>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
