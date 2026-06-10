@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import * as XLSX from 'xlsx';
+import * as xlsx from 'xlsx';
+const XLSX = xlsx.default || xlsx;
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { serviceTypeOfPartApi } from '../api/serviceTypeOfPartApi.js';

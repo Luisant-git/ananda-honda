@@ -6,7 +6,8 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
 import { Coins, Wrench, Receipt, CheckCircle, XCircle, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import * as xlsx from 'xlsx';
+const XLSX = xlsx.default || xlsx;
 
 const ServiceImport = ({ user }) => {
   const [records, setRecords] = useState([]);
