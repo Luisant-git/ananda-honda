@@ -66,6 +66,7 @@ const QuickStart = ({ setCurrentView, user }) => {
         { view: 'customer_details', label: 'Customer Details', desc: 'Manage CRM contacts and leads.', icon: <Users className="w-8 h-8 text-green-600" />, perm: 'master.customer_details', bgColor: 'bg-green-50 hover:bg-green-100 border-green-200' },
         { view: 'sales_invoice_master', label: 'Sales Invoice Master', desc: 'Manage sales invoices.', icon: <FileText className="w-8 h-8 text-purple-600" />, perm: 'master.sales_invoice_master', bgColor: 'bg-purple-50 hover:bg-purple-100 border-purple-200' },
         { view: 'service_jobcard_master', label: 'Service Import', desc: 'Import Jobcards and Invoices.', icon: <Upload className="w-8 h-8 text-pink-600" />, perm: 'master.jobcard_master', bgColor: 'bg-pink-50 hover:bg-pink-100 border-pink-200' },
+        { view: 'payment_type', label: 'Payment Type Master', desc: 'Manage payment type master records.', icon: <PenTool className="w-8 h-8 text-fuchsia-600" />, perm: 'master.payment_type', bgColor: 'bg-fuchsia-50 hover:bg-fuchsia-100 border-fuchsia-200' },
       ]
     },
     {

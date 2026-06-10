@@ -146,7 +146,10 @@ model ServicePaymentCollection {
   totalAmt        Float?
   recAmt          Float
   paymentType     String   @default("full payment")
-  paymentStatus   String   @default("completed")
+  paymentTypeId   Int?
+  paymentTypeMaster PaymentType? @relation(fields: [paymentTypeId], references: [id])
+  // Default to 'pending' to avoid accidental completed state when frontend omits this field
+  paymentStatus   String   @default("pending")
   vehicleNumber   String?
   paymentModeId   Int
   typeOfPaymentId Int?
@@ -173,6 +176,15 @@ model ServicePaymentCollection {
   user            User? @relation(fields: [enteredBy], references: [id])
   deletedByUser   User? @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
   cancelledByUser User? @relation("CancelledServicePayments", fields: [cancelledBy], references: [id])
+}
+
+model PaymentType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  servicePaymentCollections ServicePaymentCollection[]
 }
 
 model User {

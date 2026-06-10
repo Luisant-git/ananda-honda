@@ -9,6 +9,7 @@ import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { servicePaymentModeApi } from "../api/servicePaymentModeApi.js";
 import { serviceTypeOfPaymentApi } from "../api/serviceTypeOfPaymentApi.js";
 import { serviceTypeOfCollectionApi } from "../api/serviceTypeOfCollectionApi.js";
+import { paymentTypeApi } from "../api/paymentTypeApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import hondaLogo from "../assets/honda.png";
@@ -22,6 +23,7 @@ const ServicePaymentCollection = ({ user }) => {
   const [paymentModes, setPaymentModes] = useState([]);
   console.log('service payment modes', paymentModes);
 
+  const [paymentTypes, setPaymentTypes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
   const [vehicleModels, setVehicleModels] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -66,9 +68,11 @@ const ServicePaymentCollection = ({ user }) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     totalAmt: "",
-    recAmt: "",
+    recAmt: "", // This will be the current payment amount
     paymentType: "full payment",
-    paymentStatus: "completed",
+    paymentTypeId: "",
+    // default to pending to avoid accidental 'completed' state
+    paymentStatus: "pending",
     vehicleNumber: "",
     paymentModeId: "",
     typeOfPaymentId: "",
@@ -80,6 +84,15 @@ const ServicePaymentCollection = ({ user }) => {
     serviceType: "",
     serviceTypeId: "",
   });
+
+  const normalizedPaymentType = (formData.paymentType || "").toString().toLowerCase().trim();
+  const requiresJobCard = normalizedPaymentType === 'full payment' || normalizedPaymentType === 'advance payment';
+
+  const isPartPaymentType = (name) => mapMasterNameToKey(name) === 'part payment';
+
+  const paymentSelectValue = paymentTypes.length === 0
+    ? formData.paymentType
+    : (formData.paymentTypeId ? String(formData.paymentTypeId) : '');
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",
@@ -129,18 +142,41 @@ const ServicePaymentCollection = ({ user }) => {
   };
 };
 
+  const mapMasterNameToKey = (name) => {
+    const n = (name || '').toString().toLowerCase().trim();
+    if (!n) return '';
+    if (n.includes('part')) return 'part payment';
+    if (n.includes('advance')) return 'advance payment';
+    if (n.includes('full')) return 'full payment';
+    return n;
+  };
+
   const getPaymentTypeLabel = (paymentType) => {
     if (!paymentType) return 'N/A';
-    if (paymentType === 'part payment') return 'Payment for Parts';
-    if (paymentType === 'advance payment') return 'Advance payment';
+    const p = paymentType.toString().toLowerCase().trim();
+    if (p === 'part payment') return 'Payment for Parts';
+    if (p === 'advance payment') return 'Advance payment';
     return paymentType
+      .toString()
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
 
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState(null);
+  const paymentTypeBadgeClass = (paymentType) => {
+    const p = (paymentType || '').toString().toLowerCase().trim();
+    switch (p) {
+      case 'part payment':
+        return 'text-orange-700 bg-orange-100 px-2 rounded-full text-xs font-semibold';
+      case 'advance payment':
+        return 'text-indigo-700 bg-indigo-100 px-2 rounded-full text-xs font-semibold';
+      case 'full payment':
+        return 'text-green-700 bg-green-100 px-2 rounded-full text-xs font-semibold';
+      default:
+        return 'text-gray-800 bg-gray-100 px-2 rounded-full text-xs font-semibold';
+    }
+  };
+
 
 const [isManualJobCard, setIsManualJobCard] = useState(false);
 const [manualJobCardData, setManualJobCardData] = useState({
@@ -155,6 +191,9 @@ const [manualJobCardData, setManualJobCardData] = useState({
 // Add state for checking job card status
 const [isCheckingJobCard, setIsCheckingJobCard] = useState(false);
 const [foundJobCard, setFoundJobCard] = useState(null);
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
 // Function to fetch job card by number, optionally ensuring it belongs to the expected mobile number
 const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) => {
@@ -528,7 +567,7 @@ setFormData(prev => ({
   serviceTypeOfCollectionId: "",
   vehicleModelId: "",
   recAmt: "",
-}));
+})); // Reset form data when a new customer is selected
 
 const fetchData = async () => {
   // Store the current selection ID at the start
@@ -729,7 +768,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
   }
 };
 
-await fetchData();
+  await fetchData(); // Call fetchData to load details for the selected customer
    
   setShowDropdown(false);
 };
@@ -756,8 +795,8 @@ useEffect(() => {
       return;
     }
     
-    // Only fetch for full payment or advance payment
-    if (formData.paymentType === "full payment" || formData.paymentType === "advance payment") {
+    // Only fetch for payment types that require a job card
+    if (requiresJobCard) {
       // Skip if in edit mode
       if (isEditMode) return;
       
@@ -955,6 +994,7 @@ useEffect(() => {
   useEffect(() => {
     fetchCustomers();
     fetchPaymentModes();
+    fetchPaymentTypes();
     fetchTypeOfPayments();
     fetchServiceTypeOfCollections();
     fetchVehicleModels();
@@ -1511,6 +1551,26 @@ const handleCreateJobCard = async () => {
     }
   };
 
+  const fetchPaymentTypes = async () => {
+    try {
+      const data = await paymentTypeApi.getAll();
+      // Deduplicate by normalized name (case-insensitive) and keep only active
+      const seen = new Set();
+      const deduped = [];
+      (data || []).forEach((pt) => {
+        const key = (pt.name || '').toString().toLowerCase().trim();
+        if (!seen.has(key) && pt.isActive) {
+          seen.add(key);
+          deduped.push(pt);
+        }
+      });
+      setPaymentTypes(deduped);
+    } catch (error) {
+      console.error("Error fetching payment types:", error);
+      setPaymentTypes([]);
+    }
+  };
+
   const fetchServiceTypeOfCollections = async () => {
     try {
       const data = await serviceTypeOfCollectionApi.getAll();
@@ -1555,8 +1615,8 @@ const handleCreateJobCard = async () => {
         ? payment.totalAmt
         : payment.recAmt || "N/A",
       recAmt: payment.recAmt,
-      paymentType: payment.paymentType,
-      paymentTypeLabel: getPaymentTypeLabel(payment.paymentType),
+      paymentType: payment.paymentTypeMaster?.name || payment.paymentType,
+      paymentTypeLabel: getPaymentTypeLabel(payment.paymentTypeMaster?.name || payment.paymentType),
       paymentStatus: payment.paymentStatus,
       vehicleNumber: payment.vehicleNumber || "N/A",
       paymentMode: payment.paymentMode.paymentMode,
@@ -1605,8 +1665,8 @@ const handleCreateJobCard = async () => {
         address: payment.customer.address,
         totalAmt: payment.totalAmt || "N/A",
         recAmt: payment.recAmt,
-        paymentType: payment.paymentType,
-        paymentTypeLabel: getPaymentTypeLabel(payment.paymentType),
+        paymentType: payment.paymentTypeMaster?.name || payment.paymentType,
+        paymentTypeLabel: getPaymentTypeLabel(payment.paymentTypeMaster?.name || payment.paymentType),
         paymentStatus: payment.paymentStatus,
         vehicleNumber: payment.vehicleNumber || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
@@ -1666,16 +1726,20 @@ const handleCreateJobCard = async () => {
   const handlePaymentStatusChange = (e) => {
     const newStatus = e.target.value;
     let newPaymentType = formData.paymentType;
+    let newPaymentTypeId = formData.paymentTypeId;
     
-    if (formData.paymentType === "part payment" && newStatus === "completed") {
+    if (normalizedPaymentType === "part payment" && newStatus === "completed") {
       newPaymentType = "full payment";
+      const fullType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().trim() === 'full payment');
+      newPaymentTypeId = fullType ? String(fullType.id) : "";
       toast.success("Payment type will be changed to Full Payment", { duration: 3000 });
     }
     
     setFormData({ 
       ...formData, 
       paymentStatus: newStatus,
-      paymentType: newPaymentType
+      paymentType: newPaymentType,
+      paymentTypeId: newPaymentTypeId
     });
   };
 
@@ -1786,13 +1850,13 @@ const handleSubmit = async (e) => {
   }
 
   // Validate vehicle number for part payment
-  if (formData.paymentType === "part payment" && !formData.vehicleNumber) {
+  if (normalizedPaymentType === "part payment" && !formData.vehicleNumber) {
     toast.error("Vehicle number is mandatory for part payment");
     return;
   }
 
 // Validate job card number for full payment OR advance payment (if job card number is provided)
-if ((formData.paymentType === "full payment" || formData.paymentType === "advance payment") && !formData.jobCardNumber) {
+if (requiresJobCard && !formData.jobCardNumber) {
   toast.error(`Job card number is required for ${formData.paymentType}`);
   return;
 }
@@ -1812,7 +1876,7 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
 let finalJobCardNumber = formData.jobCardNumber;
 let createdJobCardId = null;
 
-if ((formData.paymentType === "full payment" || formData.paymentType === "advance payment") && formData.jobCardNumber) {
+if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "advance payment") && formData.jobCardNumber) {
   try {
     const allJobCards = await serviceJobCardApi.getAll();
     const existingJobCard = allJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
@@ -1822,8 +1886,8 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
       createdJobCardId = existingJobCard.id;
       
       // For advance payment, update the job card to show advance received
-      if (formData.paymentType === "advance payment") {
-       
+      if (normalizedPaymentType === "advance payment") {
+
         toast.success(`Advance payment recorded for job card ${finalJobCardNumber}`);
       }
     } else {
@@ -1835,11 +1899,11 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
         mobileNumber: loadedCustomer?.contactNo || newCustomerData.contactNo,
         vehicleDetails: vehicleModels.find(v => v.id.toString() === formData.vehicleModelId)?.model || '',
         serviceType: serviceTypes.find(s => s.id.toString() === formData.serviceTypeId)?.name || '',
-        status: formData.paymentType === "advance payment" ? 'Advance Received' : 'Pending'
+        status: normalizedPaymentType === "advance payment" ? 'Advance Received' : 'Pending'
       };
       
       // Add advance payment fields if applicable
-      if (formData.paymentType === "advance payment") {
+      if (normalizedPaymentType === "advance payment") {
         newJobCardData.advanceAmount = parseFloat(formData.recAmt);
         newJobCardData.advancePaymentDate = formData.date;
       }
@@ -1856,11 +1920,17 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
     return;
   }
 }
-    const submitData = {
+    // Resolve master by name first to avoid stale paymentTypeId mismatches, then by id.
+    const normalizedTypeName = (formData.paymentType || '').toString().toLowerCase().trim();
+    const matchedByName = paymentTypes.find(pt => pt.name?.toString().toLowerCase().trim() === normalizedTypeName);
+    const matchedById = paymentTypes.find(pt => pt.id === (formData.paymentTypeId ? parseInt(formData.paymentTypeId) : undefined));
+    const master = matchedByName || matchedById;
+    const submitData = { // Construct submitData based on the new logic
       date: formData.date,
       customerId: customerId,
       recAmt: parseFloat(formData.recAmt),
-      paymentType: formData.paymentType,
+      paymentType: master ? master.name : formData.paymentType,
+      paymentTypeId: master ? master.id : (formData.paymentTypeId ? parseInt(formData.paymentTypeId) : undefined),
       paymentStatus: formData.paymentStatus,
       vehicleNumber: formData.vehicleNumber || undefined,
       paymentModeId: parseInt(formData.paymentModeId),
@@ -1876,7 +1946,7 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
     };
 
     // FIRST: Create or update payment
-    if (isEditMode) {
+    if (isEditMode) { // If in edit mode, update existing payment
       await servicePaymentCollectionApi.update(editingPayment.id, submitData);
       toast.success("Service payment updated successfully!");
     } else {
@@ -1884,20 +1954,60 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
       toast.success("Service payment created successfully!");
     }
 
-  // SECOND: After payment is created, check and update job card status for BOTH full and advance payment
+  // SECOND: After payment is created, check and update job card status for BOTH full and advance payment (if applicable)
 if (finalJobCardNumber) {
   // For advance payment, we already updated the job card above, but we still want to refresh
-  if (formData.paymentType === "advance payment") {
+  if (normalizedPaymentType === "advance payment") {
     setTimeout(async () => {
       await refreshJobCardStatus(finalJobCardNumber);
     }, 1500);
   } else {
-    // For full payment, check if total payments meet invoice amount
+    // For full payment, check if total payments meet invoice amount and close job card if needed
     await checkAndUpdateJobCardStatus(finalJobCardNumber, customerId);
     setTimeout(async () => {
       await refreshJobCardStatus(finalJobCardNumber);
     }, 1500);
   }
+
+    // If a part payment was marked completed or a full payment was submitted,
+    // update previous payments in the client state so the table shows them as completed/full.
+    if ((normalizedPaymentType === "part payment" && formData.paymentStatus === "completed") || normalizedPaymentType === "full payment") {
+      try {
+        setPayments(prev => prev.map(p => {
+          const matchesJob = finalJobCardNumber && p.jobCardNumber === finalJobCardNumber;
+          const matchesVehicle = formData.vehicleNumber && p.vehicleNumber === formData.vehicleNumber;
+          if (matchesJob || matchesVehicle) {
+            return {
+              ...p,
+              paymentStatus: 'completed'
+            };
+          }
+          return p;
+        }));
+
+        setFilteredPayments(prev => prev.map(p => {
+          const matchesJob = finalJobCardNumber && p.jobCardNumber === finalJobCardNumber;
+          const matchesVehicle = formData.vehicleNumber && p.vehicleNumber === formData.vehicleNumber;
+          if (matchesJob || matchesVehicle) {
+            return {
+              ...p,
+              paymentStatus: 'completed'
+            };
+          }
+          return p;
+        }));
+
+        setPendingPayments([]);
+        setCustomerHistory(prev => (prev || []).map(p => {
+          const matchesJob = finalJobCardNumber && p.jobCardNumber === finalJobCardNumber;
+          const matchesVehicle = formData.vehicleNumber && p.vehicleNumber === formData.vehicleNumber;
+          if (matchesJob || matchesVehicle) return { ...p, paymentStatus: 'completed' };
+          return p;
+        }));
+      } catch (err) {
+        console.error('Error updating client-side payment statuses:', err);
+      }
+    }
 }
 
     // Reset all form states
@@ -1966,13 +2076,13 @@ if (finalJobCardNumber) {
   }
 };
   
-const fetchCustomerPayments = (customerId, paymentType, jobCardNumber, vehicleNumber) => {
+const fetchCustomerPayments = (customerId, paymentType, jobCardNumber, vehicleNumber) => { // Refactored to use paymentType string
   if (!customerId) {
     setPendingPayments([]);
     return;
   }
 
-  // Filter out cancelled payments for calculating totals
+  // Filter out cancelled payments for calculating totals for the current customer
   const customerPayments = payments.filter((p) => p.customerId === customerId && !p.cancelledAt);
 
   if (jobCardNumber && jobCardNumber !== 'N/A') {
@@ -1992,7 +2102,7 @@ const fetchCustomerPayments = (customerId, paymentType, jobCardNumber, vehicleNu
   }
 };
 
-useEffect(() => {
+useEffect(() => { // This useEffect now correctly uses formData.paymentType for fetchCustomerPayments
   const fetchHistory = async () => {
     if (isPaymentModalOpen && loadedCustomer) {
       try {
@@ -2005,7 +2115,7 @@ useEffect(() => {
   };
   fetchHistory();
 
-  if (isPaymentModalOpen && !isEditMode && loadedCustomer) {
+  if (isPaymentModalOpen && !isEditMode && loadedCustomer) { // Ensure fetchCustomerPayments uses the correct paymentType from formData
     fetchCustomerPayments(loadedCustomer.id, formData.paymentType, formData.jobCardNumber, formData.vehicleNumber);
   }
 }, [isPaymentModalOpen, formData.paymentType, loadedCustomer, payments, formData.jobCardNumber, formData.vehicleNumber]);
@@ -2035,13 +2145,16 @@ useEffect(() => {
     setEditingPayment(payment);
     const customer = customers.find((c) => c.id === payment.customerId);
     setLoadedCustomer(customer);
-    setSelectedCustomerId(customer.id.toString());
+    setSelectedCustomerId(customer.id.toString()); // Set selected customer ID
+    const canonicalType = mapMasterNameToKey(payment.paymentType);
+    const matchedMaster = paymentTypes.find(pt => pt.id === payment.paymentTypeId || pt.name === payment.paymentType);
     setFormData({
       date: new Date(payment.date).toISOString().split("T")[0],
       totalAmt: payment.totalAmt?.toString() || "",
       recAmt: payment.recAmt.toString(),
-      paymentType: payment.paymentType,
+      paymentType: canonicalType || payment.paymentType,
       paymentStatus: payment.paymentStatus,
+      paymentTypeId: matchedMaster ? matchedMaster.id : (payment.paymentTypeId || ""),
       vehicleNumber: payment.vehicleNumber || "",
       paymentModeId: payment.paymentModeId.toString(),
       typeOfPaymentId: payment.typeOfPaymentId?.toString() || "",
@@ -2638,23 +2751,51 @@ useEffect(() => {
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Type <span className="text-red-500">*</span></label>
               <select
-                value={formData.paymentType}
+                value={paymentSelectValue}
                 onChange={(e) => {
-                  const newPaymentType = e.target.value;
-                  setFormData({ ...formData, paymentType: newPaymentType, paymentStatus: newPaymentType === "full payment" ? "completed" : "pending" });
-                  if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, newPaymentType, formData.jobCardNumber);
+                  const selectedId = e.target.value;
+                  if (paymentTypes.length === 0) { // Fallback if master data not loaded yet
+                    // fallback: treat value as name
+                    const canonical = mapMasterNameToKey(selectedId);
+                    setFormData({
+                      ...formData,
+                      paymentType: canonical,
+                      paymentTypeId: "",
+                      paymentStatus: canonical === "full payment" ? "completed" : "pending"
+                    });
+                    if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, selectedId, formData.jobCardNumber);
+                    return;
+                  }
+                  // Use master data
+                  const matched = paymentTypes.find(pt => String(pt.id) === String(selectedId));
+                  const canonical = matched ? mapMasterNameToKey(matched.name) : mapMasterNameToKey(selectedId);
+                  setFormData({
+                    ...formData,
+                    paymentType: canonical,
+                    paymentTypeId: matched ? String(matched.id) : "",
+                    paymentStatus: canonical === "full payment" ? "completed" : "pending"
+                  });
+                  if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, matched ? matched.name : selectedId, formData.jobCardNumber);
                 }}
                 className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                 required
               >
-                <option value="full payment">Full Payment</option>
-                <option value="part payment">Payment for Parts</option>
-                <option value="advance payment">Advance payment</option>
+                {paymentTypes.length === 0 ? (
+                  <>
+                    <option value="full payment">Full Payment</option>
+                    <option value="part payment">Payment for Parts</option>
+                    <option value="advance payment">Advance payment</option>
+                  </>
+                ) : (
+                  paymentTypes.map((pt) => (
+                    <option key={pt.id} value={String(pt.id)}>{pt.name}</option>
+                  ))
+                )}
               </select>
             </div>
 
             {/* Row 2: Vehicle Info */}
-            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {formData.paymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={formData.paymentType === "part payment"} /></div>
+            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Vehicle Number {normalizedPaymentType === "part payment" && <span className="text-red-500">*</span>}</label><input type="text" value={formData.vehicleNumber} onChange={(e) => { const vehicleNum = e.target.value.toUpperCase(); setFormData({ ...formData, vehicleNumber: vehicleNum }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" placeholder="Enter vehicle number" required={normalizedPaymentType === "part payment"} /></div>
             <div>
               {(() => {
                 const selectedTypeOfCollection = serviceTypeOfCollections.find(type => type.id === parseInt(formData.serviceTypeOfCollectionId));
@@ -2667,10 +2808,10 @@ useEffect(() => {
             </div>
 
             {/* Row 3: Service Info - Job Card Number */}
-            {["full payment", "advance payment"].includes(formData.paymentType) && (
+            {normalizedPaymentType !== 'part payment' && (
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-                  Job Card Number {formData.paymentType === "full payment" && <span className="text-red-500">*</span>}
+                  Job Card Number {requiresJobCard && <span className="text-red-500">*</span>}
                 </label>
 
                 <div className="space-y-2">
@@ -2687,10 +2828,8 @@ useEffect(() => {
                     }}
                     className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                     placeholder="JC-BWKA0105-02-2526-000000"
-                    required={formData.paymentType === "full payment"}
+                    required={requiresJobCard}
                   />
-
-
                 </div>
               </div>
             )}
@@ -2738,7 +2877,7 @@ useEffect(() => {
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
 
             {/* Part Selection for Part Payment */}
-            {formData.paymentType === "part payment" && (
+            {normalizedPaymentType === "part payment" && (
               <div className="relative part-dropdown">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Select Part</label>
                 <input
@@ -2784,7 +2923,7 @@ useEffect(() => {
             )}
 
             {/* Selected Parts List */}
-            {formData.paymentType === "part payment" && selectedParts.length > 0 && (
+            {normalizedPaymentType === "part payment" && selectedParts.length > 0 && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-2">Added Parts</label>
                 <div className="bg-gray-50 border border-brand-border rounded-lg max-h-40 overflow-y-auto">
@@ -2809,7 +2948,7 @@ useEffect(() => {
             )}
 
             {/* Payment Status */}
-            {formData.paymentType === "part payment" && (
+            {normalizedPaymentType === "part payment" && (
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Payment Status <span className="text-red-500">*</span></label>
                 <select
@@ -2821,12 +2960,12 @@ useEffect(() => {
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
                 </select>
-                {formData.paymentStatus === "completed" && formData.paymentType === "part payment" && (
+                {formData.paymentStatus === "completed" && normalizedPaymentType === "part payment" && (
                   <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                     ⚡ Note: This will change Payment Type to "Full Payment"
                   </p>
                 )}
-                {formData.paymentStatus === "completed" && formData.paymentType === "full payment" && (
+                {formData.paymentStatus === "completed" && normalizedPaymentType === "full payment" && (
                   <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                     ✓ Payment will be processed as Full Payment
                   </p>
@@ -2855,9 +2994,7 @@ useEffect(() => {
                           <div className="flex gap-4">
                             <span className="text-blue-800 font-medium">{payment.receiptNo}</span>
                             <span className="text-blue-600">{new Date(payment.date).toLocaleDateString('en-GB')}</span>
-                            {payment.paymentType === 'part payment' && (
-                              <span className="text-orange-600 text-xs bg-orange-100 px-2 rounded-full">Payment for Parts</span>
-                            )}
+                            <span className={paymentTypeBadgeClass(payment.paymentTypeMaster?.name || payment.paymentType)}>{getPaymentTypeLabel(payment.paymentTypeMaster?.name || payment.paymentType)}</span>
                             {payment.vehicleNumber && payment.vehicleNumber !== 'N/A' && (
                               <span className="text-blue-600">Vehicle: {payment.vehicleNumber}</span>
                             )}
@@ -2918,7 +3055,7 @@ useEffect(() => {
             )}
 
             {/* Total Paid Amount Info - Full Width */}
-            {formData.paymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && !isClosedJobCard && (
+            {normalizedPaymentType === "part payment" && formData.paymentStatus === "completed" && pendingPayments.length > 0 && !isClosedJobCard && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Total Paid Amount <span className="text-red-500">*</span></label>
                 <input type="number" step="0.01" value={pendingPayments.reduce((sum, p) => sum + p.recAmt, 0) + (parseFloat(formData.recAmt) || 0)} className="w-full bg-gray-100 border border-brand-border text-brand-text-primary rounded-lg p-2 cursor-not-allowed" readOnly />
@@ -3201,13 +3338,17 @@ useEffect(() => {
       {/* Previous Payment Sessions (for completed part payments) */}
       {selectedPayment.paymentSessions && selectedPayment.paymentSessions.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Previous Payment Sessions</h3>
+          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">
+            {getPaymentTypeLabel(selectedPayment.paymentType)} Payment Session Summary {selectedPayment.vehicleNumber ? `(Vehicle: ${selectedPayment.vehicleNumber})` : ''}
+          </h3>
           <div className="bg-gray-50 border border-brand-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-3 py-2 text-left">Receipt No</th>
                   <th className="px-3 py-2 text-left">Date</th>
+                  <th className="px-3 py-2 text-left">Vehicle</th>
+                  <th className="px-3 py-2 text-left">Type</th>
                   <th className="px-3 py-2 text-right">Amount</th>
                 </tr>
               </thead>
@@ -3216,6 +3357,8 @@ useEffect(() => {
                   <tr key={idx} className="border-t border-brand-border">
                     <td className="px-3 py-2">{session.receiptNo}</td>
                     <td className="px-3 py-2">{new Date(session.date).toLocaleDateString('en-GB')}</td>
+                    <td className="px-3 py-2">{session.vehicleNumber || selectedPayment.vehicleNumber || 'N/A'}</td>
+                    <td className="px-3 py-2"><span className={paymentTypeBadgeClass(session.paymentTypeMaster?.name || session.paymentType || selectedPayment.paymentType)}>{getPaymentTypeLabel(session.paymentTypeMaster?.name || session.paymentType || selectedPayment.paymentType)}</span></td>
                     <td className="px-3 py-2 text-right">₹{session.amount}</td>
                   </tr>
                 ))}

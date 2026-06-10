@@ -11,6 +11,7 @@ import PaymentCollection from '../pages/PaymentCollection';
 import ServicePaymentCollection from '../pages/ServicePaymentCollection';
 import ServicePaymentMode from '../pages/ServicePaymentMode';
 import ServiceTypeOfPayment from '../pages/ServiceTypeOfPayment';
+import PaymentType from '../pages/PaymentType';
 import ChangePassword from '../pages/ChangePassword';
 import Reports from '../pages/Reports';
 import ServiceReports from '../pages/ServiceReports';
@@ -60,6 +61,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <ServicePaymentMode user={user} />;
       case 'service_type_of_payment':
         return <ServiceTypeOfPayment user={user} />;
+      case 'payment_type':
+        return <PaymentType user={user} />;
       case 'service_type_of_collection':               
         return <ServiceTypeOfCollection user={user} />;
       case 'service_type_of_part':

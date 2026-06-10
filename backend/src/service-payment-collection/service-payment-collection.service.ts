@@ -20,7 +20,7 @@ async create(data: {
   customerId: number; 
   totalAmt?: number; 
   recAmt: number; 
-  paymentType: string; 
+  paymentType?: string; 
   paymentStatus?: string; 
   vehicleNumber?: string; 
   paymentModeId: number; 
@@ -96,7 +96,35 @@ async create(data: {
   const previousTotal = previousSumAgg._sum.recAmt || 0;
   computedTotalAmt = Math.round((previousTotal + data.recAmt) * 100) / 100; // Keep precise for cumulative total
 
-  const currentStatus = data.paymentStatus || (data.paymentType === 'part payment' ? 'pending' : 'completed');
+  // Resolve payment type id and name (accept legacy string or id) early so status and session updates use it
+  const resolvePaymentType = async () => {
+    if (data.paymentType) {
+      const name = String(data.paymentType).trim();
+      if (name) {
+        let pt = await this.prisma.paymentType.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
+        if (!pt) pt = await this.prisma.paymentType.create({ data: { name, isActive: true } });
+        return { id: pt.id, name: pt.name };
+      }
+    }
+    if ((data as any).paymentTypeId) {
+      const pt = await this.prisma.paymentType.findUnique({ where: { id: (data as any).paymentTypeId } });
+      if (pt) return { id: pt.id, name: pt.name };
+    }
+    // default to 'full payment'
+    let pt = await this.prisma.paymentType.findFirst({ where: { name: { equals: 'full payment', mode: 'insensitive' } } });
+    if (!pt) pt = await this.prisma.paymentType.create({ data: { name: 'full payment', isActive: true } });
+    return { id: pt.id, name: pt.name };
+  };
+
+  const resolvedPaymentTypeEarly = await resolvePaymentType();
+  // Server authoritative: treat 'full payment' as completed unless explicitly overridden to something else
+  let currentStatus: string;
+  const normalizedResolvedName = resolvedPaymentTypeEarly.name?.toString().toLowerCase().trim();
+  if (normalizedResolvedName === 'full payment') {
+    currentStatus = 'completed';
+  } else {
+    currentStatus = data.paymentStatus || (normalizedResolvedName === 'part payment' ? 'pending' : 'completed');
+  }
 
   // Identify previous relevant pending payments for this vehicle session context
   const partPayments = await this.prisma.servicePaymentCollection.findMany({
@@ -124,6 +152,9 @@ async create(data: {
       }));
     }
 
+    // Do NOT change the original paymentType of previous receipts.
+    // Only mark previous relevant pending payments as completed and link job card if provided.
+
     if (Object.keys(updateData).length > 0) {
       await this.prisma.servicePaymentCollection.updateMany({
         where: { id: { in: partPayments.map(p => p.id) } },
@@ -132,13 +163,17 @@ async create(data: {
     }
   }
 
+  // Resolve paymentType again for final save (use early result)
+  const resolvedPaymentType = resolvedPaymentTypeEarly;
+
   const savedPayment = await this.prisma.servicePaymentCollection.create({
     data: {
       date: new Date(data.date),
       customerId: data.customerId,
       totalAmt: computedTotalAmt || null,
       recAmt: data.recAmt,
-      paymentType: data.paymentType,
+      paymentTypeId: resolvedPaymentType.id,
+      paymentType: resolvedPaymentType.name,
       paymentStatus: currentStatus,
       vehicleNumber: effectiveVehicleNumber || null,
       paymentModeId: data.paymentModeId,
@@ -161,9 +196,11 @@ async create(data: {
       serviceTypeOfCollection: true,
       vehicleModel: true,
       serviceTypeRelation: true,
-      user: true
+      user: true,
+      paymentTypeMaster: true
     }
   });
+
 
   // Check and update job card status - ONLY if there is an invoice amount
   if (data.jobCardNumber) {
@@ -178,11 +215,18 @@ async create(data: {
       
       // CRITICAL: Only proceed if there's an invoice amount
       if (invoiceAmount > 0) {
+        // Count all related payments for the same job card, same vehicle session, or this receipt.
         const totalPaid = await this.prisma.servicePaymentCollection.aggregate({
           where: {
-            jobCardNumber: data.jobCardNumber,
             deletedAt: null,
-            cancelledAt: null
+            cancelledAt: null,
+            OR: [
+              { jobCardNumber: data.jobCardNumber },
+              { customerId: data.customerId, vehicleNumber: effectiveVehicleNumber },
+              { receiptNo }
+            ],
+            // If current payment is a full payment, include pending receipts too.
+            ...(normalizedResolvedName === 'full payment' ? {} : { paymentStatus: 'completed' })
           },
           _sum: {
             recAmt: true
@@ -290,16 +334,23 @@ async completePartPayment(id: number, data: {
     throw new Error('Payment is already completed');
   }
 
-  if (partPayment.paymentType !== 'part payment') {
+    if ((partPayment as any).paymentTypeMaster?.name !== 'part payment') {
     throw new Error('This is not a part payment record');
   }
 
   // Update the part payment to completed and change type to full payment
+  // Ensure there is a 'full payment' PaymentType to link to
+  let fullPaymentType = await this.prisma.paymentType.findFirst({ where: { name: { equals: 'full payment', mode: 'insensitive' } } });
+  if (!fullPaymentType) {
+    fullPaymentType = await this.prisma.paymentType.create({ data: { name: 'full payment', isActive: true } });
+  }
+
   const updatedPayment = await this.prisma.servicePaymentCollection.update({
     where: { id },
     data: {
       paymentStatus: 'completed',
-      paymentType: 'full payment',
+        paymentTypeId: fullPaymentType.id,
+        paymentType: fullPaymentType.name,
       recAmt: data.recAmt || partPayment.recAmt,
       paymentModeId: data.paymentModeId || partPayment.paymentModeId,
       typeOfPaymentId: data.typeOfPaymentId || partPayment.typeOfPaymentId,
@@ -341,11 +392,17 @@ async completePartPayment(id: number, data: {
       
       // Only proceed if there's an invoice amount
       if (invoiceAmount > 0) {
+        // Count all related payments for the same job card, same vehicle session, or this receipt.
         const totalPaid = await this.prisma.servicePaymentCollection.aggregate({
           where: {
-            jobCardNumber: updatedPayment.jobCardNumber,
             deletedAt: null,
-            cancelledAt: null
+            cancelledAt: null,
+            OR: [
+              { jobCardNumber: updatedPayment.jobCardNumber },
+              { customerId: updatedPayment.customerId, vehicleNumber: updatedPayment.vehicleNumber },
+              { receiptNo: updatedPayment.receiptNo }
+            ],
+            ...((updatedPayment.paymentType?.toString().toLowerCase().trim() === 'full payment') ? {} : { paymentStatus: 'completed' })
           },
           _sum: {
             recAmt: true
@@ -381,7 +438,7 @@ async completePartPayment(id: number, data: {
     page: number = 1, 
     limit: number = 10, 
     customerId?: number,
-    paymentType?: string, // 'full payment' | 'part payment' | 'all'
+    paymentType?: string, // 'full payment' | 'part payment' | 'all' (legacy)
     paymentStatus?: string // 'completed' | 'pending' | 'all'
   ) {
     const skip = (page - 1) * limit;
@@ -393,7 +450,16 @@ async completePartPayment(id: number, data: {
     
     // Apply payment type filter
     if (paymentType && paymentType !== 'all') {
-      where.paymentType = paymentType;
+      // legacy: allow either master-linked records or string-only legacy records
+      const pt = await this.prisma.paymentType.findFirst({
+        where: { name: { equals: paymentType, mode: 'insensitive' } }
+      });
+      where.OR = [
+        { paymentType: { equals: paymentType, mode: 'insensitive' } }
+      ];
+      if (pt) {
+        where.OR.unshift({ paymentTypeId: pt.id });
+      }
     }
     
     // Apply payment status filter
@@ -413,6 +479,7 @@ async completePartPayment(id: number, data: {
           serviceTypeRelation: true,
           user: true,
           cancelledByUser: true
+          ,paymentTypeMaster: true
         },
         orderBy: { id: 'desc' },
         skip,
