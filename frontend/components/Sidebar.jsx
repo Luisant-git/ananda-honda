@@ -151,8 +151,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {permissions.master.type_of_collection && <li><NavLink view="type_of_collection" label="Type of Collection" isSubmenu /></li>}
                 {permissions.master.vehicle_model && <li><NavLink view="vehicle_model" label="Vehicle Model" isSubmenu /></li>}
                 {permissions.master.service_payment_mode && <li><NavLink view="service_payment_mode" label="S - Payment Mode" isSubmenu /></li>}
-                {permissions.master.service_type_of_payment && <li><NavLink view="service_type_of_payment" label="S - Type of Payment" isSubmenu /></li>}
-                {permissions?.master?.service_type_of_collection && (<li><NavLink view="service_type_of_collection" label="S - Type of Collection" isSubmenu /></li>)}
+                {permissions.master.service_type_of_payment && <li><NavLink view="service_type_of_payment" label="S - Payment Type" isSubmenu /></li>}
+                {permissions.master.payment_type && <li><NavLink view="payment_type" label="Payment Type Master" isSubmenu /></li>}
+                {permissions?.master?.service_type_of_collection && <li><NavLink view="service_type_of_collection" label="S - Type of Collection" isSubmenu /></li>}
                 {permissions.master.service_type && 
                   <li>
                     <NavLink

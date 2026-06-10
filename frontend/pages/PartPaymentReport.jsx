@@ -23,38 +23,46 @@ const PartPaymentReport = ({ user }) => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const response = await servicePaymentCollectionApi.getAll(1, 999999, null, 'part payment', 'pending');
+      const response = await servicePaymentCollectionApi.getAll(1, 999999, null, 'all', 'all');
       console.log('API Response:', response);
       
       const paymentsData = response.data || response;
       
-      const formattedData = (Array.isArray(paymentsData) ? paymentsData : []).map((payment, index) => ({
-        sNo: index + 1,
-        id: payment.id,
-        date: payment.date,
-        receiptNo: payment.receiptNo,
-        custId: payment.customer?.custId || 'N/A',
-        name: payment.customer?.name || 'N/A',
-        contactNo: payment.customer?.contactNo || 'N/A',
-        address: payment.customer?.address || 'N/A',
-        recAmt: payment.recAmt,
-        paymentType: payment.paymentType,
-        paymentStatus: payment.paymentStatus,
-        vehicleNumber: payment.vehicleNumber || 'N/A',
-        paymentMode: payment.paymentMode?.paymentMode || 'N/A',
-        typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
-        typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
-        vehicleModel: payment.vehicleModel?.model || 'N/A',
-        enteredBy: payment.user?.username || 'N/A',
-        refNo: payment.refNo || 'N/A',
-        remarks: payment.remarks || 'N/A',
-        jobCardNumber: payment.jobCardNumber || 'N/A',
-        serviceType: payment.serviceTypeRelation?.name || 'N/A',
-        selectedParts: payment.selectedParts || [],
-        paymentSessions: payment.paymentSessions || [],
-        totalAmt: payment.totalAmt || 'N/A',
-        customerId: payment.customerId,
-      }));
+      const formattedData = (Array.isArray(paymentsData) ? paymentsData : [])
+        .map((payment, index) => {
+          const resolvedPaymentType = payment.paymentTypeMaster?.name || payment.paymentType;
+          return {
+            sNo: index + 1,
+            id: payment.id,
+            date: payment.date,
+            receiptNo: payment.receiptNo,
+            custId: payment.customer?.custId || 'N/A',
+            name: payment.customer?.name || 'N/A',
+            contactNo: payment.customer?.contactNo || 'N/A',
+            address: payment.customer?.address || 'N/A',
+            recAmt: payment.recAmt,
+            paymentType: resolvedPaymentType,
+            paymentStatus: payment.paymentStatus,
+            vehicleNumber: payment.vehicleNumber || 'N/A',
+            paymentMode: payment.paymentMode?.paymentMode || 'N/A',
+            typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
+            typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
+            vehicleModel: payment.vehicleModel?.model || 'N/A',
+            enteredBy: payment.user?.username || 'N/A',
+            refNo: payment.refNo || 'N/A',
+            remarks: payment.remarks || 'N/A',
+            jobCardNumber: payment.jobCardNumber || 'N/A',
+            serviceType: payment.serviceTypeRelation?.name || 'N/A',
+            selectedParts: payment.selectedParts || [],
+            paymentSessions: payment.paymentSessions || [],
+            totalAmt: payment.totalAmt || 'N/A',
+            customerId: payment.customerId,
+          };
+        })
+        .filter((payment) => {
+          const type = payment.paymentType?.toString().toLowerCase().trim();
+          return type === 'part payment' || (payment.selectedParts?.length > 0);
+        });
       setReportData(formattedData);
       setFilteredData(formattedData);
     } catch (error) {
@@ -95,7 +103,11 @@ const PartPaymentReport = ({ user }) => {
     }
     
     if (paymentTypeFilter) {
-      filtered = filtered.filter(item => item.paymentType === paymentTypeFilter);
+      filtered = filtered.filter(item => {
+        const normalizedType = item.paymentType?.toString().toLowerCase().trim();
+        return normalizedType === paymentTypeFilter ||
+          (paymentTypeFilter === 'part payment' && item.selectedParts?.length > 0);
+      });
     }
     
     setFilteredData(filtered);
