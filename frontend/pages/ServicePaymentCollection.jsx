@@ -16,6 +16,7 @@ import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
+import PineLabsModal from "../components/PineLabsModal";
 
 const ServicePaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -82,6 +83,8 @@ const ServicePaymentCollection = ({ user }) => {
     serviceType: "",
     serviceTypeId: "",
   });
+  const [isPineLabsModalOpen, setIsPineLabsModalOpen] = useState(false);
+  const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",
@@ -1799,6 +1802,14 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
   return;
 }
 
+  const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
+  const isPineLabs = selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'));
+
+  if (isPineLabs && !pineLabsTxnId && !isEditMode) {
+    setIsPineLabsModalOpen(true);
+    return;
+  }
+
   setIsSubmitting(true);
   try {
     let customerId = loadedCustomer?.id;
@@ -1875,6 +1886,7 @@ if ((formData.paymentType === "full payment" || formData.paymentType === "advanc
       jobCardNumber: finalJobCardNumber,
       serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
       selectedParts: selectedParts,
+      pineLabsTxnId: pineLabsTxnId,
     };
 
     // FIRST: Create or update payment
@@ -1912,6 +1924,7 @@ if (finalJobCardNumber) {
     setSelectedParts([]);
     setIsManualJobCard(false);
     setFoundJobCard(null);
+    setPineLabsTxnId(null);
     setManualJobCardData({
       jobCardNumber: '',
       registrationNumber: '',
@@ -2657,7 +2670,7 @@ useEffect(() => {
       />
 
       <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); setSelectedParts([]); setPartSearchTerm(''); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form id="service-payment-form" className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Row 1: Basic Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
@@ -3287,6 +3300,26 @@ useEffect(() => {
         title="Confirm Clear All"
         message="Are you sure you want to delete ALL service payment collection records? This action cannot be undone and will permanently erase the data."
         confirmText="Yes, Clear All"
+      />
+
+      <PineLabsModal
+        isOpen={isPineLabsModalOpen}
+        onClose={() => setIsPineLabsModalOpen(false)}
+        amount={formData.recAmt}
+        customerName={loadedCustomer ? loadedCustomer.name : newCustomerData.name}
+        mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
+        referenceId={formData.jobCardNumber || formData.refNo || ''}
+        createdBy={user?.id}
+        onSuccess={(txId) => {
+          setPineLabsTxnId(txId);
+          setIsPineLabsModalOpen(false);
+          // Small delay to allow state update before auto-submitting
+          setTimeout(() => {
+            const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+            const form = document.getElementById('service-payment-form');
+            if (form) form.dispatchEvent(submitEvent);
+          }, 100);
+        }}
       />
     </div>
   );

@@ -189,6 +189,7 @@ model User {
   servicePaymentCollections ServicePaymentCollection[]
   deletedServicePayments ServicePaymentCollection[] @relation("DeletedServicePayments")
   cancelledServicePayments ServicePaymentCollection[] @relation("CancelledServicePayments")
+  paymentTransactions PaymentTransaction[]
 }
 
 model MenuPermission {
@@ -332,4 +333,33 @@ model ServiceReminderLog {
   @@index([status])
   @@index([scheduledDate])
   @@unique([salesInvoiceId, serviceType, reminderNumber])
+}
+
+model PineLabsConfig {
+  id            Int      @id @default(autoincrement())
+  merchantId    String
+  terminalId    String
+  apiKey        String
+  apiSecret     String
+  environment   String   @default("UAT") // UAT or Production
+  status        String   @default("Active") // Active or Inactive
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PaymentTransaction {
+  id             Int      @id @default(autoincrement())
+  transactionId  String   @unique
+  invoiceId      String?
+  customerName   String?
+  mobileNumber   String?
+  amount         Float
+  paymentMode    String?
+  status         String   @default("Pending") // Pending, Success, Failed, Cancelled
+  responseData   Json?
+  createdBy      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User?    @relation(fields: [createdBy], references: [id])
 }

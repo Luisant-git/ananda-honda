@@ -15,6 +15,7 @@ import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import { serviceJobCardApi } from "../api/serviceJobcard.js";
 import { locationApi } from "../api/locationApi.js";
+import PineLabsModal from "../components/PineLabsModal";
 
 const PaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -67,6 +68,8 @@ const PaymentCollection = ({ user }) => {
     status: "Walk in Customer",
   });
   const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
+  const [isPineLabsModalOpen, setIsPineLabsModalOpen] = useState(false);
+  const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -408,6 +411,14 @@ useEffect(() => {
       return;
     }
 
+    const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
+    const isPineLabs = selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'));
+
+    if (isPineLabs && !pineLabsTxnId && !isEditMode) {
+      setIsPineLabsModalOpen(true);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let customerId = loadedCustomer?.id;
@@ -437,6 +448,8 @@ useEffect(() => {
         enteredBy: user?.id,
         refNo: formData.refNo,
         remarks: formData.remarks,
+        pineLabsTxnId: pineLabsTxnId,
+
       };
 
       if (isEditMode) {
@@ -469,6 +482,7 @@ useEffect(() => {
         pincode: "",
         status: "Walk in Customer",
       });
+      setPineLabsTxnId(null);
       fetchPayments(1);
       setCurrentPage(1);
       if (showDeleted) fetchDeletedPayments();
@@ -1469,7 +1483,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         title={isEditMode ? "Edit Sales Payment" : "Sales Payment Entry"}
         maxWidth="max-w-4xl"
       >
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form id="sales-payment-form" className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -1669,6 +1683,26 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         title="Confirm Clear All"
         message="Are you sure you want to delete ALL sales payment collection records? This action cannot be undone and will permanently erase the data."
         confirmText="Yes, Clear All"
+      />
+
+      <PineLabsModal
+        isOpen={isPineLabsModalOpen}
+        onClose={() => setIsPineLabsModalOpen(false)}
+        amount={formData.recAmt}
+        customerName={loadedCustomer ? loadedCustomer.name : newCustomerData.name}
+        mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
+        referenceId={formData.refNo || salesInvoiceInfo?.invoiceNo || ''}
+        createdBy={user?.id}
+        onSuccess={(txId) => {
+          setPineLabsTxnId(txId);
+          setIsPineLabsModalOpen(false);
+          // Small delay to allow state update before auto-submitting
+          setTimeout(() => {
+            const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+            const form = document.getElementById('sales-payment-form');
+            if (form) form.dispatchEvent(submitEvent);
+          }, 100);
+        }}
       />
     </div>
   );

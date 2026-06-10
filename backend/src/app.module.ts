@@ -24,10 +24,12 @@ import { ServiceTypeOfPartModule } from './service-type-of-part/service-type-of-
 import { ServiceRemainderTemplateModule } from './service-remainder-template/service-remainder-template.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { LocationModule } from './location/location.module';
+import { PineLabsModule } from './pine-labs/pine-labs.module';
+import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module';
 
 
 @Module({
-  imports: [ScheduleModule.forRoot(),CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule, ServiceRemainderTemplateModule, LocationModule],
+  imports: [ScheduleModule.forRoot(),CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule, ServiceRemainderTemplateModule, LocationModule, PineLabsModule, PineLabsConfigModule],
   controllers: [AppController],
   providers: [AppService],
 })

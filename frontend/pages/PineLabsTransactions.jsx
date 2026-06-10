@@ -1,0 +1,88 @@
+import React, { useState, useEffect } from 'react';
+import config from '../config';
+import DataTable from '../components/DataTable';
+
+const PineLabsTransactions = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/pine-labs/transactions`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      
+      const data = await response.json() || [];
+      const formatted = data.map((t, idx) => ({
+        sNo: idx + 1,
+        id: t.id,
+        transactionId: t.transactionId,
+        invoiceId: t.invoiceId || 'N/A',
+        customerName: t.customerName || 'N/A',
+        mobileNumber: t.mobileNumber || 'N/A',
+        amount: `₹${t.amount}`,
+        paymentMode: t.paymentMode || 'POS',
+        status: t.status,
+        date: new Date(t.createdAt).toLocaleString(),
+        createdBy: t.user?.username || 'System'
+      }));
+      setTransactions(formatted);
+    } catch (error) {
+      console.error('Failed to fetch transactions', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const columns = [
+    { key: "sNo", label: "S.No" },
+    { key: "date", label: "Date & Time" },
+    { key: "transactionId", label: "Transaction ID" },
+    { key: "invoiceId", label: "Reference ID" },
+    { key: "customerName", label: "Customer Name" },
+    { key: "mobileNumber", label: "Mobile" },
+    { key: "amount", label: "Amount" },
+    { key: "paymentMode", label: "Payment Mode" },
+    { key: "status", label: "Status",
+      render: (item) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold
+          ${item.status === 'Success' ? 'bg-green-100 text-green-800' : 
+            item.status === 'Failed' ? 'bg-red-100 text-red-800' : 
+            item.status === 'Cancelled' ? 'bg-gray-100 text-gray-800' : 
+            'bg-yellow-100 text-yellow-800'}`}>
+          {item.status}
+        </span>
+      )
+    },
+    { key: "createdBy", label: "Initiated By" }
+  ];
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Pine Labs Transactions</h1>
+        <button 
+          onClick={fetchTransactions}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md p-4">
+        {loading ? (
+          <div className="flex justify-center p-8">Loading transactions...</div>
+        ) : (
+          <DataTable data={transactions} columns={columns} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PineLabsTransactions;
