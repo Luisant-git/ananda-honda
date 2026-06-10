@@ -121,13 +121,13 @@ const ServiceImport = ({ user }) => {
           let isValidFormat = true;
           if (type === 'ORDER') {
             if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['vehicle reg', 'registration', 'created date'])) isValidFormat = false;
-            if (hasKey(['invoice date', 'inv date']) || hasKey(['labour', 'labour revenue'])) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date', 'invoice number']) || hasKey(['labour', 'labour revenue'])) isValidFormat = false;
           } else if (type === 'REVENUE') {
             if (!hasKey(['job card', 'jobcard', 'job_card']) || (!hasKey(['labour']) && !hasKey(['parts']) && !hasKey(['lubes']))) isValidFormat = false;
-            if (hasKey(['invoice date', 'inv date'])) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date', 'invoice number'])) isValidFormat = false;
           } else if (type === 'INVOICE') {
-            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['invoice date', 'inv date'])) isValidFormat = false;
-            if (hasKey(['labour', 'labour revenue']) || hasKey(['created date', 'vehicle reg'])) isValidFormat = false;
+            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['invoice number', 'invoice'])) isValidFormat = false;
+            if (hasKey(['labour', 'labour revenue']) || hasKey(['created date'])) isValidFormat = false;
           } else if (type === 'WORKSHOP') {
             // No strict format rules for workshop sheet, accept any Excel file
             isValidFormat = true;
