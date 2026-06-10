@@ -5,8 +5,7 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { salesInvoiceApi } from '../api/salesInvoiceApi.js';
 import { FileSpreadsheet, CheckCircle, XCircle, AlertCircle, ChevronRight, Download } from 'lucide-react';
-import * as xlsx from 'xlsx';
-const XLSX = xlsx.default || xlsx;
+const XLSX = window.XLSX;
 
 const SalesInvoiceMaster = ({ user }) => {
   const [records, setRecords] = useState([]);
