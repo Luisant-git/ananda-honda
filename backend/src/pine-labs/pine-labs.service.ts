@@ -14,17 +14,8 @@ export class PineLabsService {
   ) {}
 
   async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number }) {
-    const dbConfig = await this.configService.getConfig();
-    const config = {
-      merchantId: process.env.PINELABS_MERCHANT_ID || dbConfig?.merchantId,
-      terminalId: process.env.PINELABS_TERMINAL_ID || dbConfig?.terminalId,
-      apiKey: process.env.PINELABS_API_KEY || dbConfig?.apiKey,
-      apiSecret: process.env.PINELABS_API_SECRET || dbConfig?.apiSecret,
-      environment: process.env.PINELABS_ENVIRONMENT || dbConfig?.environment || 'UAT',
-      status: dbConfig?.status || 'Active',
-    };
-
-    if (!config.merchantId || !config.terminalId || config.status !== 'Active') {
+    const config = await this.configService.getConfig();
+    if (!config || config.status !== 'Active') {
       throw new BadRequestException('Pine Labs integration is not configured or active');
     }
 
@@ -84,13 +75,8 @@ export class PineLabsService {
       throw new NotFoundException('Transaction not found');
     }
 
-    const dbConfig = await this.configService.getConfig();
-    const config = {
-      merchantId: process.env.PINELABS_MERCHANT_ID || dbConfig?.merchantId,
-      terminalId: process.env.PINELABS_TERMINAL_ID || dbConfig?.terminalId,
-    };
-
-    if (!config.merchantId) {
+    const config = await this.configService.getConfig();
+    if (!config) {
       throw new BadRequestException('Pine Labs config not found');
     }
 
