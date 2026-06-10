@@ -1167,8 +1167,8 @@ const ServiceImport = ({ user }) => {
                       </div>
                     )}
                     
-                      <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-4">
-                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm">Cancel</button>
+                      <div className="flex justify-end gap-3 p-4 border-t border-brand-border mt-auto bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm bg-white">Cancel</button>
                         <button 
                           onClick={() => setIsConfirmImportOpen(true)} 
                           disabled={previewResult.validRows.length === 0}
@@ -1215,7 +1215,7 @@ const ServiceImport = ({ user }) => {
                       </div>
                     )}
 
-                    <div className="mt-10 pt-6 border-t border-brand-border flex justify-center">
+                    <div className="mt-auto p-4 border-t border-brand-border flex justify-center bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
                       <button 
                         onClick={() => { setIsResultOpen(false); setImportResult(null); fetchRecords(); }}
                         className="px-10 py-3 rounded-lg bg-brand-accent text-white font-bold hover:bg-brand-accent-hover text-lg transition-colors"
