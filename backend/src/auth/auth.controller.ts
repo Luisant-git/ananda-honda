@@ -24,9 +24,6 @@ export class AuthController {
       console.log('User logged in:', user);
       return user;
     } catch (error) {
-      if (error.code === 'P2037' || error.message?.includes('connection')) {
-        throw new HttpException('Server is experiencing heavy traffic. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
-      }
       throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
     }
   }
@@ -50,9 +47,6 @@ export class AuthController {
       }
       return session.user;
     } catch (error) {
-      if (error.code === 'P2037' || error.message?.includes('connection')) {
-        throw new HttpException('Server is experiencing heavy traffic. Please try again later.', HttpStatus.SERVICE_UNAVAILABLE);
-      }
       throw error;
     }
   }
