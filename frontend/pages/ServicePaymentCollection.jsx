@@ -12,10 +12,12 @@ import { serviceTypeOfCollectionApi } from "../api/serviceTypeOfCollectionApi.js
 import { paymentTypeApi } from "../api/paymentTypeApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
+import ConfirmModal from '../components/ConfirmModal';
 import hondaLogo from "../assets/honda.png";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
+import PineLabsModal from "../components/PineLabsModal";
 
 const ServicePaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -43,6 +45,7 @@ const ServicePaymentCollection = ({ user }) => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -93,6 +96,8 @@ const ServicePaymentCollection = ({ user }) => {
   const paymentSelectValue = paymentTypes.length === 0
     ? formData.paymentType
     : (formData.paymentTypeId ? String(formData.paymentTypeId) : '');
+  const [isPineLabsModalOpen, setIsPineLabsModalOpen] = useState(false);
+  const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",
@@ -1861,6 +1866,14 @@ if (requiresJobCard && !formData.jobCardNumber) {
   return;
 }
 
+  const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
+  const isPineLabs = selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'));
+
+  if (isPineLabs && !pineLabsTxnId && !isEditMode) {
+    setIsPineLabsModalOpen(true);
+    return;
+  }
+
   setIsSubmitting(true);
   try {
     let customerId = loadedCustomer?.id;
@@ -1943,6 +1956,7 @@ if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "adva
       jobCardNumber: finalJobCardNumber,
       serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
       selectedParts: selectedParts,
+      pineLabsTxnId: pineLabsTxnId,
     };
 
     // FIRST: Create or update payment
@@ -2020,6 +2034,7 @@ if (finalJobCardNumber) {
     setSelectedParts([]);
     setIsManualJobCard(false);
     setFoundJobCard(null);
+    setPineLabsTxnId(null);
     setManualJobCardData({
       jobCardNumber: '',
       registrationNumber: '',
@@ -2211,6 +2226,19 @@ useEffect(() => {
     } catch (error) {
       toast.error("Error cancelling service payment");
       console.error("Error cancelling service payment:", error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await servicePaymentCollectionApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      setPayments([]);
+      setFilteredPayments([]);
+      fetchPayments(1);
+    } catch {
+      toast.error('Error clearing records');
     }
   };
 
@@ -2505,11 +2533,21 @@ useEffect(() => {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection</h1>
-        {permissions?.payment_collection?.service?.view_deleted && (
-          <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
-            {showDeleted ? "Show Active" : "Show Trash"}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+            >
+              Clear All Data
+            </button>
+          )}
+          {permissions?.payment_collection?.service?.view_deleted && (
+            <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
+              {showDeleted ? "Show Active" : "Show Trash"}
+            </button>
+          )}
+        </div>
       </div>
 
       {!showDeleted && (
@@ -2745,7 +2783,7 @@ useEffect(() => {
       />
 
       <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); setSelectedParts([]); setPartSearchTerm(''); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form id="service-payment-form" className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Row 1: Basic Info */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Date <span className="text-red-500">*</span></label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required disabled /></div>
@@ -3389,6 +3427,7 @@ useEffect(() => {
     </div>
   )}
 </Modal>
+
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Delete">
         <div className="space-y-4"><p className="text-brand-text-primary">Are you sure you want to delete service payment <strong>{paymentToDelete?.receiptNo}</strong>?</p><div className="flex justify-end gap-4"><button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">Cancel</button><button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold">Delete</button></div></div>
       </Modal>
@@ -3396,6 +3435,35 @@ useEffect(() => {
       <Modal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} title="Confirm Cancel Payment">
         <div className="space-y-4"><p className="text-brand-text-primary">Are you sure you want to cancel service payment <strong>{paymentToCancel?.receiptNo}</strong>? The amount will be set to ₹0.</p><div className="flex justify-end gap-4"><button onClick={() => setIsCancelModalOpen(false)} className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border">No</button><button onClick={handleCancel} className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold">Yes, Cancel Payment</button></div></div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL service payment collection records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
+
+      <PineLabsModal
+        isOpen={isPineLabsModalOpen}
+        onClose={() => setIsPineLabsModalOpen(false)}
+        amount={formData.recAmt}
+        customerName={loadedCustomer ? loadedCustomer.name : newCustomerData.name}
+        mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
+        referenceId={formData.jobCardNumber || formData.refNo || ''}
+        createdBy={user?.id}
+        onSuccess={(txId) => {
+          setPineLabsTxnId(txId);
+          setIsPineLabsModalOpen(false);
+          // Small delay to allow state update before auto-submitting
+          setTimeout(() => {
+            const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+            const form = document.getElementById('service-payment-form');
+            if (form) form.dispatchEvent(submitEvent);
+          }, 100);
+        }}
+      />
     </div>
   );
 };

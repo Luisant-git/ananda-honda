@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
 import { Coins, Wrench, Receipt, CheckCircle, XCircle, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -12,6 +13,8 @@ const ServiceImport = ({ user }) => {
   const [search, setSearch] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -19,6 +22,7 @@ const ServiceImport = ({ user }) => {
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [selectedTab, setSelectedTab] = useState('summary');
+  const [isConfirmImportOpen, setIsConfirmImportOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -94,14 +98,51 @@ const ServiceImport = ({ user }) => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    setIsUploading(type);
+
+    setTimeout(() => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
         const wb = XLSX.read(data, { type: 'array' });
         const firstSheetName = wb.SheetNames[0];
         const ws = wb.Sheets[firstSheetName];
-        const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const rawRowsUnfiltered = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        // Filter out rows where every column is entirely empty
+        const rawRows = rawRowsUnfiltered.filter(row => {
+          return Object.values(row).some(val => String(val).trim() !== '');
+        });
+
+        if (rawRows.length > 0) {
+          const firstRowKeys = Object.keys(rawRows[0]).map(k => k.toLowerCase());
+          const hasKey = (names) => names.some(n => firstRowKeys.some(k => k.includes(n.toLowerCase())));
+          
+          let isValidFormat = true;
+          if (type === 'ORDER') {
+            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['vehicle reg', 'registration', 'created date'])) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date']) || hasKey(['labour', 'labour revenue'])) isValidFormat = false;
+          } else if (type === 'REVENUE') {
+            if (!hasKey(['job card', 'jobcard', 'job_card']) || (!hasKey(['labour']) && !hasKey(['parts']) && !hasKey(['lubes']))) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date'])) isValidFormat = false;
+          } else if (type === 'INVOICE') {
+            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['invoice date', 'inv date'])) isValidFormat = false;
+            if (hasKey(['labour', 'labour revenue']) || hasKey(['created date', 'vehicle reg'])) isValidFormat = false;
+          } else if (type === 'WORKSHOP') {
+            // No strict format rules for workshop sheet, accept any Excel file
+            isValidFormat = true;
+          }
+
+          if (!isValidFormat) {
+            setPreviewResult({
+              type,
+              fileName: file.name,
+              formatError: true
+            });
+            setIsPreviewOpen(true);
+            return;
+          }
+        }
 
         const rowsWithIssues = [];
         const validRows = [];
@@ -136,10 +177,13 @@ const ServiceImport = ({ user }) => {
       } catch (err) {
         console.error('Error parsing file:', err);
         toast.error('Failed to parse file');
+      } finally {
+        setIsUploading(false);
       }
     };
 
     reader.readAsArrayBuffer(file);
+    }, 200);
   };
 
   const validateRow = (row, type) => {
@@ -168,8 +212,7 @@ const ServiceImport = ({ user }) => {
       const lubes = getVal(['lubes', 'lubes revenue']);
       if ((!labour || labour === '') && (!parts || parts === '') && (!lubes || lubes === '')) reasons.push('No revenue values found');
     } else if (type === 'WORKSHOP') {
-      const jobCard = getVal(['job card', 'jobcard', 'job_card']);
-      if (!jobCard || String(jobCard).trim() === '') reasons.push('Missing Job Card number');
+      // No strict row validation for workshop sheets, accept all rows
     } else if (type === 'INVOICE') {
       const jobCard = getVal(['job card', 'jobcard', 'job_card']);
       if (!jobCard || String(jobCard).trim() === '') reasons.push('Missing Job Card number');
@@ -283,10 +326,13 @@ const ServiceImport = ({ user }) => {
 
   const handleSearch = () => fetchRecords(search);
 
-  const handleDelete = async (record) => {
+  const handleDelete = async () => {
+    if (!recordToDelete) return;
     try {
-      await serviceJobCardApi.remove(record.id);
+      await serviceJobCardApi.remove(recordToDelete.id);
       toast.success('Record deleted');
+      setIsDeleteModalOpen(false);
+      setRecordToDelete(null);
       fetchRecords();
     } catch (error) {
       toast.error('Error deleting record');
@@ -467,7 +513,7 @@ const ServiceImport = ({ user }) => {
               Export Excel
             </button>
           )}
-          {records.length > 0 && (
+          {(records.length > 0 && user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
@@ -747,7 +793,10 @@ const ServiceImport = ({ user }) => {
               View
             </button>
             <button
-              onClick={() => handleDelete(record)}
+              onClick={() => {
+                setRecordToDelete(record);
+                setIsDeleteModalOpen(true);
+              }}
               className="text-red-600 hover:underline text-sm"
             >
               Delete
@@ -926,580 +975,312 @@ const ServiceImport = ({ user }) => {
         )}
       </Modal>
 
-      {/* ✨ NEW: PROFESSIONAL PREVIEW & VALIDATION MODAL */}
-      {isPreviewOpen && previewResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Data Validation Preview</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Review your data before importing to the system
-                </p>
-              </div>
-              <button
-                onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      {/* ✨ IMPORT WIZARD MODAL */}
+      <Modal
+        isOpen={isPreviewOpen || isResultOpen || (isUploading && !!previewResult)}
+        onClose={() => { 
+          if (isUploading) return;
+          setIsPreviewOpen(false); 
+          setIsResultOpen(false); 
+          setPreviewResult(null); 
+          if (isResultOpen) fetchRecords();
+        }}
+        title="Import Data Wizard"
+        maxWidth="max-w-4xl"
+        maxHeight="max-h-[95vh]"
+      >
+        {(() => {
+          const isWizardOpen = isPreviewOpen || isResultOpen || (isUploading && !!previewResult);
+          if (!isWizardOpen) return null;
+          
+          let wizardStep = 2; // Default to Preview
+          if (isResultOpen) wizardStep = 4;
+          else if (isUploading && !!previewResult) wizardStep = 3;
 
-            {/* Summary Cards */}
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">File Name</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1 truncate">{previewResult.fileName}</p>
-                    </div>
-                    <FileSpreadsheet className="w-8 h-8 text-gray-400" />
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">Total Rows</p>
-                      <p className="text-2xl font-bold text-gray-900">{previewResult.totalRows}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-gray-600 font-bold">📊</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200 bg-green-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-green-700 uppercase tracking-wide">Valid Records</p>
-                      <p className="text-2xl font-bold text-green-700">{previewResult.validRows.length}</p>
-                    </div>
-                    <CheckCircle className="w-10 h-10 text-green-600" />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">Ready to import</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-red-200 bg-red-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-red-700 uppercase tracking-wide">Invalid Records</p>
-                      <p className="text-2xl font-bold text-red-700">{previewResult.invalidRows.length}</p>
-                    </div>
-                    <XCircle className="w-10 h-10 text-red-600" />
-                  </div>
-                  <button
-                    onClick={() => downloadInvalidRows(previewResult.invalidRows, `invalid_${previewResult.fileName}`)}
-                    className="text-xs text-red-600 hover:text-red-800 font-medium mt-2 flex items-center gap-1"
-                  >
-                    <Download className="w-3 h-3" /> Download invalid rows
-                  </button>
-                </div>
-              </div>
-            </div>
+          const steps = [
+            { num: 1, label: 'Upload' },
+            { num: 2, label: 'Preview' },
+            { num: 3, label: 'Import' },
+            { num: 4, label: 'Complete' }
+          ];
 
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 px-6">
-              <button
-                onClick={() => setSelectedTab('summary')}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  selectedTab === 'summary'
-                    ? 'text-brand-accent border-b-2 border-brand-accent'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                📋 Summary
-              </button>
-              <button
-                onClick={() => setSelectedTab('valid')}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  selectedTab === 'valid'
-                    ? 'text-brand-accent border-b-2 border-brand-accent'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                ✅ Valid Records ({previewResult.validRows.length})
-              </button>
-              <button
-                onClick={() => setSelectedTab('invalid')}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  selectedTab === 'invalid'
-                    ? 'text-brand-accent border-b-2 border-brand-accent'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                ❌ Invalid Records ({previewResult.invalidRows.length})
-              </button>
-            </div>
-
-            {/* Tab Content */}
-            <div className="flex-1 overflow-auto p-6">
-              {selectedTab === 'summary' && (
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="text-sm font-semibold text-blue-900">Validation Summary</h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Your file contains <strong>{previewResult.totalRows}</strong> records. 
-                          <strong className="text-green-700"> {previewResult.validRows.length}</strong> records are valid and ready to import. 
-                          <strong className="text-red-700"> {previewResult.invalidRows.length}</strong> records have issues that need attention.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Common Issues Found</h3>
-                    <div className="space-y-2">
-                      {(() => {
-                        const issueCount = {};
-                        previewResult.invalidRows.forEach(row => {
-                          row.__reasons.forEach(reason => {
-                            issueCount[reason] = (issueCount[reason] || 0) + 1;
-                          });
-                        });
-                        return Object.entries(issueCount).slice(0, 5).map(([issue, count]) => (
-                          <div key={issue} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm text-gray-700">{issue}</span>
-                            <span className="text-sm font-semibold text-red-600">{count} occurrence{count !== 1 ? 's' : ''}</span>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      💡 <strong>Tip:</strong> Download the invalid rows report to see detailed issues, fix them in your Excel file, and re-upload.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {selectedTab === 'valid' && (
-                <div>
-                  <div className="mb-3 flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      Showing first 20 of {previewResult.validRows.length} valid records
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {previewResult.validRows.slice(0, 20).map((row, idx) => (
-                      <div key={idx} className="border border-green-200 rounded-lg p-3 bg-green-50">
-                        <div className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <div className="text-xs text-green-700 font-medium mb-2">Excel Row #{row.__rowNumber}</div>
-                            {renderDataPreview(row)}
-                          </div>
+          return (
+            <div className="flex flex-col h-full">
+              {/* Stepper Header */}
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-brand-border px-4">
+                {steps.map((step, idx) => {
+                  const isActive = wizardStep === step.num;
+                  const isPast = wizardStep > step.num || (step.num === 1); // Upload is always past
+                  return (
+                    <React.Fragment key={step.num}>
+                      <div className="flex flex-col items-center relative z-10">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mb-2 transition-colors
+                          ${isPast && !isActive ? 'bg-green-500 text-white' : 
+                            isActive ? 'bg-brand-accent text-white' : 
+                            'bg-gray-200 text-gray-500'}`}>
+                          {isPast && !isActive ? <CheckCircle className="w-5 h-5" /> : step.num}
                         </div>
+                        <span className={`text-xs font-bold uppercase tracking-wider ${isActive || isPast ? 'text-brand-text-primary' : 'text-gray-400'}`}>
+                          {step.label}
+                        </span>
                       </div>
-                    ))}
-                    {previewResult.validRows.length > 20 && (
-                      <div className="text-center text-sm text-gray-500 py-4">
-                        + {previewResult.validRows.length - 20} more valid records
+                      {idx < steps.length - 1 && (
+                        <div className={`flex-1 h-[2px] -mt-6 mx-2 transition-colors ${wizardStep > step.num ? 'bg-green-500' : 'bg-gray-200'}`} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              <div className="flex-1 overflow-auto">
+                {/* Step 2: Preview */}
+                {wizardStep === 2 && previewResult && (
+                  previewResult.formatError ? (
+                    <div className="space-y-6 py-8 text-center">
+                      <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                        <XCircle className="w-12 h-12 text-red-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-red-700">Invalid File Format</h3>
+                      <p className="text-brand-text-secondary max-w-md mx-auto text-lg">
+                        The file you uploaded does not match the required columns for the <strong className="text-brand-text-primary">{previewResult.type}</strong> section. 
+                      </p>
+                      <p className="text-sm text-brand-text-secondary">Please check your file headers or download the sample template.</p>
+                      <div className="flex justify-center pt-8">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-8 py-3 rounded-lg bg-white border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover transition-colors">
+                          Go Back & Try Again
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-brand-text-primary text-center">
+                      {previewResult.validRows.length} valid rows ready to import.
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="bg-brand-surface p-3 rounded-lg border border-brand-border text-center shadow-sm">
+                        <div className="text-xs text-brand-text-secondary font-semibold uppercase tracking-wider mb-1">Total Rows</div>
+                        <div className="text-xl font-bold text-brand-text-primary">{previewResult.totalRows}</div>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-200 text-center shadow-sm">
+                        <div className="text-xs text-green-700 font-semibold uppercase tracking-wider mb-1">Valid</div>
+                        <div className="text-xl font-bold text-green-700">{previewResult.validRows.length}</div>
+                      </div>
+                      <div className="bg-red-50 p-3 rounded-lg border border-red-200 text-center shadow-sm">
+                        <div className="text-xs text-red-700 font-semibold uppercase tracking-wider mb-1">Errors</div>
+                        <div className="text-xl font-bold text-red-700">{previewResult.invalidRows.length}</div>
+                      </div>
+                    </div>
+
+                    {previewResult.validRows.length > 0 && previewResult.type !== 'WORKSHOP' && (
+                      <div className="border border-brand-border rounded-lg overflow-hidden">
+                        <div className="bg-brand-surface px-4 py-3 border-b border-brand-border">
+                          <h4 className="text-sm font-bold text-brand-text-primary">Previewing valid records</h4>
+                        </div>
+                        <div className="max-h-[240px] overflow-y-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead className="bg-brand-surface sticky top-0 z-10 shadow-sm">
+                              <tr>
+                                {(() => {
+                                  let headers = ['Job Card No', 'Vehicle Reg No', 'Customer Name', 'Contact Info', 'Status'];
+                                  if (previewResult.type === 'REVENUE') {
+                                    headers = ['Customer Name', 'Labour Rev', 'Parts Rev', 'Lubes Rev'];
+                                  } else if (previewResult.type === 'INVOICE') {
+                                    headers = ['Job Card', 'Invoice Number', 'Customer First Name', 'Final Amount'];
+                                  } else if (previewResult.type === 'WORKSHOP') {
+                                    const firstRow = previewResult.validRows[0]?.__origRow || {};
+                                    headers = Object.keys(firstRow).slice(0, 5);
+                                  }
+                                  
+                                  return headers.map(title => (
+                                    <th key={title} className="p-3 text-xs font-bold text-brand-text-secondary uppercase tracking-wider border-b border-brand-border">
+                                      {title}
+                                    </th>
+                                  ));
+                                })()}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-brand-border bg-white">
+                              {previewResult.validRows.map((row, idx) => {
+                                const displayRow = row.__origRow || row;
+                                
+                                const getVal = (names) => {
+                                  for (const n of names) {
+                                    for (const key of Object.keys(displayRow)) {
+                                      if (key.toLowerCase().includes(n.toLowerCase())) return displayRow[key];
+                                    }
+                                  }
+                                  return '—';
+                                };
+
+                                let extractedData = [];
+                                if (previewResult.type === 'REVENUE') {
+                                  extractedData = [
+                                    getVal(['customer name', 'name', 'customer', 'first name', 'last name']),
+                                    getVal(['labour', 'labour revenue', 'labor']),
+                                    getVal(['parts', 'parts revenue']),
+                                    getVal(['lubes', 'lubes revenue'])
+                                  ];
+                                } else if (previewResult.type === 'INVOICE') {
+                                  extractedData = [
+                                    getVal(['job card', 'jobcard', 'job_card', 'jobcard#', 'job card #']),
+                                    getVal(['invoice', 'invoice number', 'inv no']),
+                                    getVal(['customer first name', 'customer name', 'name', 'customer', 'first name']),
+                                    getVal(['final amount', 'amount', 'total', 'invoice amount'])
+                                  ];
+                                } else if (previewResult.type === 'WORKSHOP') {
+                                  const keys = Object.keys(displayRow).slice(0, 5);
+                                  extractedData = keys.map(k => displayRow[k]);
+                                } else {
+                                  extractedData = [
+                                    getVal(['job card', 'jobcard', 'job_card', 'jobcard#', 'job card #']),
+                                    getVal(['vehicle reg', 'vehicle_reg', 'registration no', 'registration', 'reg no']),
+                                    getVal(['customer name', 'name', 'customer', 'first name', 'last name']),
+                                    getVal(['contact phone', 'phone', 'mobile', 'contact', 'contact info']),
+                                    getVal(['status', 'state'])
+                                  ];
+                                }
+
+                                return (
+                                  <tr key={idx} className="hover:bg-brand-surface/50 transition-colors">
+                                    {extractedData.map((val, colIdx) => (
+                                      <td key={colIdx} className="p-3 text-xs text-brand-text-primary font-medium truncate max-w-[150px]" title={String(val)}>
+                                        {formatValue(val)}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
 
-              {selectedTab === 'invalid' && (
-                <div>
-                  <div className="mb-3 flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      {previewResult.invalidRows.length} records need attention
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {previewResult.invalidRows.map((row, idx) => (
-                      <div key={idx} className="border border-red-200 rounded-lg p-3 bg-red-50">
-                        <div className="flex items-start gap-2">
-                          <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <div className="text-xs text-red-700 font-medium mb-2">Excel Row #{row.__rowNumber}</div>
-                            {renderDataPreview(row, true, row.__reasons)}
-                          </div>
-                        </div>
+                    {previewResult.invalidRows.length > 0 && (
+                      <div className="text-center mt-4">
+                        <button 
+                          onClick={() => downloadInvalidRows(previewResult.invalidRows, `invalid_rows_${previewResult.fileName || 'upload'}.xlsx`)}
+                          className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded hover:bg-red-100 flex items-center justify-center gap-2 mx-auto text-sm"
+                        >
+                          <Download className="w-4 h-4" /> Download {previewResult.invalidRows.length} invalid rows
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                    )}
+                    
+                      <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-4">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm">Cancel</button>
+                        <button 
+                          onClick={() => setIsConfirmImportOpen(true)} 
+                          disabled={previewResult.validRows.length === 0}
+                          className="px-6 py-2 rounded-lg bg-brand-accent text-white font-bold hover:bg-brand-accent-hover disabled:opacity-50 flex items-center gap-2 text-sm"
+                        >
+                          Import {previewResult.validRows.length} Valid Records
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
 
-            {/* Modal Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => downloadInvalidRows(previewResult.invalidRows, `invalid_${previewResult.fileName}`)}
-                className="px-4 py-2 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-700 hover:bg-yellow-100 transition-colors flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" /> Export Invalid Rows
-              </button>
-              <button
-                onClick={confirmImportValidRows}
-                disabled={isUploading || previewResult.validRows.length === 0}
-                className={`px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${
-                  previewResult.validRows.length === 0
-                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
-              >
-                {isUploading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                {/* Step 3: Importing */}
+                {wizardStep === 3 && (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <svg className="animate-spin h-16 w-16 text-brand-accent mb-6" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight className="w-4 h-4" />
-                    Import {previewResult.validRows.length} Valid Records
-                  </>
+                    <h3 className="text-2xl font-bold text-brand-text-primary">Importing data...</h3>
+                    <p className="text-brand-text-secondary mt-2 text-lg">Please wait while your records are being processed.</p>
+                  </div>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-          {/* ✨ NEW: PROFESSIONAL IMPORT COMPLETED MODAL */}
-      {isResultOpen && importResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${importResult.importedCount > 0 ? 'bg-green-100' : 'bg-yellow-100'}`}>
-                  {importResult.importedCount > 0 ? (
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <AlertCircle className="w-6 h-6 text-yellow-600" />
-                  )}
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Import Completed</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {importResult.importedCount > 0 
-                      ? `Successfully processed your ${importResult.importedRows[0]?.__origRow?.type || 'data'} file`
-                      : 'No records were imported'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setIsResultOpen(false); setImportResult(null); fetchRecords(); }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+                {/* Step 4: Complete */}
+                {wizardStep === 4 && importResult && (
+                  <div className="space-y-6 text-center py-8">
+                    <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                      <CheckCircle className="w-12 h-12 text-green-600" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-brand-text-primary">
+                      {importResult.importedCount} records imported successfully!
+                    </h3>
+                    
+                    {importResult.invalidRows && importResult.invalidRows.length > 0 && (
+                      <div className="mt-8 bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-lg mx-auto">
+                        <p className="text-red-700 font-bold mb-3 text-lg">{importResult.invalidRows.length} records had errors and were skipped.</p>
+                        <button 
+                          onClick={() => downloadInvalidRows(importResult.invalidRows, `failed_records.xlsx`)}
+                          className="px-6 py-3 bg-red-100 text-red-800 font-bold rounded-lg hover:bg-red-200 inline-flex items-center gap-2 transition-colors"
+                        >
+                          <Download className="w-5 h-5" /> Download Failed Records
+                        </button>
+                      </div>
+                    )}
 
-            {/* Summary Cards */}
-            <div className="p-6 bg-gray-50 border-b border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-green-200 bg-gradient-to-r from-green-50 to-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-green-700 uppercase tracking-wide">Successfully Imported</p>
-                      <p className="text-3xl font-bold text-green-700 mt-1">{importResult.importedCount}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-green-600">
-                      {importResult.importedCount === 1 ? 'record' : 'records'} added to database
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-red-200 bg-gradient-to-r from-red-50 to-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-red-700 uppercase tracking-wide">Failed / Invalid</p>
-                      <p className="text-3xl font-bold text-red-700 mt-1">{importResult.invalidRows.length}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                      <XCircle className="w-6 h-6 text-red-600" />
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    {importResult.invalidRows.length > 0 ? (
-                      <button
-                        onClick={() => downloadInvalidRows(importResult.invalidRows, `invalid_after_import_${new Date().toISOString().split('T')[0]}.xlsx`)}
-                        className="text-xs text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+                    <div className="mt-10 pt-6 border-t border-brand-border flex justify-center">
+                      <button 
+                        onClick={() => { setIsResultOpen(false); setImportResult(null); fetchRecords(); }}
+                        className="px-10 py-3 rounded-lg bg-brand-accent text-white font-bold hover:bg-brand-accent-hover text-lg transition-colors"
                       >
-                        <Download className="w-3 h-3" /> Download invalid records
+                        Complete
                       </button>
-                    ) : (
-                      <p className="text-xs text-green-600">All records imported successfully!</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-200 bg-gradient-to-r from-blue-50 to-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-blue-700 uppercase tracking-wide">Success Rate</p>
-                      <p className="text-3xl font-bold text-blue-700 mt-1">
-                        {Math.round((importResult.importedCount / (importResult.importedCount + importResult.invalidRows.length)) * 100)}%
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <FileSpreadsheet className="w-6 h-6 text-blue-600" />
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${(importResult.importedCount / (importResult.importedCount + importResult.invalidRows.length)) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
-
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 px-6">
-              <button
-                onClick={() => setSelectedTab('summary')}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  selectedTab === 'summary'
-                    ? 'text-brand-accent border-b-2 border-brand-accent'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                📊 Summary
-              </button>
-              <button
-                onClick={() => setSelectedTab('valid')}
-                className={`px-4 py-3 text-sm font-medium transition-colors ${
-                  selectedTab === 'valid'
-                    ? 'text-brand-accent border-b-2 border-brand-accent'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                ✅ Imported Records ({importResult.importedCount})
-              </button>
-              {importResult.invalidRows.length > 0 && (
-                <button
-                  onClick={() => setSelectedTab('invalid')}
-                  className={`px-4 py-3 text-sm font-medium transition-colors ${
-                    selectedTab === 'invalid'
-                      ? 'text-brand-accent border-b-2 border-brand-accent'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  ❌ Failed Records ({importResult.invalidRows.length})
-                </button>
-              )}
-            </div>
-
-            {/* Tab Content */}
-            <div className="flex-1 overflow-auto p-6">
-              {selectedTab === 'summary' && (
-                <div className="space-y-6">
-                  {importResult.invalidRows.length > 0 ? (
-                    <>
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h4 className="text-sm font-semibold text-yellow-900">Partial Import Completed</h4>
-                            <p className="text-sm text-yellow-700 mt-1">
-                              {importResult.importedCount} records were successfully imported. 
-                              {importResult.invalidRows.length} records failed due to validation issues.
-                            </p>
-                            <p className="text-sm text-yellow-700 mt-2">
-                              💡 <strong>Next Step:</strong> Download the failed records, fix the issues in your Excel file, and re-upload.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Common Issues Found</h3>
-                        <div className="space-y-2">
-                          {(() => {
-                            const issueCount = {};
-                            importResult.invalidRows.forEach(row => {
-                              row.__reasons?.forEach(reason => {
-                                issueCount[reason] = (issueCount[reason] || 0) + 1;
-                              });
-                            });
-                            return Object.entries(issueCount).slice(0, 5).map(([issue, count]) => (
-                              <div key={issue} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <span className="text-sm text-gray-700">{issue}</span>
-                                <span className="text-sm font-semibold text-red-600">{count} occurrence{count !== 1 ? 's' : ''}</span>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                      <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                      <h3 className="text-lg font-semibold text-green-900 mb-2">All Records Imported Successfully! 🎉</h3>
-                      <p className="text-sm text-green-700">
-                        All {importResult.importedCount} records have been successfully added to your database.
-                      </p>
-                    </div>
-                  )}
-
-                  {importResult.importedCount > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-2">What's Next?</h4>
-                      <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• View imported records in the table below</li>
-                        <li>• Use search to find specific job cards</li>
-                        <li>• Export data to Excel anytime</li>
-                        <li>• Upload more reports to update existing records</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {selectedTab === 'valid' && importResult.importedCount > 0 && (
-                <div>
-                  <div className="mb-3 flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      Showing first 20 of {importResult.importedCount} successfully imported records
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {importResult.importedRows.slice(0, 20).map((row, idx) => {
-                      const displayRow = row.__origRow || row;
-                      const keys = Object.keys(displayRow).slice(0, 4);
-                      return (
-                        <div key={idx} className="border border-green-200 rounded-lg p-3 bg-green-50">
-                          <div className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="text-xs text-green-700 font-medium mb-2">Record #{idx + 1}</div>
-                              <div className="grid grid-cols-2 gap-2">
-                                {keys.map((k) => (
-                                  <div key={k} className="text-xs">
-                                    <span className="text-gray-600">{k}:</span>{' '}
-                                    <span className="text-gray-800 font-medium">{String(displayRow[k]).slice(0, 40)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {importResult.importedRows.length > 20 && (
-                      <div className="text-center text-sm text-gray-500 py-4">
-                        + {importResult.importedRows.length - 20} more imported records
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {selectedTab === 'invalid' && importResult.invalidRows.length > 0 && (
-                <div>
-                  <div className="mb-3 flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      {importResult.invalidRows.length} records failed to import
-                    </p>
-                    <button
-                      onClick={() => downloadInvalidRows(importResult.invalidRows, `failed_records_${new Date().toISOString().split('T')[0]}.xlsx`)}
-                      className="px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700 hover:bg-red-100 text-sm flex items-center gap-2 transition-colors"
-                    >
-                      <Download className="w-4 h-4" /> Export All Failed
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {importResult.invalidRows.map((row, idx) => (
-                      <div key={idx} className="border border-red-200 rounded-lg p-3 bg-red-50">
-                        <div className="flex items-start gap-2">
-                          <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <div className="text-xs text-red-700 font-medium mb-2">Excel Row #{row.__rowNumber}</div>
-                            {row.__reasons && (
-                              <div className="mb-2 p-2 bg-red-100 rounded text-xs text-red-800">
-                                <strong>Issues:</strong> {row.__reasons.join(', ')}
-                              </div>
-                            )}
-                            <div className="grid grid-cols-2 gap-2">
-                              {Object.keys(row.__origRow || row).slice(0, 4).map((k) => (
-                                <div key={k} className="text-xs">
-                                  <span className="text-gray-600">{k}:</span>{' '}
-                                  <span className="text-gray-800">{String((row.__origRow || row)[k]).slice(0, 40)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => { 
-                  setIsResultOpen(false); 
-                  setImportResult(null); 
-                  fetchRecords(); 
-                }}
-                className="px-6 py-2 bg-brand-accent hover:bg-brand-accent-hover text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Done
-              </button>
-            </div>
-          </div>
+          );
+        })()}
+      </Modal>
+      {/* Clear All Confirmation Modal */}
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        title="Confirm Clear All"
+        maxWidth="max-w-md"
+      >
+        <p className="text-brand-text-secondary mb-6">
+          Are you sure you want to delete all <strong>{records.length}</strong> service job card records? This cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3 pt-4 border-t border-brand-border">
+          <button
+            onClick={() => setIsClearModalOpen(false)}
+            className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
+          >
+            Clear All
+          </button>
         </div>
-      )}
-      {/* Clear All Confirmation Modal (unchanged) */}
-      {isClearModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-bold text-brand-text-primary mb-3">Confirm Clear All</h3>
-            <p className="text-brand-text-secondary mb-4">
-              Are you sure you want to delete all <strong>{records.length}</strong> service job card records? This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setIsClearModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClearAll}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={isConfirmImportOpen}
+        onClose={() => setIsConfirmImportOpen(false)}
+        onConfirm={confirmImportValidRows}
+        title="Confirm Import"
+        message={`Are you sure you want to import ${previewResult?.validRows?.length || 0} valid records to the database?`}
+        confirmText="Yes, Import"
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setRecordToDelete(null);
+        }}
+        onConfirm={handleDelete}
+        title="Confirm Delete"
+        message={
+          <span>
+            Are you sure you want to delete service job card <strong>{recordToDelete?.jobCardNo}</strong>?
+          </span>
+        }
+        confirmText="Delete"
+        isDestructive={true}
+      />
     </div>
   );
 };

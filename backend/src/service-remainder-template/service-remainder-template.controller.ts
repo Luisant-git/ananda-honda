@@ -74,6 +74,11 @@ async getReminders(
 
 
 
+  @Delete('clear/all')
+  async clearAll() {
+    return this.serviceRemainderTemplateService.clearAll();
+  }
+
   @Delete(':id')
   async deleteReminder(@Param('id') id: string) {
     return this.serviceRemainderTemplateService.deleteReminderLog(+id);

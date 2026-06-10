@@ -181,6 +181,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
               <NavGroup menuKey="payment_collection" label="Payment Collection" icon={<PaymentIcon />}>
                 {permissions?.payment_collection?.sales && <li><NavLink view="payment_collection" label="Sales" isSubmenu /></li>}
                 {permissions?.payment_collection?.service && <li><NavLink view="service_payment_collection" label="Service" isSubmenu /></li>}
+                <li><NavLink view="pine_labs_transactions" label="Pine Labs Txns" isSubmenu /></li>
               </NavGroup>
             )}
 
@@ -248,6 +249,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {permissions.settings.change_password && <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>}
                 {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
+                <li><NavLink view="pine_labs_config" label="Pine Labs Config" isSubmenu /></li>
               </NavGroup>
             )}
           </ul>

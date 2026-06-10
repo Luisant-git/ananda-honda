@@ -60,6 +60,15 @@ export const customerApi = {
     }
     return response.json();
   },
+
+  clearAll: async () => {
+    const response = await fetch(`${API_URL}/clear/all`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Failed to clear all customer records');
+    return response.json();
+  },
   
   getDetails: async (id) => {
     const response = await fetch(`${API_URL}/${id}/details`, { credentials: 'include' });

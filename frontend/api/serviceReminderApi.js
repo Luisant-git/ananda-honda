@@ -64,5 +64,15 @@ getAll: async (filters = {}) => {
     const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE', credentials: 'include' });
     if (!response.ok) throw new Error('Failed to delete reminder');
     return response.json();
+  },
+
+  // Clear all reminders
+  clearAll: async () => {
+    const response = await fetch(`${API_URL}/clear/all`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Failed to clear all records');
+    return response.json();
   }
 };

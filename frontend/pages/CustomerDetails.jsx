@@ -9,6 +9,7 @@ import { salesExecutiveApi } from "../api/salesExecutiveApi.js";
 import SearchableDropdown from "../components/SearchableDropdown.jsx";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import { locationApi } from "../api/locationApi.js";
+import ConfirmModal from '../components/ConfirmModal';
 
 import { 
   User, Phone, MapPin, Sparkles, CheckCircle2, Save, X,
@@ -93,6 +94,7 @@ const CustomerDetails = ({ user }) => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -744,6 +746,17 @@ const fetchPermissions = async () => {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await customerApi.clearAll();
+      toast.success('All customer records cleared');
+      setIsClearModalOpen(false);
+      fetchCustomers();
+    } catch {
+      toast.error('Error clearing customer records');
+    }
+  };
+
   const handleAddNew = () => {
     setIsEditMode(false);
     setEditingCustomer(null);
@@ -844,12 +857,22 @@ const fetchPermissions = async () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Customer Details</h1>
-        <button
-          onClick={downloadXML}
-          className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg"
-        >
-          XML
-        </button>
+        <div className="flex gap-2">
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm"
+            >
+              Clear All Data
+            </button>
+          )}
+          <button
+            onClick={downloadXML}
+            className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg text-sm"
+          >
+            XML
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm ring-1 ring-black/5">
@@ -1569,6 +1592,15 @@ const fetchPermissions = async () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL customer records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };

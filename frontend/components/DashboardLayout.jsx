@@ -30,6 +30,8 @@ import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 import ServiceReminderReport from '../pages/ServiceReminderReport';
 import QuickStart from '../pages/QuickStart';
 import LocationMaster from '../pages/LocationMaster';
+import PineLabsConfig from '../pages/PineLabsConfig';
+import PineLabsTransactions from '../pages/PineLabsTransactions';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -78,13 +80,13 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'enquiry_management':
         return <EnquiryManagement user={user} setCurrentView={setCurrentView} />;
       case 'reports':
-        return <Reports />;
+        return <Reports user={user} />;
       case 'service_reports':
-        return <ServiceReports />;
+        return <ServiceReports user={user} />;
       case 'full_payment_report':
-        return <FullPaymentReport />;
+        return <FullPaymentReport user={user} />;
       case 'part_payment_report':
-       return <PartPaymentReport />;
+       return <PartPaymentReport user={user} />;
       case 'service_reminder_report':  
         return <ServiceReminderReport user={user} />;
       case 'change_password':
@@ -95,6 +97,10 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <MenuPermission />;
       case 'quick_start':
         return <QuickStart setCurrentView={setCurrentView} user={user} />;
+      case 'pine_labs_config':
+        return <PineLabsConfig />;
+      case 'pine_labs_transactions':
+        return <PineLabsTransactions />;
       case 'dashboard':
       default:
         return <Dashboard />;

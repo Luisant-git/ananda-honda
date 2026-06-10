@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
+import hondaLogo from '../assets/honda.png';
+import ConfirmModal from '../components/ConfirmModal';
 import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";
 import { paymentCollectionApi } from "../api/paymentCollectionApi.js";
@@ -13,6 +15,7 @@ import { salesInvoiceApi } from "../api/salesInvoiceApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import { serviceJobCardApi } from "../api/serviceJobcard.js";
 import { locationApi } from "../api/locationApi.js";
+import PineLabsModal from "../components/PineLabsModal";
 
 const PaymentCollection = ({ user }) => {
   const [permissions, setPermissions] = useState(null);
@@ -38,6 +41,7 @@ const PaymentCollection = ({ user }) => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEntries, setTotalEntries] = useState(0);
@@ -64,6 +68,8 @@ const PaymentCollection = ({ user }) => {
     status: "Walk in Customer",
   });
   const [salesInvoiceInfo, setSalesInvoiceInfo] = useState(null);
+  const [isPineLabsModalOpen, setIsPineLabsModalOpen] = useState(false);
+  const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -405,6 +411,14 @@ useEffect(() => {
       return;
     }
 
+    const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
+    const isPineLabs = selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'));
+
+    if (isPineLabs && !pineLabsTxnId && !isEditMode) {
+      setIsPineLabsModalOpen(true);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let customerId = loadedCustomer?.id;
@@ -434,6 +448,8 @@ useEffect(() => {
         enteredBy: user?.id,
         refNo: formData.refNo,
         remarks: formData.remarks,
+        pineLabsTxnId: pineLabsTxnId,
+
       };
 
       if (isEditMode) {
@@ -466,6 +482,7 @@ useEffect(() => {
         pincode: "",
         status: "Walk in Customer",
       });
+      setPineLabsTxnId(null);
       fetchPayments(1);
       setCurrentPage(1);
       if (showDeleted) fetchDeletedPayments();
@@ -539,6 +556,19 @@ useEffect(() => {
     } catch (error) {
       toast.error("Error cancelling sales payment");
       console.error("Error cancelling sales payment:", error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await paymentCollectionApi.clearAll();
+      toast.success('All records cleared');
+      setIsClearModalOpen(false);
+      setPayments([]);
+      setFilteredPayments([]);
+      fetchPayments(1);
+    } catch {
+      toast.error('Error clearing records');
     }
   };
 
@@ -1053,7 +1083,16 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
           Sales Payment Collection
         </h1>
-{permissions?.payment_collection?.sales?.view_deleted && (
+        <div className="flex gap-2">
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+            >
+              Clear All Data
+            </button>
+          )}
+          {permissions?.payment_collection?.sales?.view_deleted && (
           <button
             onClick={() => {
               setShowDeleted(!showDeleted);
@@ -1068,6 +1107,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
             {showDeleted ? "Show Active" : "Show Trash"}
           </button>
         )}
+        </div>
       </div>
 
 
@@ -1443,7 +1483,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         title={isEditMode ? "Edit Sales Payment" : "Sales Payment Entry"}
         maxWidth="max-w-4xl"
       >
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form id="sales-payment-form" className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -1635,6 +1675,35 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL sales payment collection records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
+
+      <PineLabsModal
+        isOpen={isPineLabsModalOpen}
+        onClose={() => setIsPineLabsModalOpen(false)}
+        amount={formData.recAmt}
+        customerName={loadedCustomer ? loadedCustomer.name : newCustomerData.name}
+        mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
+        referenceId={formData.refNo || salesInvoiceInfo?.invoiceNo || ''}
+        createdBy={user?.id}
+        onSuccess={(txId) => {
+          setPineLabsTxnId(txId);
+          setIsPineLabsModalOpen(false);
+          // Small delay to allow state update before auto-submitting
+          setTimeout(() => {
+            const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+            const form = document.getElementById('sales-payment-form');
+            if (form) form.dispatchEvent(submitEvent);
+          }, 100);
+        }}
+      />
     </div>
   );
 };

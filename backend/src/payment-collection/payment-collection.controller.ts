@@ -45,6 +45,11 @@ export class PaymentCollectionController {
     return this.paymentCollectionService.update(+id, updatePaymentCollectionDto);
   }
 
+  @Delete('clear/all')
+  clearAll() {
+    return this.paymentCollectionService.clearAll();
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @Body() body: { deletedBy?: number }) {
     return this.paymentCollectionService.remove(+id, body.deletedBy);
