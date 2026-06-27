@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { salesInvoiceApi } from '../api/salesInvoiceApi.js';
 import { FileSpreadsheet, CheckCircle, XCircle, AlertCircle, ChevronRight, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+const XLSX = window.XLSX;
 
 const SalesInvoiceMaster = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -600,11 +600,9 @@ const SalesInvoiceMaster = ({ user }) => {
         }} 
         title="Sales Invoice Import Wizard"
         maxWidth="max-w-4xl"
+        maxHeight="max-h-[95vh]"
       >
-        <div className="bg-white rounded-lg flex h-[600px] overflow-hidden">
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full">
               {/* Stepper Header */}
               <div className="flex items-center justify-between mb-8 pb-4 border-b border-brand-border px-4">
                 {steps.map((step, idx) => {
@@ -739,8 +737,8 @@ const SalesInvoiceMaster = ({ user }) => {
                         </div>
                       )}
                       
-                      <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-4">
-                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm">Cancel</button>
+                      <div className="flex justify-end gap-3 p-4 border-t border-brand-border mt-auto bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm bg-white">Cancel</button>
                         <button 
                           onClick={() => setIsConfirmImportOpen(true)} 
                           disabled={previewResult.validRows.length === 0}
@@ -792,7 +790,7 @@ const SalesInvoiceMaster = ({ user }) => {
                       )}
                     </div>
 
-                    <div className="flex justify-center gap-4 mt-auto pt-4 border-t border-brand-border">
+                    <div className="flex justify-center gap-4 mt-auto p-4 border-t border-brand-border bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
                       <button
                         onClick={() => {
                           setIsResultOpen(false);
@@ -808,8 +806,6 @@ const SalesInvoiceMaster = ({ user }) => {
                 )}
               </div>
             </div>
-          </div>
-        </div>
       </Modal>
 
       <ConfirmModal

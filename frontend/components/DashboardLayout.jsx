@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
@@ -118,10 +119,23 @@ const DashboardLayout = ({ user, onLogout }) => {
         setSidebarCollapsed={setSidebarCollapsed}
         user={user}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header user={user} onLogout={onLogout} toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-bg p-4 sm:p-6">
-          {renderView()}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-brand-bg p-4 sm:p-6 flex flex-col">
+          {currentView !== 'quick_start' && currentView !== 'dashboard' && (
+            <div className="mb-4 shrink-0">
+              <button 
+                onClick={() => setCurrentView('quick_start')}
+                className="flex items-center gap-2 text-brand-text-secondary hover:text-brand-accent transition-colors font-bold px-3 py-1.5 rounded-lg hover:bg-brand-hover inline-flex border border-transparent hover:border-brand-border"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+            </div>
+          )}
+          <div className="flex-1 flex flex-col">
+            {renderView()}
+          </div>
         </main>
         <Footer />
       </div>

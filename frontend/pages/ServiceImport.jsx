@@ -6,7 +6,7 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
 import { Coins, Wrench, Receipt, CheckCircle, XCircle, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
-import * as XLSX from 'xlsx';
+const XLSX = window.XLSX;
 
 const ServiceImport = ({ user }) => {
   const [records, setRecords] = useState([]);
@@ -121,13 +121,13 @@ const ServiceImport = ({ user }) => {
           let isValidFormat = true;
           if (type === 'ORDER') {
             if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['vehicle reg', 'registration', 'created date'])) isValidFormat = false;
-            if (hasKey(['invoice date', 'inv date']) || hasKey(['labour', 'labour revenue'])) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date', 'invoice number']) || hasKey(['labour revenue'])) isValidFormat = false;
           } else if (type === 'REVENUE') {
             if (!hasKey(['job card', 'jobcard', 'job_card']) || (!hasKey(['labour']) && !hasKey(['parts']) && !hasKey(['lubes']))) isValidFormat = false;
-            if (hasKey(['invoice date', 'inv date'])) isValidFormat = false;
+            if (hasKey(['invoice date', 'inv date', 'invoice number'])) isValidFormat = false;
           } else if (type === 'INVOICE') {
-            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['invoice date', 'inv date'])) isValidFormat = false;
-            if (hasKey(['labour', 'labour revenue']) || hasKey(['created date', 'vehicle reg'])) isValidFormat = false;
+            if (!hasKey(['job card', 'jobcard', 'job_card']) || !hasKey(['invoice number', 'invoice'])) isValidFormat = false;
+            if (hasKey(['created date'])) isValidFormat = false;
           } else if (type === 'WORKSHOP') {
             // No strict format rules for workshop sheet, accept any Excel file
             isValidFormat = true;
@@ -1167,8 +1167,8 @@ const ServiceImport = ({ user }) => {
                       </div>
                     )}
                     
-                      <div className="flex justify-end gap-3 pt-4 border-t border-brand-border mt-4">
-                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm">Cancel</button>
+                      <div className="flex justify-end gap-3 p-4 border-t border-brand-border mt-auto bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-6 py-2 rounded-lg border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover text-sm bg-white">Cancel</button>
                         <button 
                           onClick={() => setIsConfirmImportOpen(true)} 
                           disabled={previewResult.validRows.length === 0}
@@ -1215,7 +1215,7 @@ const ServiceImport = ({ user }) => {
                       </div>
                     )}
 
-                    <div className="mt-10 pt-6 border-t border-brand-border flex justify-center">
+                    <div className="mt-auto p-4 border-t border-brand-border flex justify-center bg-white sticky bottom-0 z-20 shadow-[0_-10px_15px_-3px_rgba(255,255,255,1)]">
                       <button 
                         onClick={() => { setIsResultOpen(false); setImportResult(null); fetchRecords(); }}
                         className="px-10 py-3 rounded-lg bg-brand-accent text-white font-bold hover:bg-brand-accent-hover text-lg transition-colors"
