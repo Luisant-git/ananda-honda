@@ -3,14 +3,18 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
+import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import * as XLSX from 'xlsx';
 
 @Injectable()
 export class ServiceJobCardService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ServiceJobCardService.name);
+
+  constructor(private prisma: PrismaService, private whatsappService: WhatsappService) {}
 
   // ✅ Create
   async create(dto: any) {
@@ -35,7 +39,7 @@ export class ServiceJobCardService {
       serviceId = service.id;
     }
 
-    return this.prisma.serviceJobCard.create({
+    const created = await this.prisma.serviceJobCard.create({
       data: {
         jobCardNumber,
         registrationNumber: dto.registrationNumber,
@@ -46,6 +50,32 @@ export class ServiceJobCardService {
         status: dto.status || 'Pending',
       },
     });
+
+    // Send welcome message to customer WhatsApp number for newly created job card
+    try {
+      const mobile = (dto.mobileNumber || created.mobileNumber || '').toString().trim();
+      if (mobile && mobile !== 'N/A') {
+        const name = dto.customerName || created.customerName || 'Customer';
+        const jobNum = jobCardNumber;
+
+        // Send a template welcome message via WhatsApp
+        try {
+          const res = await this.whatsappService.sendServiceWelcomeTemplate(
+            mobile,
+            name,
+            dto.serviceAdvisorPhone || process.env.SERVICE_ADVISOR_PHONE || '9108812221',
+          );
+          this.logger.log(`Welcome service template sent to ${mobile} for job card ${jobCardNumber}`);
+          this.logger.debug(JSON.stringify(res));
+        } catch (sendErr) {
+          this.logger.error(`Failed to send welcome template to ${mobile}`, sendErr?.response || sendErr?.message || sendErr);
+        }
+      }
+    } catch (err) {
+      this.logger.error('Failed to send welcome WhatsApp message', err?.response || err?.message || err);
+    }
+
+    return created;
   }
 
   // ✅ Helper to parse Excel dates
@@ -148,6 +178,7 @@ export class ServiceJobCardService {
       let amcStartDate: Date | null = null;
       let amcEndDate: Date | null = null;
       let estimatedDeliveryDate: Date | null = null;
+      let serviceAdvisorPhone = '';
 
       let jobCardDate: Date | null = null;
 
@@ -245,6 +276,7 @@ export class ServiceJobCardService {
         amcStartDate = this.parseExcelDate(getVal('amc start date'));
         amcEndDate = this.parseExcelDate(getVal('amc end date'));
         estimatedDeliveryDate = this.parseExcelDate(getVal('effective final delivery estimate date'));
+        serviceAdvisorPhone = String(getVal('service adviser phone') || getVal('service advisor phone') || getVal('service advicer phone') || getVal('advisor phone') || getVal('service advisor') || getVal('service_advisor_phone') || '').trim();
       }
 
       if (!jobCardNumber) continue;
@@ -321,7 +353,7 @@ export class ServiceJobCardService {
           data: updateData,
         });
       } else {
-        await this.prisma.serviceJobCard.create({
+        const createdRecord = await this.prisma.serviceJobCard.create({
           data: {
           jobCardNumber,
           registrationNumber: registrationNumber || 'N/A',
@@ -353,6 +385,21 @@ export class ServiceJobCardService {
       });
 
         imported++;
+
+        // If this upload is an ORDER sheet and we created a new job card with a valid mobile, send welcome template
+        try {
+          if (type === 'ORDER' && createdRecord.mobileNumber && createdRecord.mobileNumber !== 'N/A') {
+            const custName = createdRecord.customerName || 'Customer';
+            await this.whatsappService.sendServiceWelcomeTemplate(
+              String(createdRecord.mobileNumber),
+              String(custName),
+              serviceAdvisorPhone || process.env.SERVICE_ADVISOR_PHONE || '9108812221',
+            );
+            this.logger.log(`Sent service welcome template to ${createdRecord.mobileNumber} for job ${createdRecord.jobCardNumber}`);
+          }
+        } catch (waErr) {
+          this.logger.error(`Failed sending welcome template for uploaded job ${jobCardNumber}`, waErr?.response || waErr?.message || waErr);
+        }
       }
     }
 

@@ -25,16 +25,39 @@ import { ServiceRemainderTemplateModule } from './service-remainder-template/ser
 import { ScheduleModule } from '@nestjs/schedule';
 import { LocationModule } from './location/location.module';
 import { PaymentTypeModule } from './payment-type/payment-type.module';
-
-
-@Module({
-  imports: [ScheduleModule.forRoot(),CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule, ServiceRemainderTemplateModule, LocationModule, PaymentTypeModule],
 import { PineLabsModule } from './pine-labs/pine-labs.module';
 import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module';
 
 
 @Module({
-  imports: [ScheduleModule.forRoot(),CustomerModule, PaymentModeModule, TypeOfPaymentModule, TypeOfCollectionModule, PaymentCollectionModule, ServicePaymentCollectionModule, ServicePaymentModeModule, ServiceTypeOfPaymentModule, AuthModule, VehicleModelModule, UserModule, MenuPermissionModule, EnquiryModule, WhatsappModule, PdfModule, ServiceTypeOfCollectionModule, SalesInvoiceModule, ServiceJobCardModule, ServiceTypeModule, ServiceTypeOfPartModule, ServiceRemainderTemplateModule, LocationModule, PineLabsModule, PineLabsConfigModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    CustomerModule,
+    PaymentModeModule,
+    TypeOfPaymentModule,
+    TypeOfCollectionModule,
+    PaymentCollectionModule,
+    ServicePaymentCollectionModule,
+    ServicePaymentModeModule,
+    ServiceTypeOfPaymentModule,
+    AuthModule,
+    VehicleModelModule,
+    UserModule,
+    MenuPermissionModule,
+    EnquiryModule,
+    WhatsappModule,
+    PdfModule,
+    ServiceTypeOfCollectionModule,
+    SalesInvoiceModule,
+    ServiceJobCardModule,
+    ServiceTypeModule,
+    ServiceTypeOfPartModule,
+    ServiceRemainderTemplateModule,
+    LocationModule,
+    PaymentTypeModule,
+    PineLabsModule,
+    PineLabsConfigModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -280,4 +280,70 @@ async sendServiceReminderTemplate(
       throw error;
     }
   }
+
+
+  // Send Service Welcome Template (service_welcome_v1)
+  async sendServiceWelcomeTemplate(
+    toPhoneNumber: string,
+    customerName: string,            // {{1}}
+    serviceAdvisorPhone: string,     // {{2}}
+  ): Promise<any> {
+    let formattedNumber = toPhoneNumber.trim();
+    if (/^\d{10}$/.test(formattedNumber)) {
+      formattedNumber = `91${formattedNumber}`;
+    }
+    // Ensure template parameters are non-empty — WhatsApp API rejects missing text values
+    const advisorPhone = (serviceAdvisorPhone && String(serviceAdvisorPhone).trim()) || process.env.SERVICE_ADVISOR_PHONE || '9108812221';
+    const custName = (customerName && String(customerName).trim()) || 'Customer';
+
+    // Normalize advisor phone for template display — include +91 when 10 digits provided
+    let formattedAdvisor = String(advisorPhone).replace(/[^0-9]/g, '');
+    if (/^\d{10}$/.test(formattedAdvisor)) {
+      formattedAdvisor = `+91${formattedAdvisor}`;
+    } else if (/^91\d{10}$/.test(formattedAdvisor)) {
+      formattedAdvisor = `+${formattedAdvisor}`;
+    } else {
+      // leave as-is (e.g., already has + or other format)
+      formattedAdvisor = String(advisorPhone);
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.apiUrl}/${this.phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedNumber,
+          type: 'template',
+          template: {
+            name: 'service_welcome_v1',
+            language: { code: 'en' },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(custName) },
+                  { type: 'text', text: String(formattedAdvisor) },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      this.logger.log(`Service welcome template sent to ${formattedNumber}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Error sending service welcome template',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
 }
