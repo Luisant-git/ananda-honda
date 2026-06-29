@@ -75,7 +75,9 @@ const QuickStart = ({ setCurrentView, user }) => {
       show: !!permissions?.payment_collection,
       items: [
         { view: 'payment_collection', label: 'Sales Payment Collection', desc: 'Manage payments for vehicle sales.', icon: <CreditCard className="w-8 h-8 text-indigo-600" />, perm: 'payment_collection.sales', bgColor: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200' },
-        { view: 'service_payment_collection', label: 'Service Payment Collection', desc: 'Manage payments for workshop services.', icon: <CreditCard className="w-8 h-8 text-teal-600" />, perm: 'payment_collection.service', bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200' },
+        { view: 'service_payment_collection_full', label: 'Full Payment (Service)', desc: 'Process and view completed service payments.', icon: <CreditCard className="w-8 h-8 text-teal-600" />, perm: 'payment_collection.service', bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200' },
+        { view: 'service_payment_collection_advance', label: 'Advance Payment (Service)', desc: 'Record advance payments for services.', icon: <CreditCard className="w-8 h-8 text-cyan-600" />, perm: 'payment_collection.service', bgColor: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200' },
+        { view: 'service_payment_collection_xyz', label: 'XYZ Payment (Service)', desc: 'Custom/other service payment flows.', icon: <CreditCard className="w-8 h-8 text-sky-600" />, perm: 'payment_collection.service', bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200' },
       ]
     },
     {

@@ -60,6 +60,12 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <PaymentCollection user={user} />;
       case 'service_payment_collection':
         return <ServicePaymentCollection user={user} />;
+      case 'service_payment_collection_full':
+        return <ServicePaymentCollection user={user} subType="full" />;
+      case 'service_payment_collection_advance':
+        return <ServicePaymentCollection user={user} subType="advance" />;
+      case 'service_payment_collection_xyz':
+        return <ServicePaymentCollection user={user} subType="xyz" />;
       case 'service_payment_mode':
         return <ServicePaymentMode user={user} />;
       case 'service_type_of_payment':

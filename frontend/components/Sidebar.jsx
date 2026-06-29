@@ -10,6 +10,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
     settings: false,
     reports: false,
     service_report: false,
+    service_payment: false,
   });
   const [permissions, setPermissions] = useState(null);
 
@@ -180,7 +181,41 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             {(permissions?.payment_collection?.sales || permissions?.payment_collection?.service) && (
               <NavGroup menuKey="payment_collection" label="Payment Collection" icon={<PaymentIcon />}>
                 {permissions?.payment_collection?.sales && <li><NavLink view="payment_collection" label="Sales" isSubmenu /></li>}
-                {permissions?.payment_collection?.service && <li><NavLink view="service_payment_collection" label="Service" isSubmenu /></li>}
+                {permissions?.payment_collection?.service && (
+                  <li>
+                    <div>
+                      <div
+                        onClick={() => toggleMenu('service_payment')}
+                        className={`flex items-center w-full p-2 text-base font-normal rounded-lg transition-colors duration-150 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary`}
+                        style={{ paddingLeft: '2.75rem' }}
+                      >
+                        <span className="flex-1 text-left">Service</span>
+                        <ChevronDownIcon
+                          className={`w-4 h-4 transform transition-transform duration-200 ${
+                            openMenus.service_payment ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </div>
+                      <div
+                        className={`transition-all duration-300 ease-in-out ${
+                          openMenus.service_payment ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                        } overflow-hidden`}
+                      >
+                        <ul className="space-y-1 mt-1">
+                          <li>
+                            <NavLink view="service_payment_collection_full" label="Full Payment" isSubmenu />
+                          </li>
+                          <li>
+                            <NavLink view="service_payment_collection_advance" label="Advance Payment" isSubmenu />
+                          </li>
+                          <li>
+                            <NavLink view="service_payment_collection_xyz" label="XYZ Payment" isSubmenu />
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </li>
+                )}
                 <li><NavLink view="pine_labs_transactions" label="Pine Labs Txns" isSubmenu /></li>
               </NavGroup>
             )}
