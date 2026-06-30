@@ -50,8 +50,8 @@ export class PineLabsService {
       };
 
       const apiUrl = config.environment === 'Production'
-        ? 'https://www.plutuscloudservice.in:8201/api/v1/CloudBasedIntegration/UploadBilledTransaction'
-        : 'https://www.plutuscloudserviceuat.in:8201/api/v1/CloudBasedIntegration/UploadBilledTransaction';
+        ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/UploadBilledTransaction'
+        : 'https://www.plutuscloudserviceuat.in:8201/API/CloudBasedIntegration/V1/UploadBilledTransaction';
 
       this.logger.log(`Initiating Pine Labs payment for Txn: ${transactionId}, Amount: ${data.amount}`);
       
