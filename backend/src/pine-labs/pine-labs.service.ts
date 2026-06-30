@@ -36,35 +36,48 @@ export class PineLabsService {
     });
 
     try {
-      // Mocking the Pine Labs Plutus API call for pushing payment to POS
-      // In a real environment, you'd format the payload based on Pine Labs API spec.
-      // Example payload: { MerchantID, TerminalID, TransactionNumber, Amount, TransactionType: '1' (Sale) }
-      
       const payload = {
+        TransactionNumber: transactionId,
+        SequenceNumber: 1,
+        AllowedPaymentMode: "0", // 0 = Allow all modes
+        Amount: Math.round(data.amount * 100), // typically in paisa
+        UserID: data.createdBy ? data.createdBy.toString() : "System",
         MerchantID: config.merchantId,
         SecurityToken: config.securityToken,
         ClientId: config.clientId,
         StoreId: config.storeId,
-        TransactionNumber: transactionId,
-        Amount: data.amount * 100, // typically in paisa
+        AutoCancelDurationInMinutes: 5,
       };
 
-      // Mock logic: Instead of hitting a real Pine Labs endpoint (since we don't have real credentials),
-      // we just simulate a successful initiation.
+      const apiUrl = config.environment === 'Production'
+        ? 'https://www.plutuscloudservice.in:8201/api/v1/CloudBasedIntegration/UploadBilledTransaction'
+        : 'https://www.plutuscloudserviceuat.in:8201/api/v1/CloudBasedIntegration/UploadBilledTransaction';
+
       this.logger.log(`Initiating Pine Labs payment for Txn: ${transactionId}, Amount: ${data.amount}`);
       
+      const response = await axios.post(apiUrl, payload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      this.logger.log(`Pine Labs Response: ${JSON.stringify(response.data)}`);
+
+      if (response.data.ResponseCode !== 0) {
+         throw new Error(response.data.ResponseMessage || 'Pine Labs API error');
+      }
+
       return {
         success: true,
         transactionId,
         message: 'Payment pushed to POS machine',
+        pineLabsResponse: response.data,
       };
     } catch (error) {
       this.logger.error(`Failed to initiate Pine Labs payment: ${error.message}`);
       await this.prisma.paymentTransaction.update({
         where: { id: transaction.id },
-        data: { status: 'Failed', responseData: { error: error.message } },
+        data: { status: 'Failed', responseData: { error: error.response?.data || error.message } },
       });
-      throw new BadRequestException('Failed to initiate payment on POS');
+      throw new BadRequestException(error.response?.data?.ResponseMessage || error.message || 'Failed to initiate payment on POS');
     }
   }
 
