@@ -85,7 +85,7 @@ const PineLabsTransactions = () => {
       } else if (data.status === 'Failed' || data.status === 'Cancelled') {
         toast.error(`Payment ${data.status.toLowerCase()}`);
       } else {
-        toast('Payment is still pending on terminal', { icon: '⏳' });
+        toast(`Still pending. PineLabs said: ${data.pineLabsResponse?.ResponseMessage || 'Unknown'}`, { icon: '⏳', duration: 4000 });
       }
       fetchTransactions();
     } catch (error) {

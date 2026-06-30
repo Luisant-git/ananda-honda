@@ -126,7 +126,10 @@ export class PineLabsService {
       
       this.logger.log(`Pine Labs GetStatus Response: ${JSON.stringify(pResp)}`);
 
-      if (pResp.ResponseCode === 0 && pResp.ResponseMessage === 'APPROVED') {
+      const resMsg = (pResp.ResponseMessage || '').toUpperCase();
+      const resCode = pResp.ResponseCode;
+
+      if (resCode == 0 || resCode == 1 || resMsg.includes('APPROVED') || resMsg.includes('SUCCESS')) {
          if (transaction.status !== 'Success') {
            await this.prisma.paymentTransaction.update({
              where: { id: transaction.id },
@@ -134,7 +137,7 @@ export class PineLabsService {
            });
            transaction.status = 'Success';
          }
-      } else if (pResp.ResponseMessage && (pResp.ResponseMessage.includes('CANCELLED') || pResp.ResponseMessage.includes('DECLINED') || pResp.ResponseMessage.includes('FAILED'))) {
+      } else if (resMsg.includes('CANCELLED') || resMsg.includes('DECLINED') || resMsg.includes('FAILED')) {
          if (transaction.status !== 'Failed' && transaction.status !== 'Cancelled') {
            await this.prisma.paymentTransaction.update({
              where: { id: transaction.id },
