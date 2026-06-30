@@ -73,16 +73,16 @@ const PineLabsTransactions = () => {
   };
 
   const columns = [
-    { key: "sNo", label: "S.No" },
-    { key: "date", label: "Date & Time" },
-    { key: "transactionId", label: "Transaction ID" },
-    { key: "invoiceId", label: "Reference ID" },
-    { key: "customerName", label: "Customer Name" },
-    { key: "mobileNumber", label: "Mobile" },
-    { key: "amount", label: "Amount" },
-    { key: "paymentMode", label: "Payment Mode" },
-    { key: "status", label: "Status",
-      render: (item) => (
+    { accessor: "sNo", header: "S.No" },
+    { accessor: "date", header: "Date & Time" },
+    { accessor: "transactionId", header: "Transaction ID" },
+    { accessor: "invoiceId", header: "Reference ID" },
+    { accessor: "customerName", header: "Customer Name" },
+    { accessor: "mobileNumber", header: "Mobile" },
+    { accessor: "amount", header: "Amount" },
+    { accessor: "paymentMode", header: "Payment Mode" },
+    { accessor: "status", header: "Status",
+      render: (value, item) => (
         <span className={`px-2 py-1 rounded-full text-xs font-semibold
           ${item.status === 'Success' ? 'bg-green-100 text-green-800' : 
             item.status === 'Failed' ? 'bg-red-100 text-red-800' : 
@@ -92,7 +92,7 @@ const PineLabsTransactions = () => {
         </span>
       )
     },
-    { key: "createdBy", label: "Initiated By" }
+    { accessor: "createdBy", header: "Initiated By" }
   ];
 
   return (
