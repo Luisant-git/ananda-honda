@@ -91,26 +91,65 @@ export class PineLabsService {
       where: { transactionId },
     });
 
-    if (!transaction) {
-      throw new NotFoundException('Transaction not found');
-    }
+    if (!transaction) throw new NotFoundException('Transaction not found');
 
     const config = await this.configService.getConfig();
-    if (!config) {
-      throw new BadRequestException('Pine Labs config not found');
+    if (!config) throw new BadRequestException('Pine Labs config not found');
+
+    const responseData: any = transaction.responseData;
+    const plutusRef = responseData?.PlutusTransactionReferenceID;
+
+    if (!plutusRef) {
+       return {
+         transactionId,
+         status: transaction.status,
+         amount: transaction.amount,
+         paymentMode: transaction.paymentMode,
+       };
     }
 
     try {
-      // Mocking status check API call to Pine Labs
-      // In reality, this would hit Pine Labs status check endpoint.
-      // E.g. axios.post(apiUrl, { MerchantID, TerminalID, TransactionNumber })
+      const payload = {
+        MerchantID: config.merchantId,
+        SecurityToken: config.securityToken,
+        ClientId: config.clientId,
+        StoreId: config.storeId,
+        PlutusTransactionReferenceID: plutusRef
+      };
+
+      const apiUrl = config.environment === 'Production'
+        ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/GetStatus'
+        : 'https://www.plutuscloudserviceuat.in:8201/API/CloudBasedIntegration/V1/GetStatus';
+
+      const response = await axios.post(apiUrl, payload, { headers: { 'Content-Type': 'application/json' } });
+      const pResp = response.data;
       
-      // We will just return the current DB status since we handle webhooks
+      this.logger.log(`Pine Labs GetStatus Response: ${JSON.stringify(pResp)}`);
+
+      if (pResp.ResponseCode === 0 && pResp.ResponseMessage === 'APPROVED') {
+         if (transaction.status !== 'Success') {
+           await this.prisma.paymentTransaction.update({
+             where: { id: transaction.id },
+             data: { status: 'Success' }
+           });
+           transaction.status = 'Success';
+         }
+      } else if (pResp.ResponseMessage && (pResp.ResponseMessage.includes('CANCELLED') || pResp.ResponseMessage.includes('DECLINED') || pResp.ResponseMessage.includes('FAILED'))) {
+         if (transaction.status !== 'Failed' && transaction.status !== 'Cancelled') {
+           await this.prisma.paymentTransaction.update({
+             where: { id: transaction.id },
+             data: { status: 'Failed' }
+           });
+           transaction.status = 'Failed';
+         }
+      }
+
       return {
         transactionId,
         status: transaction.status,
         amount: transaction.amount,
         paymentMode: transaction.paymentMode,
+        pineLabsResponse: pResp
       };
     } catch (error) {
       this.logger.error(`Failed to check payment status: ${error.message}`);

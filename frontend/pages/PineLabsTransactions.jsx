@@ -72,6 +72,41 @@ const PineLabsTransactions = () => {
     }
   };
 
+  const handleCheckStatus = async (transactionId) => {
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/pine-labs/status/${transactionId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!response.ok) throw new Error('Failed to check status');
+      
+      const data = await response.json();
+      if (data.status === 'Success') {
+        toast.success(`Payment successful!`);
+      } else if (data.status === 'Failed' || data.status === 'Cancelled') {
+        toast.error(`Payment ${data.status.toLowerCase()}`);
+      } else {
+        toast('Payment is still pending on terminal', { icon: '⏳' });
+      }
+      fetchTransactions();
+    } catch (error) {
+      toast.error('Failed to get status');
+    }
+  };
+
+  const actionButtons = (item) => {
+    if (item.status === 'Pending') {
+      return (
+        <button 
+          onClick={() => handleCheckStatus(item.transactionId)}
+          className="px-3 py-1 bg-brand-surface border border-brand-border text-brand-text-primary rounded hover:bg-brand-hover text-sm shadow-sm transition-colors"
+        >
+          Check Status
+        </button>
+      );
+    }
+    return null;
+  };
+
   const columns = [
     { accessor: "sNo", header: "S.No" },
     { accessor: "date", header: "Date & Time" },
@@ -120,7 +155,7 @@ const PineLabsTransactions = () => {
         {loading ? (
           <div className="flex justify-center p-8">Loading transactions...</div>
         ) : (
-          <DataTable data={transactions} columns={columns} />
+          <DataTable data={transactions} columns={columns} actionButtons={actionButtons} />
         )}
       </div>
     </div>
