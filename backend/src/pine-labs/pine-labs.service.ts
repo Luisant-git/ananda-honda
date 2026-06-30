@@ -129,7 +129,8 @@ export class PineLabsService {
       const resMsg = (pResp.ResponseMessage || '').toUpperCase();
       const resCode = pResp.ResponseCode;
 
-      if (resCode == 0 || resCode == 1 || resMsg.includes('APPROVED') || resMsg.includes('SUCCESS')) {
+      // In Pine Labs, ResponseCode 0 is Success. ResponseCode 1 is usually an Error (like Invalid Device).
+      if (resCode == 0 || resMsg === 'APPROVED' || resMsg === 'SUCCESS') {
          if (transaction.status !== 'Success') {
            await this.prisma.paymentTransaction.update({
              where: { id: transaction.id },
