@@ -153,7 +153,10 @@ export class PineLabsService {
       };
     } catch (error) {
       this.logger.error(`Failed to check payment status: ${error.message}`);
-      throw new BadRequestException('Failed to check payment status');
+      if (error.response) {
+        this.logger.error(`Pine Labs GetStatus API Error Response: ${JSON.stringify(error.response.data)}`);
+      }
+      throw new BadRequestException(error.response?.data?.ResponseMessage || error.response?.data?.Message || error.message || 'Failed to check payment status');
     }
   }
 
