@@ -278,7 +278,7 @@ const PartPaymentReport = ({ user }) => {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Part Payment Collection Report</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Advance Payment Collection Report</h1>
         {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
           <button
             onClick={() => setIsClearModalOpen(true)}

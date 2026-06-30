@@ -10,7 +10,7 @@ const FullPaymentReport = ({ user }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('full payment');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -23,7 +23,7 @@ const FullPaymentReport = ({ user }) => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const response = await servicePaymentCollectionApi.getAll(1, 999999, null, 'full payment', 'completed');
+      const response = await servicePaymentCollectionApi.getAll(1, 999999, null, 'full payment');
       console.log('API Response:', response);
       
       const paymentsData = response.data || response;
@@ -120,9 +120,9 @@ const FullPaymentReport = ({ user }) => {
         return itemDate >= from && itemDate <= to;
       });
     }
-    
-    if (paymentTypeFilter) {
-      filtered = filtered.filter(item => item.paymentType === paymentTypeFilter);
+
+    if (paymentStatusFilter) {
+      filtered = filtered.filter(item => (item.paymentStatus || '').toString().toLowerCase() === paymentStatusFilter.toLowerCase());
     }
     
     setFilteredData(filtered);
@@ -131,7 +131,7 @@ const FullPaymentReport = ({ user }) => {
   const handleReset = () => {
     setFromDate('');
     setToDate('');
-    setPaymentTypeFilter('full payment');
+    setPaymentStatusFilter('');
     fetchReportData();
   };
 
@@ -326,6 +326,18 @@ const FullPaymentReport = ({ user }) => {
               />
             </div>
            
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">Status</label>
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
+              >
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
             <div className="flex gap-2 items-end">
               <button 
                 onClick={handleFilter}
@@ -427,7 +439,7 @@ const FullPaymentReport = ({ user }) => {
                 <div>
                   <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
                   <div className="text-brand-text-primary font-medium">
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedPayment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {selectedPayment.paymentStatus}
                     </span>
                   </div>

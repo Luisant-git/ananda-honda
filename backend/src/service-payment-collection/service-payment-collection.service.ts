@@ -117,14 +117,10 @@ async create(data: {
   };
 
   const resolvedPaymentTypeEarly = await resolvePaymentType();
-  // Server authoritative: treat 'full payment' as completed unless explicitly overridden to something else
+  // All new payments start with 'pending' status - user must manually change to 'completed'
   let currentStatus: string;
   const normalizedResolvedName = resolvedPaymentTypeEarly.name?.toString().toLowerCase().trim();
-  if (normalizedResolvedName === 'full payment') {
-    currentStatus = 'completed';
-  } else {
-    currentStatus = data.paymentStatus || (normalizedResolvedName === 'part payment' ? 'pending' : 'completed');
-  }
+  currentStatus = data.paymentStatus || 'pending';
 
   // Identify previous relevant pending payments for this vehicle session context
   const partPayments = await this.prisma.servicePaymentCollection.findMany({
@@ -248,6 +244,24 @@ async create(data: {
               closedDate: new Date()
             }
           });
+
+          // Mark all related pending payments as completed when the job card is auto-closed.
+          await this.prisma.servicePaymentCollection.updateMany({
+            where: {
+              deletedAt: null,
+              cancelledAt: null,
+              OR: [
+                { jobCardNumber: data.jobCardNumber },
+                { customerId: data.customerId, vehicleNumber: effectiveVehicleNumber },
+                { receiptNo }
+              ],
+              paymentStatus: 'pending'
+            },
+            data: {
+              paymentStatus: 'completed'
+            }
+          });
+
           this.logger.log(`Job card ${data.jobCardNumber} closed automatically. Paid: ${paidAmount}, Invoice: ${invoiceAmount} (Tolerance: ${CLOSING_TOLERANCE_RUPEES})`);
         } else if (paidAmount < invoiceAmount) {
           this.logger.log(`Job card ${data.jobCardNumber} NOT closed. Paid: ${paidAmount}, Need: ${invoiceAmount}, Status: ${jobCard.status}`);

@@ -33,6 +33,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
 
   const hasDashboardAccess =
     !!(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business);
+  const hasAnyReportAccess = !!(permissions?.reports && Object.values(permissions.reports).some(value => value === true));
 
   const NavLink = ({ view, label, icon, isSubmenu = false }) => {
     const isActive = currentView === view;
@@ -202,15 +203,21 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                         } overflow-hidden`}
                       >
                         <ul className="space-y-1 mt-1">
-                          <li>
-                            <NavLink view="service_payment_collection_full" label="Full Payment" isSubmenu />
-                          </li>
-                          <li>
-                            <NavLink view="service_payment_collection_advance" label="Advance Payment" isSubmenu />
-                          </li>
-                          <li>
-                            <NavLink view="service_payment_collection_xyz" label="XYZ Payment" isSubmenu />
-                          </li>
+                          {permissions?.payment_collection?.service?.full_payment_menu && (
+                            <li>
+                              <NavLink view="service_payment_collection_full" label="Full Payment" isSubmenu />
+                            </li>
+                          )}
+                          {permissions?.payment_collection?.service?.advance_payment_menu && (
+                            <li>
+                              <NavLink view="service_payment_collection_advance" label="Advance Payment" isSubmenu />
+                            </li>
+                          )}
+                          {permissions?.payment_collection?.service?.service_plan_payment_menu && (
+                            <li>
+                              <NavLink view="service_payment_collection_xyz" label="Service Plan Payment" isSubmenu />
+                            </li>
+                          )}
                         </ul>
                       </div>
                     </div>
@@ -221,11 +228,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             )}
 
             {/* Reports - Main Parent */}
-            {(permissions?.reports?.payment_collection_report || 
-              permissions?.reports?.service_payment_collection_report || 
-              permissions?.reports?.full_payment_report ||
-              permissions?.reports?.part_payment_report ||
-              permissions?.reports?.service_reminder_report) && (
+            {hasAnyReportAccess && (
               <NavGroup menuKey="reports" label="Reports" icon={<ReportIcon />}>
                 
                 {/* Sales Report */}
@@ -255,6 +258,11 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                         } overflow-hidden`}
                       >
                         <ul className="space-y-1 mt-1">
+                          {permissions?.reports?.service_reports && (
+                            <li>
+                              <NavLink view="service_reports" label="Service Plan Payment report" isSubmenu />
+                            </li>
+                          )}
                           {permissions?.reports?.full_payment_report && (
                             <li>
                               <NavLink view="full_payment_report" label="Full Payment Report" isSubmenu />
@@ -262,7 +270,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                           )}
                           {permissions?.reports?.part_payment_report && (
                             <li>
-                              <NavLink view="part_payment_report" label="Part Payment Report" isSubmenu />
+                              <NavLink view="part_payment_report" label="Advance Payment Report" isSubmenu />
                             </li>
                           )}
                         </ul>

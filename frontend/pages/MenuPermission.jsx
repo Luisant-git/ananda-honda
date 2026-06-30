@@ -38,7 +38,8 @@ const MenuPermission = () => {
         service_payment_collection_report: false, 
         full_payment_report: false,
         part_payment_report: false,
-         service_reminder_report: false 
+        service_reports: false,
+        service_reminder_report: false 
       },
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
@@ -62,12 +63,18 @@ const MenuPermission = () => {
   const togglePermission = (path) => {
     setEditData(prev => {
       const newData = { ...prev };
-      if (path.includes('.')) {
-        const [parent, child] = path.split('.');
-        newData[parent] = { ...newData[parent], [child]: !newData[parent][child] };
-      } else {
-        newData[path] = !newData[path];
+      const keys = path.split('.');
+      let current = newData;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (current[key] === undefined || current[key] === null) {
+          current[key] = {};
+        }
+        current[key] = { ...current[key] };
+        current = current[key];
       }
+      const finalKey = keys[keys.length - 1];
+      current[finalKey] = !current[finalKey];
       return newData;
     });
   };
@@ -327,6 +334,22 @@ const MenuPermission = () => {
                         )}
                       </div>
                     ))}
+                    {editData.payment_collection?.service && (
+                      <div className="ml-4 sm:ml-6 space-y-1 border-l border-gray-200 pl-3">
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" checked={editData.payment_collection.service.full_payment_menu || false} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, service: { ...prev.payment_collection.service, full_payment_menu: !prev.payment_collection.service.full_payment_menu } } }))} className="rounded" />
+                          <span className="text-sm">- Full Payment</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" checked={editData.payment_collection.service.advance_payment_menu || false} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, service: { ...prev.payment_collection.service, advance_payment_menu: !prev.payment_collection.service.advance_payment_menu } } }))} className="rounded" />
+                          <span className="text-sm">- Advance Payment</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" checked={editData.payment_collection.service.service_plan_payment_menu || false} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, service: { ...prev.payment_collection.service, service_plan_payment_menu: !prev.payment_collection.service.service_plan_payment_menu } } }))} className="rounded" />
+                          <span className="text-sm">- Service Plan Payment</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -335,7 +358,7 @@ const MenuPermission = () => {
               {/* Reports Section */}
 <div>
   <label className="flex items-center space-x-2 mb-2">
-    <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false, full_payment_report: false, part_payment_report: false, service_reminder_report: false } }))} className="rounded" />
+    <input type="checkbox" checked={!!editData.reports} onChange={() => setEditData(prev => ({ ...prev, reports: prev.reports ? false : { payment_collection_report: false, service_payment_collection_report: false, enquiry_report: false, full_payment_report: false, part_payment_report: false, service_reports: false, service_reminder_report: false } }))} className="rounded" />
     <span className="font-medium">Reports</span>
   </label>
   {editData.reports && typeof editData.reports === 'object' && (
@@ -357,9 +380,12 @@ const MenuPermission = () => {
             </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.part_payment_report} onChange={() => togglePermission('reports.part_payment_report')} className="rounded" />
-              <span className="text-sm">- Part Payment Report</span>
+              <span className="text-sm">- Advance Payment Report</span>
             </label>
-            {/* Add Service Reminder Report here */}
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={editData.reports.service_reports} onChange={() => togglePermission('reports.service_reports')} className="rounded" />
+              <span className="text-sm">- Service Plan Payment report</span>
+            </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.service_reminder_report} onChange={() => togglePermission('reports.service_reminder_report')} className="rounded" />
               <span className="text-sm">- Service Reminder Report</span>

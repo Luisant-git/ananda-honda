@@ -10,6 +10,7 @@ const ServiceReports = ({ user }) => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState('');
+  const [collectionTypeFilter, setCollectionTypeFilter] = useState('');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
@@ -79,6 +80,10 @@ const ServiceReports = ({ user }) => {
     if (paymentTypeFilter) {
       filtered = filtered.filter(item => item.paymentType === paymentTypeFilter);
     }
+
+    if (collectionTypeFilter) {
+      filtered = filtered.filter(item => item.typeOfCollection.toString().toLowerCase() === collectionTypeFilter.toLowerCase());
+    }
     
     setFilteredData(filtered);
   };
@@ -87,6 +92,7 @@ const ServiceReports = ({ user }) => {
     setFromDate('');
     setToDate('');
     setPaymentTypeFilter('');
+    setCollectionTypeFilter('');
     setFilteredData(reportData);
   };
 
@@ -223,7 +229,7 @@ const ServiceReports = ({ user }) => {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection Report</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Plan Payment report</h1>
         {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
           <button
             onClick={() => setIsClearModalOpen(true)}
@@ -265,6 +271,20 @@ const ServiceReports = ({ user }) => {
                 <option value="">All</option>
                 <option value="full payment">Full Payment</option>
                 <option value="part payment">Part Payment</option>
+                <option value="service plan payment">Service Plan Payment</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">Collection Type</label>
+              <select
+                value={collectionTypeFilter}
+                onChange={(e) => setCollectionTypeFilter(e.target.value)}
+                className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
+              >
+                <option value="">All</option>
+                <option value="RSA">RSA</option>
+                <option value="AMC">AMC</option>
+                <option value="EW">EW</option>
               </select>
             </div>
             <div className="flex gap-2 items-end">

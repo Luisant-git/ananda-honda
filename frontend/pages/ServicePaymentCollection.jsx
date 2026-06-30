@@ -19,11 +19,16 @@ import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
 import PineLabsModal from "../components/PineLabsModal";
 
-const ServicePaymentCollection = ({ user }) => {
+const ServicePaymentCollection = ({ user, subType }) => {
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   console.log('service payment modes', paymentModes);
+  
+  // Determine if current subType is full or advance payment
+  const isFullPaymentMode = subType === 'full';
+  const isAdvancePaymentMode = subType === 'advance';
+  const isXyzPaymentMode = subType === 'xyz';
 
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
@@ -52,8 +57,22 @@ const ServicePaymentCollection = ({ user }) => {
   const [itemsPerPage] = useState(10);
   const [serviceTypeOfCollections, setServiceTypeOfCollections] = useState([]);
   const [serviceTypes, setServiceTypes] = useState([]);
+  const [pageTitle, setPageTitle] = useState('Service Payment Collection');
   
   const CLOSING_TOLERANCE_RUPEES = 2.0; // Must match backend logic
+  
+  // Update page title based on subType
+  useEffect(() => {
+    if (isFullPaymentMode) {
+      setPageTitle('Service Payment Collection - Full Payment');
+    } else if (isAdvancePaymentMode) {
+      setPageTitle('Service Payment Collection - Advance Payment');
+    } else if (isXyzPaymentMode) {
+      setPageTitle('Service Payment Collection - Service Plan Payment');
+    } else {
+      setPageTitle('Service Payment Collection');
+    }
+  }, [subType, isFullPaymentMode, isAdvancePaymentMode, isXyzPaymentMode]);
 
   // Part selection states
   const [isPartDropdownOpen, setIsPartDropdownOpen] = useState(false);
@@ -89,7 +108,23 @@ const ServicePaymentCollection = ({ user }) => {
   });
 
   const normalizedPaymentType = (formData.paymentType || "").toString().toLowerCase().trim();
-  const requiresJobCard = normalizedPaymentType === 'full payment' || normalizedPaymentType === 'advance payment';
+  
+  // Determine if Job Card is mandatory based on payment type
+  const requiresJobCard = isFullPaymentMode || isXyzPaymentMode || (isAdvancePaymentMode && normalizedPaymentType === 'full payment');
+  const isOptionalJobCard = isAdvancePaymentMode && normalizedPaymentType !== 'full payment';
+  
+  // Filter Type of Collection to show only JOBCARD and CERAMIC COATING for Full/Advance payments
+  const filteredTypeOfCollections = isXyzPaymentMode
+    ? serviceTypeOfCollections.filter(item => {
+        const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
+        return ['rsa', 'amc', 'ew'].includes(typeStr);
+      })
+    : (isFullPaymentMode || isAdvancePaymentMode)
+      ? serviceTypeOfCollections.filter(item => {
+          const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
+          return typeStr.includes('jobcard') || typeStr.includes('ceramic');
+        })
+      : serviceTypeOfCollections;
 
   const isPartPaymentType = (name) => mapMasterNameToKey(name) === 'part payment';
 
@@ -1010,6 +1045,65 @@ useEffect(() => {
     fetchAvailableParts();
   }, []);
 
+  // Handle subType: set default payment type based on subType
+  useEffect(() => {
+    if (paymentTypes.length === 0) return;
+    
+    if (isFullPaymentMode) {
+      const fullType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('full'));
+      setFormData(prev => ({
+        ...prev,
+        paymentType: 'full payment',
+        paymentTypeId: fullType ? String(fullType.id) : '',
+        paymentStatus: 'pending'
+      }));
+    } else if (isAdvancePaymentMode) {
+      const advanceType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('advance'));
+      setFormData(prev => ({
+        ...prev,
+        paymentType: 'advance payment',
+        paymentTypeId: advanceType ? String(advanceType.id) : '',
+        paymentStatus: 'pending'
+      }));
+    } else if (isXyzPaymentMode) {
+      const servicePlanType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('service plan'));
+      setFormData(prev => ({
+        ...prev,
+        paymentType: 'service plan payment',
+        paymentTypeId: servicePlanType ? String(servicePlanType.id) : '',
+        paymentStatus: 'pending'
+      }));
+    }
+  }, [isFullPaymentMode, isAdvancePaymentMode, isXyzPaymentMode, paymentTypes]);
+
+  // Apply subType filter when payments load or when subType changes
+  useEffect(() => {
+    if (!subType) {
+      setFilteredPayments(payments);
+      return;
+    }
+    const key = (subType || '').toString().toLowerCase().trim();
+    if (!payments || payments.length === 0) {
+      setFilteredPayments([]);
+      return;
+    }
+
+    let filtered = payments;
+    if (key === 'full') {
+      filtered = payments.filter(p => (p.paymentType || '').toString().toLowerCase().includes('full'));
+    } else if (key === 'advance') {
+      filtered = payments.filter(p => (p.paymentType || '').toString().toLowerCase().includes('advance'));
+    } else if (key === 'xyz') {
+      filtered = payments.filter(p => {
+        const type = (p.paymentType || '').toString().toLowerCase();
+        const collection = (p.serviceTypeOfCollection?.typeOfCollect || '').toString().toLowerCase();
+        return type.includes('service plan') || ['rsa', 'amc', 'ew'].some(val => collection.includes(val));
+      });
+    }
+
+    setFilteredPayments(filtered);
+  }, [subType, payments]);
+
   // Add this useEffect to fetch vehicle models when component mounts
 useEffect(() => {
   fetchVehicleModels();
@@ -1838,6 +1932,7 @@ const refreshJobCardStatus = async (jobCardNumber) => {
       if (updatedJobCard.status === 'Closed') {
         setFormData(prev => ({ ...prev, jobCardNumber: "" }));
         toast.success(`Job Card ${jobCardNumber} is now CLOSED. Full payment received.`);
+        fetchPayments(1);
       }
     }
   } catch (error) {
@@ -1860,10 +1955,18 @@ const handleSubmit = async (e) => {
     return;
   }
 
-// Validate job card number for full payment OR advance payment (if job card number is provided)
+// Validate job card number for full payment OR advance payment (if converting to full)
 if (requiresJobCard && !formData.jobCardNumber) {
   toast.error(`Job card number is required for ${formData.paymentType}`);
   return;
+}
+
+// Validate Advance Payment has either Job Card or Parts
+if (isAdvancePaymentMode && normalizedPaymentType === "advance payment") {
+  if (!formData.jobCardNumber && selectedParts.length === 0) {
+    toast.error("For Advance Payment: Please provide either a Job Card Number or select parts");
+    return;
+  }
 }
 
   const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
@@ -1983,9 +2086,9 @@ if (finalJobCardNumber) {
     }, 1500);
   }
 
-    // If a part payment was marked completed or a full payment was submitted,
-    // update previous payments in the client state so the table shows them as completed/full.
-    if ((normalizedPaymentType === "part payment" && formData.paymentStatus === "completed") || normalizedPaymentType === "full payment") {
+    // If a part payment was marked completed, update previous payments in the client state
+    // but do NOT auto-complete full payments - let user manually change status
+    if (normalizedPaymentType === "part payment" && formData.paymentStatus === "completed") {
       try {
         setPayments(prev => prev.map(p => {
           const matchesJob = finalJobCardNumber && p.jobCardNumber === finalJobCardNumber;
@@ -2116,6 +2219,17 @@ const fetchCustomerPayments = (customerId, paymentType, jobCardNumber, vehicleNu
     setPendingPayments([]);
   }
 };
+
+useEffect(() => {
+  if (serviceJobCardInfo && loadedCustomer) {
+    fetchCustomerPayments(
+      loadedCustomer.id,
+      formData.paymentType,
+      serviceJobCardInfo.jobCardNumber,
+      serviceJobCardInfo.registrationNumber || formData.vehicleNumber
+    );
+  }
+}, [serviceJobCardInfo, loadedCustomer, payments, formData.paymentType, formData.vehicleNumber]);
 
 useEffect(() => { // This useEffect now correctly uses formData.paymentType for fetchCustomerPayments
   const fetchHistory = async () => {
@@ -2439,6 +2553,29 @@ useEffect(() => {
     { header: "Vehicle No", accessor: "vehicleNumber" },
     { header: "Total Amt", accessor: "totalAmt" },
     { header: "Received Amt", accessor: "recAmt" },
+    {
+      header: "Pending Amt",
+      accessor: "pendingAmount",
+      render: (value, row) => {
+        if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
+          // Calculate pending for job card: sum all payments for this job card - invoice amount
+          const jobCardPayments = payments.filter(p => p.jobCardNumber === row.jobCardNumber && p.customerId === row.customerId && !p.cancelledAt);
+          const totalReceivedForJobCard = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
+          
+          // Find the job card to get invoice amount
+          const jobCardInfo = serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber ? serviceJobCardInfo : null;
+          const invoiceAmount = jobCardInfo?.totalRevenue || parseFloat(row.totalAmt) || 0;
+          const balance = Math.max(0, invoiceAmount - totalReceivedForJobCard);
+          
+          return balance > 0 ? `₹${balance.toFixed(2)}` : 'N/A';
+        } else if (row.totalAmt && row.totalAmt !== 'N/A') {
+          // For non-job-card payments, show difference between total and received
+          const balance = parseFloat(row.totalAmt) - parseFloat(row.recAmt);
+          return balance > 0 ? `₹${balance.toFixed(2)}` : 'N/A';
+        }
+        return 'N/A';
+      }
+    },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
@@ -2532,7 +2669,7 @@ useEffect(() => {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service Payment Collection</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">{pageTitle}</h1>
         <div className="flex gap-2">
           {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
@@ -2692,6 +2829,11 @@ useEffect(() => {
     return null;
   }
   
+  const jobCardPayments = payments.filter(p => p.jobCardNumber === serviceJobCardInfo.jobCardNumber && p.customerId === loadedCustomer?.id && !p.cancelledAt);
+  const totalJobCardReceived = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
+  const jobCardInvoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue) || 0;
+  const jobCardBalance = Math.max(0, jobCardInvoiceAmount - totalJobCardReceived);
+
   return (
     <div className={`mt-4 p-4 rounded-lg border ${
       (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-50 border-yellow-200' :
@@ -2756,10 +2898,22 @@ useEffect(() => {
           </div>
         )}
         {!isJobCardClosed(serviceJobCardInfo.status) && serviceJobCardInfo.totalRevenue > 0 && (
-          <div>
-            <span className="font-medium text-gray-600">Total Invoice Amount:</span>
-            <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
-          </div>
+          <>
+            <div>
+              <span className="font-medium text-gray-600">Total Invoice Amount:</span>
+              <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Total Amount Received:</span>
+              <span className="ml-2 font-semibold">₹{pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Balance to Pay:</span>
+              <span className={`ml-2 font-semibold ${((serviceJobCardInfo.totalRevenue || 0) - pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)) > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                ₹{Math.max(0, (parseFloat(serviceJobCardInfo.totalRevenue) || 0) - pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)).toFixed(2)}
+              </span>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -2799,7 +2953,7 @@ useEffect(() => {
                       ...formData,
                       paymentType: canonical,
                       paymentTypeId: "",
-                      paymentStatus: canonical === "full payment" ? "completed" : "pending"
+                      paymentStatus: "pending"
                     });
                     if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, selectedId, formData.jobCardNumber);
                     return;
@@ -2811,7 +2965,7 @@ useEffect(() => {
                     ...formData,
                     paymentType: canonical,
                     paymentTypeId: matched ? String(matched.id) : "",
-                    paymentStatus: canonical === "full payment" ? "completed" : "pending"
+                    paymentStatus: "pending"
                   });
                   if (loadedCustomer) fetchCustomerPayments(loadedCustomer.id, matched ? matched.name : selectedId, formData.jobCardNumber);
                 }}
@@ -2846,10 +3000,10 @@ useEffect(() => {
             </div>
 
             {/* Row 3: Service Info - Job Card Number */}
-            {normalizedPaymentType !== 'part payment' && (
+            {(normalizedPaymentType === 'full payment' || normalizedPaymentType === 'service plan payment') && (
               <div>
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-                  Job Card Number {requiresJobCard && <span className="text-red-500">*</span>}
+                  Job Card Number <span className="text-red-500">*</span>
                 </label>
 
                 <div className="space-y-2">
@@ -2866,7 +3020,7 @@ useEffect(() => {
                     }}
                     className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
                     placeholder="JC-BWKA0105-02-2526-000000"
-                    required={requiresJobCard}
+                    required={true}
                   />
                 </div>
               </div>
@@ -2904,7 +3058,7 @@ useEffect(() => {
             />
 
             {/* Row 4: Collection & Amount */}
-            <SearchableDropdown label="Type of Collection" value={formData.serviceTypeOfCollectionId} onChange={(value) => { const selectedType = serviceTypeOfCollections.find(type => type.id === parseInt(value)); setFormData({ ...formData, serviceTypeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId }); }} options={serviceTypeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))} />
+            <SearchableDropdown label="Type of Collection" value={formData.serviceTypeOfCollectionId} onChange={(value) => { const selectedType = filteredTypeOfCollections.find(type => type.id === parseInt(value)); setFormData({ ...formData, serviceTypeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId }); }} options={filteredTypeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))} />
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Amount <span className="text-red-500">*</span></label><input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({ ...formData, recAmt: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required /></div>
 
             {/* Row 5: Payment Method */}
@@ -2914,8 +3068,8 @@ useEffect(() => {
             {/* Row 6: Reference Number */}
             <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Reference Number</label><input type="text" value={formData.refNo} onChange={(e) => setFormData({ ...formData, refNo: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" /></div>
 
-            {/* Part Selection for Part Payment */}
-            {normalizedPaymentType === "part payment" && (
+            {/* Part Selection for Part Payment and Advance Payment */}
+            {(normalizedPaymentType === "part payment" || (isAdvancePaymentMode && normalizedPaymentType === "advance payment")) && (
               <div className="relative part-dropdown">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-1">Select Part</label>
                 <input
@@ -2961,7 +3115,7 @@ useEffect(() => {
             )}
 
             {/* Selected Parts List */}
-            {normalizedPaymentType === "part payment" && selectedParts.length > 0 && (
+            {(normalizedPaymentType === "part payment" || (isAdvancePaymentMode && normalizedPaymentType === "advance payment")) && selectedParts.length > 0 && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text-secondary mb-2">Added Parts</label>
                 <div className="bg-gray-50 border border-brand-border rounded-lg max-h-40 overflow-y-auto">
@@ -3265,13 +3419,16 @@ useEffect(() => {
         {/* Show Payment Summary with Extra Amount */}
         {(() => {
           const totalReceived = selectedPayment.totalAmt !== undefined && selectedPayment.totalAmt !== null && selectedPayment.totalAmt !== 'N/A' 
-            ? selectedPayment.totalAmt 
+            ? parseFloat(selectedPayment.totalAmt)
             : getPaymentTotalAmount(selectedPayment);
-          const invoiceAmount = selectedPayment.totalInvoiceAmount;
+          const invoiceAmount = parseFloat(selectedPayment.totalInvoiceAmount);
           const difference = totalReceived - invoiceAmount;
-          const isExtraPaid = difference > 0;
-          const isShortPaid = difference < 0;
-          
+          const tolerance = CLOSING_TOLERANCE_RUPEES;
+          const isExtraPaid = difference > tolerance;
+          const isShortPaid = difference < -tolerance;
+          const isEffectivelyEqual = Math.abs(difference) <= tolerance;
+          const displayedBalance = Math.max(0, Math.abs(difference) - tolerance);
+
           return (
             <>
               {isExtraPaid && (
@@ -3288,10 +3445,11 @@ useEffect(() => {
                   <div className="text-xs text-orange-600 mt-1">Remaining amount due</div>
                 </div>
               )}
-              {!isExtraPaid && !isShortPaid && difference === 0 && invoiceAmount > 0 && (
+              {isEffectivelyEqual && invoiceAmount > 0 && (
                 <div>
                   <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
                   <div className="text-green-600 font-medium">Fully Paid ✓</div>
+                  <div className="text-xs text-green-600 mt-1">Within ₹{tolerance.toFixed(2)} tolerance</div>
                 </div>
               )}
             </>
