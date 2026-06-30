@@ -118,8 +118,8 @@ export class PineLabsService {
       };
 
       const apiUrl = config.environment === 'Production'
-        ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/GetStatus'
-        : 'https://www.plutuscloudserviceuat.in:8201/API/CloudBasedIntegration/V1/GetStatus';
+        ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/GetCloudBasedTxnStatus'
+        : 'https://www.plutuscloudserviceuat.in:8201/API/CloudBasedIntegration/V1/GetCloudBasedTxnStatus';
 
       const response = await axios.post(apiUrl, payload, { headers: { 'Content-Type': 'application/json' } });
       const pResp = response.data;
