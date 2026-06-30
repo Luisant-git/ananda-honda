@@ -65,6 +65,11 @@ export class PineLabsService {
          throw new Error(response.data.ResponseMessage || 'Pine Labs API error');
       }
 
+      await this.prisma.paymentTransaction.update({
+        where: { id: transaction.id },
+        data: { responseData: response.data }
+      });
+
       return {
         success: true,
         transactionId,
