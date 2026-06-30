@@ -350,9 +350,10 @@ model ServiceReminderLog {
 model PineLabsConfig {
   id            Int      @id @default(autoincrement())
   merchantId    String
-  terminalId    String
-  apiKey        String
-  apiSecret     String
+  securityToken String
+  clientId      String
+  storeId       String
+  hardwareSn    String?
   environment   String   @default("UAT") // UAT or Production
   status        String   @default("Active") // Active or Inactive
   createdAt     DateTime @default(now())

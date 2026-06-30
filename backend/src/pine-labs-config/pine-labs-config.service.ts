@@ -17,9 +17,10 @@ export class PineLabsConfigService {
         where: { id: existing.id },
         data: {
           merchantId: data.merchantId,
-          terminalId: data.terminalId,
-          apiKey: data.apiKey,
-          apiSecret: data.apiSecret,
+          securityToken: data.securityToken,
+          clientId: data.clientId,
+          storeId: data.storeId,
+          hardwareSn: data.hardwareSn,
           environment: data.environment,
           status: data.status,
         },
@@ -28,9 +29,10 @@ export class PineLabsConfigService {
       return this.prisma.pineLabsConfig.create({
         data: {
           merchantId: data.merchantId,
-          terminalId: data.terminalId,
-          apiKey: data.apiKey,
-          apiSecret: data.apiSecret,
+          securityToken: data.securityToken,
+          clientId: data.clientId,
+          storeId: data.storeId,
+          hardwareSn: data.hardwareSn,
           environment: data.environment,
           status: data.status,
         },

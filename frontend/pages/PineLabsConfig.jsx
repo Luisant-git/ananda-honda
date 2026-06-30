@@ -5,9 +5,10 @@ import config from '../config';
 const PineLabsConfig = () => {
   const [formData, setFormData] = useState({
     merchantId: '',
-    terminalId: '',
-    apiKey: '',
-    apiSecret: '',
+    securityToken: '',
+    clientId: '',
+    storeId: '',
+    hardwareSn: '',
     environment: 'UAT',
     status: 'Active',
   });
@@ -68,7 +69,7 @@ const PineLabsConfig = () => {
     try {
       // Simulate test connection
       await new Promise(resolve => setTimeout(resolve, 1500));
-      if (formData.merchantId && formData.terminalId && formData.apiKey) {
+      if (formData.merchantId && formData.securityToken && formData.clientId && formData.storeId) {
         toast.success('Connection to Pine Labs successful!');
       } else {
         toast.error('Please fill required credentials before testing');
@@ -129,36 +130,46 @@ const PineLabsConfig = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Terminal ID</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Security Token</label>
               <input
                 type="text"
-                name="terminalId"
-                value={formData.terminalId}
+                name="securityToken"
+                value={formData.securityToken}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">API Key / Access Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
               <input
                 type="text"
-                name="apiKey"
-                value={formData.apiKey}
+                name="clientId"
+                value={formData.clientId}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">API Secret</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Store ID</label>
               <input
-                type="password"
-                name="apiSecret"
-                value={formData.apiSecret}
+                type="text"
+                name="storeId"
+                value={formData.storeId}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hardware S.N</label>
+              <input
+                type="text"
+                name="hardwareSn"
+                value={formData.hardwareSn || ''}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>

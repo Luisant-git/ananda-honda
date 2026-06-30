@@ -42,7 +42,9 @@ export class PineLabsService {
       
       const payload = {
         MerchantID: config.merchantId,
-        TerminalID: config.terminalId,
+        SecurityToken: config.securityToken,
+        ClientId: config.clientId,
+        StoreId: config.storeId,
         TransactionNumber: transactionId,
         Amount: data.amount * 100, // typically in paisa
       };
