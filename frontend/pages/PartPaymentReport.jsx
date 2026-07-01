@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
+import DateFilterButtons from '../components/DateFilterButtons';
 import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
 
 const PartPaymentReport = ({ user }) => {
@@ -19,6 +20,10 @@ const PartPaymentReport = ({ user }) => {
   useEffect(() => {
     fetchReportData();
   }, []);
+
+  useEffect(() => {
+    handleFilter();
+  }, [fromDate, toDate, paymentTypeFilter, reportData]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -277,16 +282,19 @@ const PartPaymentReport = ({ user }) => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Advance Payment Collection Report</h1>
-        {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
-          <button
-            onClick={() => setIsClearModalOpen(true)}
-            className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
-          >
-            Clear All Data
-          </button>
-        )}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 whitespace-nowrap"
+            >
+              Clear All Data
+            </button>
+          )}
+        </div>
       </div>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">

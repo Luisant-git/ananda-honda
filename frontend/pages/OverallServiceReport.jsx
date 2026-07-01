@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
+import DateFilterButtons from '../components/DateFilterButtons';
 import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
 
 const OverallServiceReport = ({ user }) => {
@@ -127,7 +128,7 @@ const OverallServiceReport = ({ user }) => {
 
   useEffect(() => {
     handleFilter();
-  }, [search, reportData]);
+  }, [search, fromDate, toDate, statusFilter, reportData]);
 
   const handleFilter = () => {
     let filtered = reportData;
@@ -297,8 +298,9 @@ const OverallServiceReport = ({ user }) => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Overall Service Report</h1>
+        <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
       </div>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
