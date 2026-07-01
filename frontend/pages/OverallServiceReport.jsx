@@ -47,8 +47,7 @@ const OverallServiceReport = ({ user }) => {
         const jcPayments = paymentsByJc[jcNo] || [];
         
         const receipts = [];
-        let status = jc.status || 'Pending';
-        let hasClearedPayment = false;
+        let status = 'Pending';
 
         jcPayments.forEach(payment => {
            // Main payment
@@ -70,13 +69,7 @@ const OverallServiceReport = ({ user }) => {
                 });
              });
            }
-
-           if (payment.paymentStatus === 'completed') {
-             hasClearedPayment = true;
-           }
         });
-
-        if (hasClearedPayment) status = 'Completed';
 
         if (receipts.length > currentMaxReceipts) {
           currentMaxReceipts = receipts.length;
@@ -84,7 +77,14 @@ const OverallServiceReport = ({ user }) => {
 
         const receiptAmountTotal = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
         const invoicedAmount = Number(jc.totalRevenue || 0);
-        const difference = invoicedAmount - receiptAmountTotal;
+        const difference = receiptAmountTotal - invoicedAmount;
+
+        if (receiptAmountTotal > 0 && receiptAmountTotal >= invoicedAmount) {
+          status = 'Completed';
+        } else {
+          status = 'Pending';
+        }
+
         const phoneNumber = jc.mobileNumber || jc.phone || jc.contactPhone || 'N/A';
 
         const rowData = {
@@ -179,10 +179,44 @@ const OverallServiceReport = ({ user }) => {
 
   const downloadExcel = () => {
     try {
-      const headers = columns.map(col => col.header).join('\t');
-      const rows = filteredData.map(row => columns.map(col => row[col.accessor] || '').join('\t')).join('\n');
-      const content = headers + '\n' + rows;
-      const blob = new Blob([content], { type: 'application/vnd.ms-excel' });
+      let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+      html += '<head><meta charset="utf-8"></head><body>';
+      html += '<table border="1"><thead><tr>';
+      
+      columns.forEach(col => {
+        html += `<th style="background-color: #f3f4f6; font-weight: bold; text-align: left; padding: 5px;">${col.header}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      filteredData.forEach(row => {
+        html += '<tr>';
+        columns.forEach(col => {
+          let value = row[col.accessor] || '';
+          let style = 'padding: 5px;';
+          
+          if (col.accessor === 'status') {
+             if (value === 'Completed') {
+                style += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
+             } else {
+                style += ' background-color: #fef9c3; color: #854d0e; font-weight: bold; text-align: center;';
+             }
+          }
+          
+          if (col.accessor === 'jobCardDate' || col.accessor === 'invoicedDate') {
+            if (value) {
+              const date = new Date(value);
+              value = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`;
+            }
+          }
+
+          html += `<td style="${style}">${value}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></body></html>';
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
