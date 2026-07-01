@@ -29,6 +29,7 @@ import FullPaymentReport from '../pages/FullPaymentReport';
 import PartPaymentReport from '../pages/PartPaymentReport';
 import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 import ServiceReminderReport from '../pages/ServiceReminderReport';
+import OverallServiceReport from '../pages/OverallServiceReport';
 import QuickStart from '../pages/QuickStart';
 import LocationMaster from '../pages/LocationMaster';
 import PineLabsConfig from '../pages/PineLabsConfig';
@@ -94,6 +95,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <FullPaymentReport user={user} />;
       case 'part_payment_report':
        return <PartPaymentReport user={user} />;
+      case 'overall_service_report':
+       return <OverallServiceReport user={user} />;
       case 'service_reminder_report':  
         return <ServiceReminderReport user={user} />;
       case 'change_password':

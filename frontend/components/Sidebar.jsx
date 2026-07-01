@@ -273,6 +273,11 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                               <NavLink view="part_payment_report" label="Advance Payment Report" isSubmenu />
                             </li>
                           )}
+                          {permissions?.reports?.overall_service_report && (
+                            <li>
+                              <NavLink view="overall_service_report" label="Overall Service Report" isSubmenu />
+                            </li>
+                          )}
                         </ul>
                       </div>
                     </div>
