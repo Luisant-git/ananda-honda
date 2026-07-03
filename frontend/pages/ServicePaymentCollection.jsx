@@ -26,9 +26,15 @@ const ServicePaymentCollection = ({ user, subType }) => {
   console.log('service payment modes', paymentModes);
   
   // Determine if current subType is full or advance payment
-  const isFullPaymentMode = subType === 'full';
-  const isAdvancePaymentMode = subType === 'advance';
-  const isXyzPaymentMode = subType === 'xyz';
+  const [internalMode, setInternalMode] = useState(subType || 'full');
+  
+  useEffect(() => {
+    setInternalMode(subType || 'full');
+  }, [subType]);
+
+  const isFullPaymentMode = internalMode === 'full';
+  const isAdvancePaymentMode = internalMode === 'advance';
+  const isXyzPaymentMode = internalMode === 'xyz';
 
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [typeOfPayments, setTypeOfPayments] = useState([]);
@@ -64,13 +70,13 @@ const ServicePaymentCollection = ({ user, subType }) => {
   // Update page title based on subType
   useEffect(() => {
     if (isFullPaymentMode) {
-      setPageTitle('Service Payment Collection - Full Payment');
+      setPageTitle('Service Payments - Full Payment');
     } else if (isAdvancePaymentMode) {
-      setPageTitle('Service Payment Collection - Advance Payment');
+      setPageTitle('Service Payments - Advance Payment');
     } else if (isXyzPaymentMode) {
-      setPageTitle('Service Payment Collection - Service Plan Payment');
+      setPageTitle('Service Plan Payment');
     } else {
-      setPageTitle('Service Payment Collection');
+      setPageTitle('Service Payments');
     }
   }, [subType, isFullPaymentMode, isAdvancePaymentMode, isXyzPaymentMode]);
 
@@ -91,6 +97,9 @@ const ServicePaymentCollection = ({ user, subType }) => {
     date: new Date().toISOString().split("T")[0],
     totalAmt: "",
     recAmt: "", // This will be the current payment amount
+    hasAdditionalPlan: false,
+    additionalPlanCollectionId: "",
+    additionalPlanAmount: "",
     paymentType: "full payment",
     paymentTypeId: "",
     // default to pending to avoid accidental 'completed' state
@@ -125,6 +134,11 @@ const ServicePaymentCollection = ({ user, subType }) => {
           return typeStr.includes('jobcard') || typeStr.includes('ceramic');
         })
       : serviceTypeOfCollections;
+
+  const additionalPlanCollections = serviceTypeOfCollections.filter(item => {
+    const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
+    return ['rsa', 'amc', 'ew'].includes(typeStr);
+  });
 
   const isPartPaymentType = (name) => mapMasterNameToKey(name) === 'part payment';
 
@@ -1076,25 +1090,32 @@ useEffect(() => {
     }
   }, [isFullPaymentMode, isAdvancePaymentMode, isXyzPaymentMode, paymentTypes]);
 
-  // Apply subType filter when payments load or when subType changes
+  // Apply internalMode filter when payments load or when internalMode changes
   useEffect(() => {
-    if (!subType) {
-      setFilteredPayments(payments);
+    let filtered = payments || [];
+    
+    // Apply customer filter
+    if (loadedCustomer) {
+      filtered = filtered.filter(p => p.customerId === loadedCustomer.id);
+    }
+
+    if (!internalMode) {
+      setFilteredPayments(filtered);
       return;
     }
-    const key = (subType || '').toString().toLowerCase().trim();
-    if (!payments || payments.length === 0) {
+
+    const key = (internalMode || '').toString().toLowerCase().trim();
+    if (filtered.length === 0) {
       setFilteredPayments([]);
       return;
     }
 
-    let filtered = payments;
     if (key === 'full') {
-      filtered = payments.filter(p => (p.paymentType || '').toString().toLowerCase().includes('full'));
+      filtered = filtered.filter(p => (p.paymentType || '').toString().toLowerCase().includes('full'));
     } else if (key === 'advance') {
-      filtered = payments.filter(p => (p.paymentType || '').toString().toLowerCase().includes('advance'));
+      filtered = filtered.filter(p => (p.paymentType || '').toString().toLowerCase().includes('advance'));
     } else if (key === 'xyz') {
-      filtered = payments.filter(p => {
+      filtered = filtered.filter(p => {
         const type = (p.paymentType || '').toString().toLowerCase();
         const collection = (p.serviceTypeOfCollection?.typeOfCollect || '').toString().toLowerCase();
         return type.includes('service plan') || ['rsa', 'amc', 'ew'].some(val => collection.includes(val));
@@ -1102,7 +1123,7 @@ useEffect(() => {
     }
 
     setFilteredPayments(filtered);
-  }, [subType, payments]);
+  }, [internalMode, payments, loadedCustomer]);
 
   // Add this useEffect to fetch vehicle models when component mounts
 useEffect(() => {
@@ -2060,6 +2081,9 @@ if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "adva
       serviceTypeId: formData.serviceTypeId ? parseInt(formData.serviceTypeId) : undefined,
       selectedParts: selectedParts,
       pineLabsTxnId: pineLabsTxnId,
+      hasAdditionalPlan: formData.hasAdditionalPlan,
+      additionalPlanCollectionId: formData.additionalPlanCollectionId ? parseInt(formData.additionalPlanCollectionId) : undefined,
+      additionalPlanAmount: formData.additionalPlanAmount ? parseFloat(formData.additionalPlanAmount) : undefined,
     };
 
     // FIRST: Create or update payment
@@ -2164,6 +2188,9 @@ if (finalJobCardNumber) {
       jobCardNumber: "",
       serviceType: "",
       serviceTypeId: "",
+      hasAdditionalPlan: false,
+      additionalPlanCollectionId: "",
+      additionalPlanAmount: ""
     });
 
     // Reset customer data
@@ -2269,6 +2296,38 @@ useEffect(() => {
   
   refreshJobCardOnModalOpen();
 }, [isPaymentModalOpen, formData.jobCardNumber]);
+  const handleOpenNewPayment = () => {
+    setIsEditMode(false);
+    
+    let defaultType = 'full payment';
+    let defaultTypeId = '';
+    
+    if (isFullPaymentMode) {
+      const fullType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('full'));
+      defaultType = 'full payment';
+      defaultTypeId = fullType ? String(fullType.id) : '';
+    } else if (isAdvancePaymentMode) {
+      const advanceType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('advance'));
+      defaultType = 'advance payment';
+      defaultTypeId = advanceType ? String(advanceType.id) : '';
+    } else if (isXyzPaymentMode) {
+      const planType = paymentTypes.find(pt => pt.name?.toString().toLowerCase().includes('service plan'));
+      defaultType = 'service plan payment';
+      defaultTypeId = planType ? String(planType.id) : '';
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      paymentType: defaultType,
+      paymentTypeId: defaultTypeId,
+      hasAdditionalPlan: false,
+      additionalPlanCollectionId: "",
+      additionalPlanAmount: ""
+    }));
+    
+    setIsPaymentModalOpen(true);
+  };
+
   const handleEdit = (payment) => {
     setIsEditMode(true);
     setEditingPayment(payment);
@@ -2281,6 +2340,9 @@ useEffect(() => {
       date: new Date(payment.date).toISOString().split("T")[0],
       totalAmt: payment.totalAmt?.toString() || "",
       recAmt: payment.recAmt.toString(),
+      hasAdditionalPlan: payment.hasAdditionalPlan || false,
+      additionalPlanCollectionId: payment.additionalPlanCollectionId?.toString() || "",
+      additionalPlanAmount: payment.additionalPlanAmount?.toString() || "",
       paymentType: canonicalType || payment.paymentType,
       paymentStatus: payment.paymentStatus,
       paymentTypeId: matchedMaster ? matchedMaster.id : (payment.paymentTypeId || ""),
@@ -2776,7 +2838,16 @@ useEffect(() => {
                   <div className="space-y-4">
                     <div><label className="text-sm text-brand-text-secondary">Address *</label><textarea value={newCustomerData.address} onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" rows={2} required></textarea></div>
                     <div><label className="text-sm text-brand-text-secondary">Status</label><select value={newCustomerData.status} onChange={(e) => { const newStatus = e.target.value; setNewCustomerData({ ...newCustomerData, status: newStatus, address: newStatus === "Service Dealer Customer" ? "NA" : newCustomerData.address }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"><option>Walk in Customer</option><option>Online Enquiry</option><option>Service Dealer Customer</option></select></div>
-                    <div className="pt-2 flex justify-start">{permissions?.payment_collection?.service?.add && (<button onClick={() => setIsPaymentModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" disabled={!newCustomerData.name || !newCustomerData.contactNo || !newCustomerData.address}>Pay</button>)}</div>
+                    <div className="pt-2 flex justify-start gap-3">
+                      {permissions?.payment_collection?.service?.add && (
+                        <button onClick={handleOpenNewPayment} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" disabled={!newCustomerData.name || !newCustomerData.contactNo || !newCustomerData.address}>
+                          Pay
+                        </button>
+                      )}
+                      <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setServiceJobCardInfo(null); setSalesInvoiceInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -2790,7 +2861,16 @@ useEffect(() => {
                     <div className="space-y-4">
                       <div><label className="text-sm text-brand-text-secondary">Address</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.address}</div></div>
                       <div><label className="text-sm text-brand-text-secondary">Status</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.status}</div></div>
-                      <div className="pt-2 flex justify-start">{permissions?.payment_collection?.service?.add && (<button onClick={() => setIsPaymentModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Pay</button>)}</div>
+                      <div className="pt-2 flex justify-start gap-3">
+                        {permissions?.payment_collection?.service?.add && (
+                          <button onClick={handleOpenNewPayment} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">
+                            Pay
+                          </button>
+                        )}
+                        <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setServiceJobCardInfo(null); setSalesInvoiceInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   </div>
                   {salesInvoiceInfo && (
@@ -2928,6 +3008,25 @@ useEffect(() => {
         </div>
       )}
 
+      {(!subType || subType === 'full' || subType === 'advance') && !showDeleted && (
+        <div className="flex justify-center mt-6 mb-2">
+          <div className="flex bg-gray-200 p-1 rounded-xl shadow-sm border border-gray-300 w-full max-w-md">
+            <button
+              onClick={() => setInternalMode('full')}
+              className={`flex-1 py-2 text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'full' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Full Payment
+            </button>
+            <button
+              onClick={() => setInternalMode('advance')}
+              className={`flex-1 py-2 text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'advance' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Advance Payment
+            </button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={showDeleted ? deletedPayments : filteredPayments}
@@ -3059,7 +3158,55 @@ useEffect(() => {
 
             {/* Row 4: Collection & Amount */}
             <SearchableDropdown label="Type of Collection" value={formData.serviceTypeOfCollectionId} onChange={(value) => { const selectedType = filteredTypeOfCollections.find(type => type.id === parseInt(value)); setFormData({ ...formData, serviceTypeOfCollectionId: value, vehicleModelId: selectedType?.disableVehicleModel ? "" : formData.vehicleModelId }); }} options={filteredTypeOfCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))} />
-            <div><label className="block text-sm font-medium text-brand-text-secondary mb-1">Amount <span className="text-red-500">*</span></label><input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({ ...formData, recAmt: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required /></div>
+            <div>
+              <label className="block text-sm font-medium text-brand-text-secondary mb-1">Receipt Amount <span className="text-red-500">*</span></label>
+              <input type="number" step="0.01" value={formData.recAmt} onChange={(e) => setFormData({ ...formData, recAmt: e.target.value })} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2" required />
+            </div>
+
+            {normalizedPaymentType === 'full payment' && (
+              <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <label className="flex items-center gap-2 cursor-pointer font-medium text-brand-text-primary">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasAdditionalPlan}
+                    onChange={(e) => {
+                      setFormData({ 
+                        ...formData, 
+                        hasAdditionalPlan: e.target.checked,
+                        additionalPlanCollectionId: e.target.checked ? formData.additionalPlanCollectionId : "",
+                        additionalPlanAmount: e.target.checked ? formData.additionalPlanAmount : ""
+                      })
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  Service Plan Payment
+                </label>
+                
+                {formData.hasAdditionalPlan && (
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <SearchableDropdown
+                      label="Type of Collection"
+                      value={formData.additionalPlanCollectionId}
+                      onChange={(value) => setFormData({ ...formData, additionalPlanCollectionId: value })}
+                      options={additionalPlanCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
+                      required={formData.hasAdditionalPlan}
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-brand-text-secondary mb-1">Service Plan Amount <span className="text-red-500">*</span></label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={formData.additionalPlanAmount} 
+                        onChange={(e) => setFormData({ ...formData, additionalPlanAmount: e.target.value })} 
+                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" 
+                        required={formData.hasAdditionalPlan} 
+                        placeholder="Enter separate amount"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Row 5: Payment Method */}
             <SearchableDropdown label="Payment Mode" value={formData.paymentModeId} onChange={(value) => setFormData({ ...formData, paymentModeId: value, typeOfPaymentId: "" })} options={paymentModes.map(mode => ({ value: mode.id.toString(), label: mode.paymentMode }))} required />

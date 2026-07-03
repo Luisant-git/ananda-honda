@@ -20,6 +20,9 @@ async create(data: {
   customerId: number; 
   totalAmt?: number; 
   recAmt: number; 
+  hasAdditionalPlan?: boolean;
+  additionalPlanCollectionId?: number;
+  additionalPlanAmount?: number;
   paymentType?: string; 
   paymentStatus?: string; 
   vehicleNumber?: string; 
@@ -168,6 +171,9 @@ async create(data: {
       customerId: data.customerId,
       totalAmt: computedTotalAmt || null,
       recAmt: data.recAmt,
+      hasAdditionalPlan: data.hasAdditionalPlan || false,
+      additionalPlanCollectionId: data.additionalPlanCollectionId || null,
+      additionalPlanAmount: data.additionalPlanAmount || 0,
       paymentTypeId: resolvedPaymentType.id,
       paymentType: resolvedPaymentType.name,
       paymentStatus: currentStatus,
@@ -193,7 +199,8 @@ async create(data: {
       vehicleModel: true,
       serviceTypeRelation: true,
       user: true,
-      paymentTypeMaster: true
+      paymentTypeMaster: true,
+      additionalPlanCollection: true
     }
   });
 
@@ -492,8 +499,9 @@ async completePartPayment(id: number, data: {
           vehicleModel: true,
           serviceTypeRelation: true,
           user: true,
-          cancelledByUser: true
-          ,paymentTypeMaster: true
+          cancelledByUser: true,
+          paymentTypeMaster: true,
+          additionalPlanCollection: true
         },
         orderBy: { id: 'desc' },
         skip,
@@ -570,7 +578,9 @@ async completePartPayment(id: number, data: {
         vehicleModel: true,
         serviceTypeRelation: true,
         user: true,
-        cancelledByUser: true
+        cancelledByUser: true,
+        paymentTypeMaster: true,
+        additionalPlanCollection: true
       }
     });
     
@@ -589,6 +599,9 @@ async completePartPayment(id: number, data: {
     customerId?: number; 
     totalAmt?: number; 
     recAmt?: number; 
+    hasAdditionalPlan?: boolean;
+    additionalPlanCollectionId?: number;
+    additionalPlanAmount?: number;
     paymentType?: string; 
     paymentStatus?: string; 
     vehicleNumber?: string; 
@@ -612,6 +625,9 @@ async completePartPayment(id: number, data: {
     }
     if (data.serviceTypeOfCollectionId === undefined) {
       delete updateData.serviceTypeOfCollectionId; 
+    }
+    if (data.additionalPlanCollectionId === undefined) {
+      delete updateData.additionalPlanCollectionId;
     }
     if (data.vehicleModelId === undefined) {
       delete updateData.vehicleModelId;

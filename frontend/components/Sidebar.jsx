@@ -203,14 +203,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                         } overflow-hidden`}
                       >
                         <ul className="space-y-1 mt-1">
-                          {permissions?.payment_collection?.service?.full_payment_menu && (
+                          {(permissions?.payment_collection?.service?.full_payment_menu || permissions?.payment_collection?.service?.advance_payment_menu) && (
                             <li>
-                              <NavLink view="service_payment_collection_full" label="Full Payment" isSubmenu />
-                            </li>
-                          )}
-                          {permissions?.payment_collection?.service?.advance_payment_menu && (
-                            <li>
-                              <NavLink view="service_payment_collection_advance" label="Advance Payment" isSubmenu />
+                              <NavLink view="service_payment_collection" label="Service Payments" isSubmenu />
                             </li>
                           )}
                           {permissions?.payment_collection?.service?.service_plan_payment_menu && (

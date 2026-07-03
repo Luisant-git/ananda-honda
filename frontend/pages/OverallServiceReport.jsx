@@ -71,12 +71,24 @@ const OverallServiceReport = ({ user }) => {
              });
            }
         });
+        
+        // Sort receipts by receipt number ascending (e.g. SRV0001 then SRV0002)
+        receipts.sort((a, b) => {
+          const numA = parseInt((a.receiptNo || '').replace(/[^0-9]/g, ''), 10) || 0;
+          const numB = parseInt((b.receiptNo || '').replace(/[^0-9]/g, ''), 10) || 0;
+          return numA - numB;
+        });
 
         if (receipts.length > currentMaxReceipts) {
           currentMaxReceipts = receipts.length;
         }
 
         const receiptAmountTotal = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const additionalPlanTotal = jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0);
+        const additionalPlanTypes = jcPayments
+          .map(p => p.additionalPlanCollection?.typeOfCollect)
+          .filter(Boolean)
+          .join(', ');
         const invoicedAmount = Number(jc.totalRevenue || 0);
         const difference = receiptAmountTotal - invoicedAmount;
 
@@ -102,6 +114,8 @@ const OverallServiceReport = ({ user }) => {
           invoicedDate: jc.closedDate || jc.updatedAt || jc.createdAt,
           invoicedAmount: invoicedAmount,
           receiptAmountTotal: receiptAmountTotal,
+          additionalPlanTypes: additionalPlanTypes || 'N/A',
+          additionalPlanTotal: additionalPlanTotal,
           invoiceAmount: invoicedAmount,
           difference: difference,
           status: status,
@@ -274,6 +288,8 @@ const OverallServiceReport = ({ user }) => {
   }
 
   const baseColumns2 = [
+    { header: "Service Plan Type", accessor: "additionalPlanTypes" },
+    { header: "Service Plan Payment", accessor: "additionalPlanTotal" },
     { header: "Receipt Amt Total", accessor: "receiptAmountTotal" },
     { header: "Invoice Amount", accessor: "invoiceAmount" },
     { header: "Difference", accessor: "difference" },

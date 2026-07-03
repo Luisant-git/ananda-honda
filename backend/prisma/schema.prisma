@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,8 +8,8 @@ datasource db {
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
-  custId    String   @unique
+  id        Int     @id @default(autoincrement())
+  custId    String  @unique
   name      String
   contactNo String
   address   String
@@ -18,198 +17,201 @@ model Customer {
   pincode   String?
   status    String
 
-  enquiryDate       DateTime?  
-  vehicleModel      String?     // crm vehicle model
-  color             String?     
-  variant           String?     
-  interestLevel     String?     
-  purchaseType      String?    
-  exchangeDetails   String? 
-  branch            String?      
-  assignedExecutive String?     
-  remarks            String?
+  enquiryDate       DateTime?
+  vehicleModel      String? // crm vehicle model
+  color             String?
+  variant           String?
+  interestLevel     String?
+  purchaseType      String?
+  exchangeDetails   String?
+  branch            String?
+  assignedExecutive String?
+  remarks           String?
 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  paymentCollections PaymentCollection[]
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  paymentCollections        PaymentCollection[]
   servicePaymentCollections ServicePaymentCollection[]
-
 }
 
 model PaymentMode {
-  id          Int      @id @default(autoincrement())
-  paymentMode String
-  status      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  typeOfPayments TypeOfPayment[]
+  id                 Int                 @id @default(autoincrement())
+  paymentMode        String
+  status             String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  typeOfPayments     TypeOfPayment[]
   paymentCollections PaymentCollection[]
 }
 
 model TypeOfPayment {
-  id            Int         @id @default(autoincrement())
-  paymentModeId Int
-  typeOfMode    String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  paymentMode   PaymentMode @relation(fields: [paymentModeId], references: [id])
+  id                 Int                 @id @default(autoincrement())
+  paymentModeId      Int
+  typeOfMode         String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  paymentMode        PaymentMode         @relation(fields: [paymentModeId], references: [id])
   paymentCollections PaymentCollection[]
 }
 
-model ServiceTypeOfCollection{
-  id                    Int    @id @default(autoincrement())
-  typeOfCollect         String
-  status                String
-  disableVehicleModel   Boolean @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+model ServiceTypeOfCollection {
+  id                        Int                        @id @default(autoincrement())
+  typeOfCollect             String
+  status                    String
+  disableVehicleModel       Boolean                    @default(false)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
   servicePaymentCollections ServicePaymentCollection[]
+  additionalPlanPayments    ServicePaymentCollection[] @relation("AdditionalPlanRelation")
 }
 
 model TypeOfCollection {
-  id          Int      @id @default(autoincrement())
-  typeOfCollect  String
-  status         String
-  disableVehicleModel Boolean @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  paymentCollections PaymentCollection[]
+  id                  Int                 @id @default(autoincrement())
+  typeOfCollect       String
+  status              String
+  disableVehicleModel Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  paymentCollections  PaymentCollection[]
 }
 
 model VehicleModel {
-  id        Int      @id @default(autoincrement())
-  model     String
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  paymentCollections PaymentCollection[]
+  id                        Int                        @id @default(autoincrement())
+  model                     String
+  status                    String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  paymentCollections        PaymentCollection[]
   servicePaymentCollections ServicePaymentCollection[]
 }
 
 model PaymentCollection {
-  id              Int      @id @default(autoincrement())
-  date            DateTime
-  receiptNo       String   @unique
-  refNo           String?
-  customerId      Int
-  recAmt          Float
-  paymentModeId   Int
-  paymentType     String   @default("booking")
-  typeOfPaymentId Int?
+  id                 Int               @id @default(autoincrement())
+  date               DateTime
+  receiptNo          String            @unique
+  refNo              String?
+  customerId         Int
+  recAmt             Float
+  paymentModeId      Int
+  paymentType        String            @default("booking")
+  typeOfPaymentId    Int?
   typeOfCollectionId Int?
-  vehicleModelId  Int?
-  enteredBy       Int?
-  remarks         String?
-  deletedAt       DateTime?
-  deletedBy       Int?
-  cancelledAt     DateTime?
-  cancelledBy     Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  customer        Customer @relation(fields: [customerId], references: [id])
-  paymentMode     PaymentMode @relation(fields: [paymentModeId], references: [id])
-  typeOfPayment   TypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
-  typeOfCollection TypeOfCollection? @relation(fields: [typeOfCollectionId], references: [id])
-  vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
-  user            User? @relation(fields: [enteredBy], references: [id])
-  deletedByUser   User? @relation("DeletedPayments", fields: [deletedBy], references: [id])
-  cancelledByUser User? @relation("CancelledPayments", fields: [cancelledBy], references: [id])
+  vehicleModelId     Int?
+  enteredBy          Int?
+  remarks            String?
+  deletedAt          DateTime?
+  deletedBy          Int?
+  cancelledAt        DateTime?
+  cancelledBy        Int?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  customer           Customer          @relation(fields: [customerId], references: [id])
+  paymentMode        PaymentMode       @relation(fields: [paymentModeId], references: [id])
+  typeOfPayment      TypeOfPayment?    @relation(fields: [typeOfPaymentId], references: [id])
+  typeOfCollection   TypeOfCollection? @relation(fields: [typeOfCollectionId], references: [id])
+  vehicleModel       VehicleModel?     @relation(fields: [vehicleModelId], references: [id])
+  user               User?             @relation(fields: [enteredBy], references: [id])
+  deletedByUser      User?             @relation("DeletedPayments", fields: [deletedBy], references: [id])
+  cancelledByUser    User?             @relation("CancelledPayments", fields: [cancelledBy], references: [id])
 }
 
 model ServicePaymentMode {
-  id          Int      @id @default(autoincrement())
-  paymentMode String
-  status      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  serviceTypeOfPayments ServiceTypeOfPayment[]
+  id                        Int                        @id @default(autoincrement())
+  paymentMode               String
+  status                    String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  serviceTypeOfPayments     ServiceTypeOfPayment[]
   servicePaymentCollections ServicePaymentCollection[]
 }
 
 model ServiceTypeOfPayment {
-  id            Int         @id @default(autoincrement())
-  paymentModeId Int
-  typeOfMode    String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  paymentMode   ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
+  id                        Int                        @id @default(autoincrement())
+  paymentModeId             Int
+  typeOfMode                String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  paymentMode               ServicePaymentMode         @relation(fields: [paymentModeId], references: [id])
   servicePaymentCollections ServicePaymentCollection[]
 }
 
 model ServicePaymentCollection {
-  id              Int      @id @default(autoincrement())
-  date            DateTime
-  receiptNo       String   @unique
-  refNo           String?
-  customerId      Int
-  totalAmt        Float?
-  recAmt          Float
-  paymentType     String   @default("full payment")
-  paymentTypeId   Int?
-  paymentTypeMaster PaymentType? @relation(fields: [paymentTypeId], references: [id])
+  id                        Int                      @id @default(autoincrement())
+  date                      DateTime
+  receiptNo                 String                   @unique
+  refNo                     String?
+  customerId                Int
+  totalAmt                  Float?
+  recAmt                    Float
+  hasAdditionalPlan         Boolean?                 @default(false)
+  additionalPlanCollectionId Int?
+  additionalPlanAmount      Float?                   @default(0)
+  paymentType               String                   @default("full payment")
+  paymentTypeId             Int?
+  paymentTypeMaster         PaymentType?             @relation(fields: [paymentTypeId], references: [id])
   // Default to 'pending' to avoid accidental completed state when frontend omits this field
-  paymentStatus   String   @default("pending")
-  vehicleNumber   String?
-  paymentModeId   Int
-  typeOfPaymentId Int?
+  paymentStatus             String                   @default("pending")
+  vehicleNumber             String?
+  paymentModeId             Int
+  typeOfPaymentId           Int?
   serviceTypeOfCollectionId Int?
-  vehicleModelId  Int?
-  enteredBy       Int?
-  remarks         String?
-  jobCardNumber   String?
-  serviceTypeId   Int?   
-  paymentSessions Json     @default("[]")
-  selectedParts             Json?                        @default("[]") 
-  deletedAt       DateTime?
-  deletedBy       Int?
-  cancelledAt     DateTime?
-  cancelledBy     Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  customer        Customer @relation(fields: [customerId], references: [id])
-  paymentMode     ServicePaymentMode @relation(fields: [paymentModeId], references: [id])
-  typeOfPayment   ServiceTypeOfPayment? @relation(fields: [typeOfPaymentId], references: [id])
-  serviceTypeOfCollection ServiceTypeOfCollection? @relation(fields: [serviceTypeOfCollectionId], references: [id])
-  serviceTypeRelation ServiceType? @relation(fields: [serviceTypeId], references: [id])  
-  vehicleModel   VehicleModel? @relation(fields: [vehicleModelId], references: [id])
-  user            User? @relation(fields: [enteredBy], references: [id])
-  deletedByUser   User? @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
-  cancelledByUser User? @relation("CancelledServicePayments", fields: [cancelledBy], references: [id])
+  vehicleModelId            Int?
+  enteredBy                 Int?
+  remarks                   String?
+  jobCardNumber             String?
+  serviceTypeId             Int?
+  paymentSessions           Json                     @default("[]")
+  selectedParts             Json?                    @default("[]")
+  deletedAt                 DateTime?
+  deletedBy                 Int?
+  cancelledAt               DateTime?
+  cancelledBy               Int?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  customer                  Customer                 @relation(fields: [customerId], references: [id])
+  paymentMode               ServicePaymentMode       @relation(fields: [paymentModeId], references: [id])
+  typeOfPayment             ServiceTypeOfPayment?    @relation(fields: [typeOfPaymentId], references: [id])
+  serviceTypeOfCollection   ServiceTypeOfCollection? @relation(fields: [serviceTypeOfCollectionId], references: [id])
+  additionalPlanCollection  ServiceTypeOfCollection? @relation("AdditionalPlanRelation", fields: [additionalPlanCollectionId], references: [id])
+  serviceTypeRelation       ServiceType?             @relation(fields: [serviceTypeId], references: [id])
+  vehicleModel              VehicleModel?            @relation(fields: [vehicleModelId], references: [id])
+  user                      User?                    @relation(fields: [enteredBy], references: [id])
+  deletedByUser             User?                    @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
+  cancelledByUser           User?                    @relation("CancelledServicePayments", fields: [cancelledBy], references: [id])
 }
 
 model PaymentType {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                        Int                        @id @default(autoincrement())
+  name                      String                     @unique
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
   servicePaymentCollections ServicePaymentCollection[]
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  role      Role
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  paymentCollections PaymentCollection[]
-  deletedPayments PaymentCollection[] @relation("DeletedPayments")
-  cancelledPayments PaymentCollection[] @relation("CancelledPayments")
+  id                        Int                        @id @default(autoincrement())
+  username                  String                     @unique
+  password                  String
+  role                      Role
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  paymentCollections        PaymentCollection[]
+  deletedPayments           PaymentCollection[]        @relation("DeletedPayments")
+  cancelledPayments         PaymentCollection[]        @relation("CancelledPayments")
   servicePaymentCollections ServicePaymentCollection[]
-  deletedServicePayments ServicePaymentCollection[] @relation("DeletedServicePayments")
-  cancelledServicePayments ServicePaymentCollection[] @relation("CancelledServicePayments")
-  paymentTransactions PaymentTransaction[]
+  deletedServicePayments    ServicePaymentCollection[] @relation("DeletedServicePayments")
+  cancelledServicePayments  ServicePaymentCollection[] @relation("CancelledServicePayments")
+  paymentTransactions       PaymentTransaction[]
 }
 
 model MenuPermission {
-  id        Int      @id @default(autoincrement())
-  role      Role     @unique
+  id          Int      @id @default(autoincrement())
+  role        Role     @unique
   permissions Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum Role {
@@ -224,97 +226,97 @@ enum Role {
 }
 
 model Enquiry {
-  id              Int      @id @default(autoincrement())
-  customerName    String?
-  enquiryType     String
-  mobileNumber    String
-  vehicleModel    String?
-  leadSources     String[]
-  executiveName   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  customerName  String?
+  enquiryType   String
+  mobileNumber  String
+  vehicleModel  String?
+  leadSources   String[]
+  executiveName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model SalesInvoice {
-  id              Int      @id @default(autoincrement())
-  customerName    String
-  contactInfo     String
-  referenceNo     String?
-  vehicleRegNo    String?
-  vehicleModel    String?
-  assignedTo      String?
-  address1        String?
-  address2        String?
-  city            String?
-  state           String?
-  zipCode         String?
+  id                Int                  @id @default(autoincrement())
+  customerName      String
+  contactInfo       String
+  referenceNo       String?
+  vehicleRegNo      String?
+  vehicleModel      String?
+  assignedTo        String?
+  address1          String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
   actualDeliverDate DateTime?
-  account         String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  reminderLogs     ServiceReminderLog[]
+  account           String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  reminderLogs      ServiceReminderLog[]
+
   @@index([contactInfo])
   @@index([vehicleRegNo])
 }
 
-
 model ServiceJobCard {
-  id                 Int      @id @default(autoincrement())
-  jobCardNumber      String   @unique  // This is used for matching
-  registrationNumber String
-  customerName       String?
-  mobileNumber       String?
-  vehicleDetails     String?
-  serviceId      Int?
-  serviceType        ServiceType? @relation(fields: [serviceId], references: [id])
-  closedDate         DateTime?
-  status             String   @default("Pending")
-  labourRevenue      Float?   @default(0)
-  partsRevenue       Float?   @default(0)
-  lubesRevenue       Float?   @default(0)
-  accessoriesRevenue Float?   @default(0)
-  totalRevenue       Float?   @default(0)
-  amc                Boolean  @default(false)
-  oil                Boolean  @default(false)
-  battery            Boolean  @default(false)
-  tyre               Boolean  @default(false)
-  painting           Boolean  @default(false)
-  frameNumber        String?
-  invoiceNumber      String?
-  currentKM          Float?
-  otpNo              String?
-  amcStartDate       DateTime?
-  amcEndDate         DateTime?
+  id                    Int          @id @default(autoincrement())
+  jobCardNumber         String       @unique // This is used for matching
+  registrationNumber    String
+  customerName          String?
+  mobileNumber          String?
+  vehicleDetails        String?
+  serviceId             Int?
+  serviceType           ServiceType? @relation(fields: [serviceId], references: [id])
+  closedDate            DateTime?
+  status                String       @default("Pending")
+  labourRevenue         Float?       @default(0)
+  partsRevenue          Float?       @default(0)
+  lubesRevenue          Float?       @default(0)
+  accessoriesRevenue    Float?       @default(0)
+  totalRevenue          Float?       @default(0)
+  amc                   Boolean      @default(false)
+  oil                   Boolean      @default(false)
+  battery               Boolean      @default(false)
+  tyre                  Boolean      @default(false)
+  painting              Boolean      @default(false)
+  frameNumber           String?
+  invoiceNumber         String?
+  currentKM             Float?
+  otpNo                 String?
+  amcStartDate          DateTime?
+  amcEndDate            DateTime?
   estimatedDeliveryDate DateTime?
-  branchCode         String?
-  mainCode           String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  branchCode            String?
+  mainCode              String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
-   @@index([mobileNumber]) 
+  @@index([mobileNumber])
   @@index([registrationNumber])
   @@index([closedDate])
 }
 
-model ServiceType{
-  id        Int      @id @default(autoincrement())
-  name    String @unique
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ServiceType {
+  id              Int                        @id @default(autoincrement())
+  name            String                     @unique
+  status          String
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
   serviceJobCard  ServiceJobCard[]
-  servicePayments ServicePaymentCollection[] 
+  servicePayments ServicePaymentCollection[]
 }
 
 model ServiceTypeOfPart {
-  id        Int      @id @default(autoincrement())
-  partNo    String   @unique
-  partName  String // for part description
-  Model String ?
-  status    String  @default("ORDERED")
-  statusDate    DateTime?  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int       @id @default(autoincrement())
+  partNo     String    @unique
+  partName   String // for part description
+  Model      String?
+  status     String    @default("ORDERED")
+  statusDate DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Location {
@@ -330,23 +332,23 @@ model Location {
 }
 
 model ServiceReminderLog {
-  id              Int      @id @default(autoincrement())
-  salesInvoiceId  Int
-  serviceType     String   // 'FREE_SERVICE_1', 'FREE_SERVICE_2', 'FREE_SERVICE_3'
-  reminderNumber  Int      // 1 or 2 (first reminder or second reminder)
-  reminderDate    DateTime
-  scheduledDate   DateTime
-  sentAt          DateTime @default(now())
-  status          String   // 'PENDING', 'SENT', 'FAILED'
-  errorMessage    String?
-  createdAt       DateTime @default(now())
-  
-  salesInvoice    SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
-  
+  id             Int      @id @default(autoincrement())
+  salesInvoiceId Int
+  serviceType    String // 'FREE_SERVICE_1', 'FREE_SERVICE_2', 'FREE_SERVICE_3'
+  reminderNumber Int // 1 or 2 (first reminder or second reminder)
+  reminderDate   DateTime
+  scheduledDate  DateTime
+  sentAt         DateTime @default(now())
+  status         String // 'PENDING', 'SENT', 'FAILED'
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  salesInvoice SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
+
+  @@unique([salesInvoiceId, serviceType, reminderNumber])
   @@index([salesInvoiceId])
   @@index([status])
   @@index([scheduledDate])
-  @@unique([salesInvoiceId, serviceType, reminderNumber])
 }
 
 model PineLabsConfig {
@@ -363,18 +365,18 @@ model PineLabsConfig {
 }
 
 model PaymentTransaction {
-  id             Int      @id @default(autoincrement())
-  transactionId  String   @unique
-  invoiceId      String?
-  customerName   String?
-  mobileNumber   String?
-  amount         Float
-  paymentMode    String?
-  status         String   @default("Pending") // Pending, Success, Failed, Cancelled
-  responseData   Json?
-  createdBy      Int?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  transactionId String   @unique
+  invoiceId     String?
+  customerName  String?
+  mobileNumber  String?
+  amount        Float
+  paymentMode   String?
+  status        String   @default("Pending") // Pending, Success, Failed, Cancelled
+  responseData  Json?
+  createdBy     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user           User?    @relation(fields: [createdBy], references: [id])
+  user User? @relation(fields: [createdBy], references: [id])
 }

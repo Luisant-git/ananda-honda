@@ -41,6 +41,8 @@ const ServiceReports = ({ user }) => {
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
         typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
+        additionalPlanType: payment.additionalPlanCollection?.typeOfCollect || 'N/A',
+        additionalPlanAmount: payment.additionalPlanAmount || 0,
         vehicleModel: payment.vehicleModel?.model || 'N/A',
         enteredBy: payment.user?.username || 'N/A',
         refNo: payment.refNo || 'N/A',
@@ -89,7 +91,10 @@ const ServiceReports = ({ user }) => {
     }
 
     if (collectionTypeFilter) {
-      filtered = filtered.filter(item => item.typeOfCollection.toString().toLowerCase() === collectionTypeFilter.toLowerCase());
+      filtered = filtered.filter(item => 
+        item.typeOfCollection.toString().toLowerCase() === collectionTypeFilter.toLowerCase() ||
+        item.additionalPlanType.toString().toLowerCase() === collectionTypeFilter.toLowerCase()
+      );
     }
     
     setFilteredData(filtered);
@@ -227,6 +232,8 @@ const ServiceReports = ({ user }) => {
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
+    { header: "Service Plan Type", accessor: "additionalPlanType" },
+    { header: "Service Plan Amount", accessor: "additionalPlanAmount" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
     { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "Ref No", accessor: "refNo" },
