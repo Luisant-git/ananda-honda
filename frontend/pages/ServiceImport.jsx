@@ -64,6 +64,8 @@ const ServiceImport = ({ user }) => {
           amcStartDate: r.amcStartDate,
           amcEndDate: r.amcEndDate,
           estimatedDeliveryDate: r.estimatedDeliveryDate,
+          dealerCode: r.branchCode || 'N/A',
+          mainCode: r.mainCode || 'N/A',
         }))
       );
     } catch (error) {
@@ -367,7 +369,9 @@ const ServiceImport = ({ user }) => {
         'OTP No': '123456',
         'AMC Start Date': '2026-01-01',
         'AMC End Date': '2027-01-01',
-        'Effective Final Delivery Estimate Date': '2026-01-16 17:00'
+        'Effective Final Delivery Estimate Date': '2026-01-16 17:00',
+        'Dealer Code': 'DLR001',
+        'Main Code': 'MAIN001'
       }];
       filename = 'order_report_template.xlsx';
     } else if (type === 'REVENUE') {
@@ -562,7 +566,7 @@ const ServiceImport = ({ user }) => {
                 <>
                   <span className="text-brand-text-primary font-bold text-sm">Upload Order Report</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
-                    <strong className="text-pink-600 font-semibold">Key Data:</strong> Job Card #, Created Date/Time, Vehicle Reg No., Contact Phone, AMC Dates
+                    <strong className="text-pink-600 font-semibold">Key Data:</strong> Job Card #, Created Date/Time, Vehicle Reg No., Contact Phone, AMC Dates, Dealer Code, Main Code
                   </span>
                 </>
               )}
@@ -831,6 +835,14 @@ const ServiceImport = ({ user }) => {
                   </div>
                 </>
               )}
+              <div>
+                <label className="text-xs text-brand-text-secondary uppercase">Dealer Code</label>
+                <div className="text-brand-text-primary font-medium">{selectedJobCard.dealerCode}</div>
+              </div>
+              <div>
+                <label className="text-xs text-brand-text-secondary uppercase">Main Code</label>
+                <div className="text-brand-text-primary font-medium">{selectedJobCard.mainCode}</div>
+              </div>
               <div>
                 <label className="text-xs text-brand-text-secondary uppercase">Status</label>
                 <div className="mt-1">

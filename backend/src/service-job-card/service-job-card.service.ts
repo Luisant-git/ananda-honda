@@ -179,6 +179,8 @@ export class ServiceJobCardService {
       let amcEndDate: Date | null = null;
       let estimatedDeliveryDate: Date | null = null;
       let serviceAdvisorPhone = '';
+      let branchCode = '';
+      let mainCode = '';
 
       let jobCardDate: Date | null = null;
 
@@ -277,6 +279,8 @@ export class ServiceJobCardService {
         amcEndDate = this.parseExcelDate(getVal('amc end date'));
         estimatedDeliveryDate = this.parseExcelDate(getVal('effective final delivery estimate date'));
         serviceAdvisorPhone = String(getVal('service adviser phone') || getVal('service advisor phone') || getVal('service advicer phone') || getVal('advisor phone') || getVal('service advisor') || getVal('service_advisor_phone') || '').trim();
+        branchCode = String(getVal('dealer code') || getVal('branch code') || '').trim();
+        mainCode = String(getVal('main code') || '').trim();
       }
 
       if (!jobCardNumber) continue;
@@ -325,6 +329,8 @@ export class ServiceJobCardService {
           amcStartDate: amcStartDate || undefined,
           amcEndDate: amcEndDate || undefined,
           estimatedDeliveryDate: estimatedDeliveryDate || undefined,
+          branchCode: branchCode || undefined,
+          mainCode: mainCode || undefined,
           updatedAt: new Date(),
         };
 
@@ -380,6 +386,8 @@ export class ServiceJobCardService {
           amcStartDate,
           amcEndDate,
           estimatedDeliveryDate,
+          branchCode,
+          mainCode,
           createdAt: finalCreatedAt,
         },
       });

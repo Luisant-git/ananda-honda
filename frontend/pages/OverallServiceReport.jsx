@@ -80,7 +80,9 @@ const OverallServiceReport = ({ user }) => {
         const invoicedAmount = Number(jc.totalRevenue || 0);
         const difference = receiptAmountTotal - invoicedAmount;
 
-        if (receiptAmountTotal > 0 && receiptAmountTotal >= invoicedAmount) {
+        if (invoicedAmount === 0) {
+          status = 'Invoice Pending';
+        } else if (receiptAmountTotal >= invoicedAmount) {
           status = 'Completed';
         } else {
           status = 'Pending';
@@ -93,8 +95,9 @@ const OverallServiceReport = ({ user }) => {
           jobCardDate: jc.createdAt || jc.date,
           jobCardNo: jcNo,
           phoneNumber: phoneNumber,
-          branchName: jc.branchName || 'N/A',
+          branchName: jc.branchName || 'Silk Board',
           branchCode: jc.branchCode || 'N/A',
+          mainCode: jc.mainCode || 'N/A',
           invoiceNumber: jc.invoiceNumber || 'N/A',
           invoicedDate: jc.closedDate || jc.updatedAt || jc.createdAt,
           invoicedAmount: invoicedAmount,
@@ -200,6 +203,8 @@ const OverallServiceReport = ({ user }) => {
           if (col.accessor === 'status') {
              if (value === 'Completed') {
                 style += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
+             } else if (value === 'Invoice Pending') {
+                style += ' background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;';
              } else {
                 style += ' background-color: #fef9c3; color: #854d0e; font-weight: bold; text-align: center;';
              }
@@ -247,6 +252,7 @@ const OverallServiceReport = ({ user }) => {
     { header: "Phone Number", accessor: "phoneNumber" },
     { header: "Branch Name", accessor: "branchName" },
     { header: "Branch Code", accessor: "branchCode" },
+    { header: "Main Code", accessor: "mainCode" },
     { header: "Invoice Number", accessor: "invoiceNumber" },
     {
       header: "Invoiced Date",
@@ -276,8 +282,9 @@ const OverallServiceReport = ({ user }) => {
       accessor: "status",
       render: (value) => {
         const isCompleted = value === 'Completed';
+        const isInvoicePending = value === 'Invoice Pending';
         return (
-          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isCompleted ? 'bg-green-100 text-green-800' : isInvoicePending ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
             {value}
           </span>
         );
@@ -353,6 +360,7 @@ const OverallServiceReport = ({ user }) => {
                 <option value="">All</option>
                 <option value="Completed">Completed</option>
                 <option value="Pending">Pending</option>
+                <option value="Invoice Pending">Invoice Pending</option>
               </select>
             </div>
             <div className="flex gap-2 items-end">
