@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const DateFilterButtons = ({ setFromDate, setToDate }) => {
+const DateFilterButtons = ({ setFromDate, setToDate, onFilterSelect }) => {
   const [activeFilter, setActiveFilter] = useState('');
 
   const setDateFilter = (type) => {
@@ -32,6 +32,7 @@ const DateFilterButtons = ({ setFromDate, setToDate }) => {
 
     setFromDate(from);
     setToDate(to);
+    if (onFilterSelect) onFilterSelect(from, to);
   };
 
   const getButtonStyle = (type) => {
@@ -78,6 +79,7 @@ const DateFilterButtons = ({ setFromDate, setToDate }) => {
             setActiveFilter('');
             setFromDate('');
             setToDate('');
+            if (onFilterSelect) onFilterSelect('', '');
           }}
           className="ml-auto sm:ml-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
           title="Clear Filter"

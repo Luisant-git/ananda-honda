@@ -137,6 +137,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             {permissions?.master && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
                 {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
+                {permissions.master.walk_in_customer && <li><NavLink view="walk_in_customer" label="Walk-in Customers" isSubmenu /></li>}
                 {/* Fixed: Now wrapped in permission check */}
                 {permissions.master.sales_invoice_master && <li><NavLink view="sales_invoice_master" label="Sales Invoice Master" isSubmenu /></li>}
                 {permissions.master.jobcard_master && (

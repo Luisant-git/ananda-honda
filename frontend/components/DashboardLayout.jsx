@@ -46,7 +46,9 @@ const DashboardLayout = ({ user, onLogout }) => {
   const renderView = () => {
     switch (currentView) {
       case 'customer_details':
-        return <CustomerDetails user={user} />;
+        return <CustomerDetails key="customer_details" user={user} />;
+      case 'walk_in_customer':
+        return <CustomerDetails key="walk_in_customer" user={user} defaultStatus="Walk in Customer" title="Walk-in Customers" />;
       case 'vehicle_enquiry_form':
         return <VehicleEnquiryForm setCurrentView={setCurrentView} />;
       case 'payment_mode':

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import * as XLSX from "xlsx";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import { customerApi } from "../api/customerApi.js";
@@ -10,12 +11,13 @@ import SearchableDropdown from "../components/SearchableDropdown.jsx";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import { locationApi } from "../api/locationApi.js";
 import ConfirmModal from '../components/ConfirmModal';
+import DateFilterButtons from "../components/DateFilterButtons";
 
 import { 
   User, Phone, MapPin, Sparkles, CheckCircle2, Save, X,
   Mail, Calendar, Briefcase, Home, Building2, CreditCard,
   FileText, AlertCircle, Search, UserCheck, UserPlus,
-  Bike, Wrench, Target, ClipboardList, Globe, Award, CalendarClock, Repeat
+  Bike, Wrench, Target, ClipboardList, Globe, Award, CalendarClock, Repeat, Flame, Thermometer, Snowflake
 } from "lucide-react";
 
 const InputField = ({ label, value, onChange, icon: Icon, type = "text", required = false, placeholder = "", disabled = false, maxLength }) => {
@@ -86,7 +88,7 @@ const SelectField = ({ label, value, onChange, options, disabled = false, requir
   );
 };
 
-const CustomerDetails = ({ user }) => {
+const CustomerDetails = ({ user, defaultStatus = "", title = "Customer Details" }) => {
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,7 +114,7 @@ const CustomerDetails = ({ user }) => {
     channel: "WALKIN",
     sourceId: "",
     enquiryTypeId: "",
-    status: "Walk in Customer",
+    status: defaultStatus || "Walk in Customer",
     modelId: "",
     variantId: "",
     colourId: "",
@@ -142,6 +144,7 @@ const CustomerDetails = ({ user }) => {
     selectedCustomer: "",
     fromDate: "",
     toDate: "",
+    status: defaultStatus,
   });
   const [permissions, setPermissions] = useState(null);
 
@@ -309,7 +312,12 @@ const fetchPermissions = async () => {
         ...customer,
       }));
       setCustomers(formattedData);
-      setFilteredCustomers(formattedData);
+      
+      if (defaultStatus) {
+        setFilteredCustomers(formattedData.filter(c => c.status === defaultStatus).map((customer, index) => ({ ...customer, sNo: index + 1 })));
+      } else {
+        setFilteredCustomers(formattedData);
+      }
     } catch (error) {
       console.error("Error fetching customers:", error);
     }
@@ -485,20 +493,27 @@ const fetchPermissions = async () => {
     }
   };
 
-  const handleFilterLoad = () => {
+  const handleFilterLoad = (overrideFilters) => {
+    const currentFilters = (overrideFilters && !overrideFilters.nativeEvent) ? overrideFilters : filters;
     let filtered = [...customers];
 
-    if (filters.selectedCustomer) {
+    if (currentFilters.selectedCustomer) {
       filtered = filtered.filter(
-        (customer) => customer.custId === filters.selectedCustomer
+        (customer) => customer.custId === currentFilters.selectedCustomer
       );
     }
 
-    if (filters.fromDate || filters.toDate) {
+    if (currentFilters.status) {
+      filtered = filtered.filter(
+        (customer) => customer.status === currentFilters.status
+      );
+    }
+
+    if (currentFilters.fromDate || currentFilters.toDate) {
       filtered = filtered.filter((customer) => {
         const customerDate = new Date(customer.createdAt);
-        const fromDate = filters.fromDate ? new Date(filters.fromDate) : null;
-        const toDate = filters.toDate ? new Date(filters.toDate) : null;
+        const fromDate = currentFilters.fromDate ? new Date(currentFilters.fromDate) : null;
+        const toDate = currentFilters.toDate ? new Date(currentFilters.toDate) : null;
 
         if (fromDate) {
           fromDate.setHours(0, 0, 0, 0);
@@ -518,8 +533,16 @@ const fetchPermissions = async () => {
   };
 
   const handleLoadAll = () => {
-    setFilters({ selectedCustomer: "", fromDate: "", toDate: "" });
-    setFilteredCustomers(customers);
+    setFilters({ selectedCustomer: "", fromDate: "", toDate: "", status: defaultStatus });
+    if (defaultStatus) {
+      setFilteredCustomers(
+        customers
+          .filter(c => c.status === defaultStatus)
+          .map((customer, index) => ({ ...customer, sNo: index + 1 }))
+      );
+    } else {
+      setFilteredCustomers(customers);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -570,7 +593,7 @@ const fetchPermissions = async () => {
         interestLevel: formData.interestLevel,
         purchaseType: formData.purchaseType,
         branch: lookupData.branches.find((b) => String(b.id) === formData.branchId)?.name,
-        exchangeDetails: formData.exchangeEnabled && formData.exchangeValue ? formData.exchangeValue : undefined,
+        exchangeDetails: formData.exchangeEnabled === false ? "No" : (formData.exchangeEnabled && formData.exchangeValue ? formData.exchangeValue : undefined),
         assignedExecutive: formData.executiveName || undefined,
         remarks: formData.remark || undefined,
       };
@@ -703,8 +726,8 @@ const fetchPermissions = async () => {
       executiveName: customer.assignedExecutive || "",
       interestLevel: customer.interestLevel || "",
       purchaseType: customer.purchaseType || "",
-      exchangeEnabled: Boolean(customer.exchangeDetails && customer.exchangeDetails.trim() !== ""),
-      exchangeValue: customer.exchangeDetails || "",
+      exchangeEnabled: customer.exchangeDetails === "No" ? false : Boolean(customer.exchangeDetails && customer.exchangeDetails.trim() !== ""),
+      exchangeValue: customer.exchangeDetails === "No" ? "" : (customer.exchangeDetails || ""),
       enquiryDate: customer.enquiryDate ? new Date(customer.enquiryDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
       remark: customer.remarks || "",
       typeOfService: "",
@@ -765,53 +788,71 @@ const fetchPermissions = async () => {
     setIsModalOpen(true);
   };
 
-  const downloadXML = () => {
+  const getExportData = () => {
+    return filteredCustomers.map((customer, index) => ({
+      "S.No": index + 1,
+      "Customer ID": customer.custId || "N/A",
+      "Customer Name": customer.name || "N/A",
+      "Contact No": customer.contactNo || "N/A",
+      "Status": customer.status || "N/A",
+      "Date": customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('en-GB') : "N/A",
+      "Branch": customer.branch || "N/A",
+      "Address": customer.address || "N/A",
+      "Location": customer.location ? (() => {
+        const locMatch = lookupData.locations.find(l => l.officename === customer.location);
+        return locMatch?.district ? `${customer.location} - ${locMatch.district}` : customer.location;
+      })() : "N/A",
+      "Pincode": customer.pincode || "N/A",
+      "Vehicle Model": customer.vehicleModel || "N/A",
+      "Variant": customer.variant || "N/A",
+      "Color": customer.color || "N/A",
+      "Interest Level": customer.interestLevel || "N/A",
+      "Purchase Type": customer.purchaseType || "N/A",
+      "Exchange Details": customer.exchangeDetails || "N/A",
+      "Remarks": customer.remarks || "N/A"
+    }));
+  };
+
+  const getExportFileName = () => {
+    let prefix = "Customers";
+    if (title === "Customer Details") {
+      prefix = "All_Customer_Details";
+    } else if (title) {
+      prefix = title.replace(/\s+/g, '_') + "_Details";
+    }
+    return `${prefix}_${new Date().toISOString().split('T')[0]}`;
+  };
+
+  const downloadExcel = () => {
     try {
-      let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      xmlContent += "<ENVELOPE>\n";
-      xmlContent += "<HEADER>\n";
-      xmlContent += "<TALLYREQUEST>Import Data</TALLYREQUEST>\n";
-      xmlContent += "</HEADER>\n";
-      xmlContent += "<BODY>\n";
-      xmlContent += "<IMPORTDATA>\n";
-      xmlContent += "<REQUESTDESC>\n";
-      xmlContent += "<REPORTNAME>All Masters</REPORTNAME>\n";
-      xmlContent += "<STATICVARIABLES>\n";
-      xmlContent += "<SVCURRENTCOMPANY>DEMO COMPANY</SVCURRENTCOMPANY>\n";
-      xmlContent += "</STATICVARIABLES>\n";
-      xmlContent += "</REQUESTDESC>\n";
-      xmlContent += "<REQUESTDATA>\n";
+      const data = getExportData();
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Customers");
+      XLSX.writeFile(wb, `${getExportFileName()}.xlsx`);
+      toast.success("Excel file downloaded successfully!");
+    } catch (error) {
+      toast.error("Error downloading Excel file");
+      console.error(error);
+    }
+  };
 
-      filteredCustomers.forEach((customer) => {
-        xmlContent += '<TALLYMESSAGE xmlns:UDF="TallyUDF">\n';
-        xmlContent += `<LEDGER NAME="${customer.custId} ${customer.name}" RESERVEDNAME="">\n`;
-        xmlContent += "<NAME.LIST>\n";
-        xmlContent += `<NAME>${customer.custId} ${customer.name}</NAME>\n`;
-        xmlContent += "</NAME.LIST>\n";
-        xmlContent += "<ADDRESS.LIST>\n";
-        xmlContent += `<ADDRESS>${customer.address || "N/A"}</ADDRESS>\n`;
-        xmlContent += "</ADDRESS.LIST>\n";
-        xmlContent += `<ADDITIONALNAME>${customer.custId} ${customer.name}</ADDITIONALNAME>\n`;
-        xmlContent += `<PARENT>Sundry Debtors</PARENT>\n`;
-        xmlContent += "</LEDGER>\n";
-        xmlContent += "</TALLYMESSAGE>\n";
-      });
-
-      xmlContent += "</REQUESTDATA>\n";
-      xmlContent += "</IMPORTDATA>\n";
-      xmlContent += "</BODY>\n";
-      xmlContent += "</ENVELOPE>";
-
-      const blob = new Blob([xmlContent], { type: "application/xml" });
+  const downloadCSV = () => {
+    try {
+      const data = getExportData();
+      const ws = XLSX.utils.json_to_sheet(data);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tally_customers_${new Date().toISOString().split("T")[0]}.xml`;
+      a.download = `${getExportFileName()}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success("Tally XML file downloaded successfully!");
+      toast.success("CSV file downloaded successfully!");
     } catch (error) {
-      toast.error("Error downloading XML file");
+      toast.error("Error downloading CSV file");
+      console.error(error);
     }
   };
 
@@ -821,6 +862,11 @@ const fetchPermissions = async () => {
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
     { header: "Status", accessor: "status" },
+    { 
+      header: "Date", 
+      accessor: "createdAt",
+      render: (val) => val ? new Date(val).toLocaleDateString('en-GB') : '-'
+    },
   ];
 
   const EnquiryTypeBadge = ({ type }) => {
@@ -835,6 +881,27 @@ const fetchPermissions = async () => {
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getTypeColor(type)}`}>
         {type?.replace(/_/g, ' ') || 'N/A'}
+      </span>
+    );
+  };
+
+  const InterestLevelBadge = ({ level }) => {
+    const getBadgeStyle = (interestLevel) => {
+      const normalized = (interestLevel || '').toUpperCase();
+      switch(normalized) {
+        case 'HOT': return { color: 'bg-[#EF4444] text-white border-[#EF4444]', label: '🔥 Hot' };
+        case 'WARM': return { color: 'bg-[#F59E0B] text-white border-[#F59E0B]', label: '🌤️ Warm' };
+        case 'COLD': return { color: 'bg-[#64748B] text-white border-[#64748B]', label: '❄️ Cold' };
+        default: return { color: 'bg-gray-100 text-gray-800 border-gray-200', label: interestLevel };
+      }
+    };
+    
+    if (!level) return <span className="text-gray-800 font-medium">N/A</span>;
+    
+    const { color, label } = getBadgeStyle(level);
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold border shadow-sm ${color}`}>
+        {label}
       </span>
     );
   };
@@ -855,36 +922,49 @@ const fetchPermissions = async () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Customer Details</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <DateFilterButtons 
+            setFromDate={(date) => setFilters(prev => ({ ...prev, fromDate: date }))}
+            setToDate={(date) => setFilters(prev => ({ ...prev, toDate: date }))}
+            onFilterSelect={(from, to) => handleFilterLoad({ ...filters, fromDate: from, toDate: to })}
+          />
           {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center"
             >
               Clear All Data
             </button>
           )}
           <button
-            onClick={downloadXML}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg text-sm"
+            onClick={downloadExcel}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center"
           >
-            XML
+            Export Excel
+          </button>
+          <button
+            onClick={downloadCSV}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center"
+          >
+            Export CSV
           </button>
         </div>
       </div>
 
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm ring-1 ring-black/5">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm ring-1 ring-black/5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <SearchableDropdown
             label="Select Customer"
             value={filters.selectedCustomer}
             onChange={(value) => setFilters({ ...filters, selectedCustomer: value })}
-            options={customers.map((c) => ({
-              value: c.custId,
-              label: `${c.name} - ${c.contactNo}`,
-            }))}
+            options={customers
+              .filter(c => defaultStatus ? c.status === defaultStatus : true)
+              .map((c) => ({
+                value: c.custId,
+                label: `${c.name} - ${c.contactNo}`,
+              }))}
           />
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-600 mb-1">From:</label>
@@ -915,7 +995,7 @@ const fetchPermissions = async () => {
               onClick={handleLoadAll}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
             >
-              Load All
+              Reset
             </button>
           </div>
           {permissions?.master?.customer_details?.add && (
@@ -927,6 +1007,26 @@ const fetchPermissions = async () => {
             </button>
           )}
         </div>
+        {!defaultStatus && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-600 mb-1">Status:</label>
+              <select
+                value={filters.status}
+                onChange={(e) => {
+                  const newFilters = { ...filters, status: e.target.value };
+                  setFilters(newFilters);
+                  handleFilterLoad(newFilters);
+                }}
+                className="bg-white border border-gray-200 rounded-lg p-2 focus:ring-blue-600 focus:border-blue-600"
+              >
+                <option value="">All Statuses</option>
+                <option value="Walk in Customer">Walk in Customer</option>
+                <option value="Imported from Invoice">Imported from Invoice</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       <DataTable
@@ -1350,8 +1450,8 @@ const fetchPermissions = async () => {
 
             {activeTab === "enquiries" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 border-b border-gray-200 pb-6">
-                  <div className="col-span-1 md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Location</p>
                     <p className="text-gray-800 font-medium">
                       {detailedCustomer?.location ? (() => {
@@ -1377,49 +1477,21 @@ const fetchPermissions = async () => {
                     <p className="text-gray-800 font-medium">{detailedCustomer?.color || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase font-bold">Interest Level</p>
-                    <p className="text-gray-800 font-medium">{detailedCustomer?.interestLevel || 'N/A'}</p>
+                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Interest Level</p>
+                    <InterestLevelBadge level={detailedCustomer?.interestLevel} />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Purchase Type</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.purchaseType || 'N/A'}</p>
                   </div>
-                  <div className="col-span-1 md:col-span-3 lg:col-span-4">
+                  <div>
                     <p className="text-xs text-gray-500 uppercase font-bold">Exchange Details</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.exchangeDetails || 'N/A'}</p>
                   </div>
-                  <div className="col-span-1 md:col-span-3 lg:col-span-4">
+                  <div className="col-span-1 md:col-span-2">
                     <p className="text-xs text-gray-500 uppercase font-bold">Remarks</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.remarks || 'N/A'}</p>
                   </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Type</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Vehicle</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Executive</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {detailedCustomer?.enquiries?.map((enq) => (
-                        <tr key={enq.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-sm">{enq.enquiryType}</td>
-                          <td className="px-4 py-2 text-sm">{enq.vehicleModel || 'N/A'}</td>
-                          <td className="px-4 py-2 text-sm">{enq.executiveName || 'N/A'}</td>
-                          <td className="px-4 py-2 text-sm">{new Date(enq.createdAt).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                      {(!detailedCustomer?.enquiries || detailedCustomer.enquiries.length === 0) && (
-                        <tr>
-                          <td colSpan="4" className="px-4 py-8 text-center text-gray-500 italic">No enquiries found</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
                 </div>
               </div>
             )}
@@ -1570,19 +1642,7 @@ const fetchPermissions = async () => {
             )}
           </div>
           
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            {permissions?.master?.customer_details?.edit && detailedCustomer && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDetailsModalOpen(false);
-                  handleEdit(detailedCustomer);
-                }}
-                className="px-6 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-bold transition-colors"
-              >
-                Edit
-              </button>
-            )}
+          <div className="flex justify-end pt-4 border-t border-gray-200">
             <button
               onClick={() => setIsDetailsModalOpen(false)}
               className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors"

@@ -5,6 +5,7 @@ import { customerApi } from '../api/customerApi';
 import { menuPermissionApi } from '../api/menuPermissionApi';
 import ServiceBusinessDashboard from './ServiceBusinessDashboard';
 import WalkinDashboard from './WalkinDashboard';
+import DateFilterButtons from '../components/DateFilterButtons';
 
 const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
@@ -36,8 +37,11 @@ else setActiveTab(null);
 
   fetchPerms();
 }, []);
-  const fetchDashboardData = async () => {
-    if ((fromDate && !toDate) || (!fromDate && toDate)) {
+  const fetchDashboardData = async (fDate, tDate) => {
+    const activeFrom = (fDate && typeof fDate === 'string') ? fDate : fromDate;
+    const activeTo = (tDate && typeof tDate === 'string') ? tDate : toDate;
+
+    if ((activeFrom && !activeTo) || (!activeFrom && activeTo)) {
       toast.error('Please select both from and to dates or clear both for overall data');
       return;
     }
@@ -45,13 +49,13 @@ else setActiveTab(null);
     try {
       let data = { modes: [], totalCount: 0 };
       if (activeTab === 'sales') {
-        data = await dashboardApi.getDashboardStats(fromDate, toDate);
+        data = await dashboardApi.getDashboardStats(activeFrom, activeTo);
       } else if (activeTab === 'services') {
-        data = await dashboardApi.getServicesDashboardStats(fromDate, toDate);
+        data = await dashboardApi.getServicesDashboardStats(activeFrom, activeTo);
       } else if (activeTab === 'service_business') {
-        data = await dashboardApi.getBusinessDashboardStats(fromDate, toDate);
+        data = await dashboardApi.getBusinessDashboardStats(activeFrom, activeTo);
       } else if (activeTab === 'walkin') {
-        data = await customerApi.getWalkinDashboardStats(fromDate, toDate);
+        data = await customerApi.getWalkinDashboardStats(activeFrom, activeTo);
       }
       setChartData(data);
       setExpandedMode(null); // collapse any expanded row
@@ -340,7 +344,10 @@ if (!permissions) return null; // or: return <div>Loading...</div>
 if (!hasDashboardAccess) return null; // hides whole dashboard page
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Dashboard</h1>
+        <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} onFilterSelect={fetchDashboardData} />
+      </div>
       
       {/* Tabs */}
 {(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business) && (
@@ -376,25 +383,25 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       {/* Date Filter Section */}
       <div className="bg-brand-surface p-3 rounded-lg shadow-sm border border-brand-border flex flex-wrap items-end gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-brand-text-secondary mb-1">From:</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
-            />
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-brand-text-secondary mb-1">From:</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-brand-text-secondary mb-1">To:</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
+              />
+            </div>
           </div>
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-brand-text-secondary mb-1">To:</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
-            />
-          </div>
-        </div>
         <div className="flex gap-2 mb-0.5">
           <button
             onClick={fetchDashboardData}

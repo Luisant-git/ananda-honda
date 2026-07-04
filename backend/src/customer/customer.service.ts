@@ -282,7 +282,10 @@ async getDetails(id: number) {
     } : {};
 
     const totalEnquiry = await this.prisma.customer.count({
-      where: dateFilter,
+      where: {
+        ...dateFilter,
+        status: 'Walk in Customer',
+      },
     });
     
     const todaysEnquiry = await this.prisma.customer.count({
@@ -290,12 +293,14 @@ async getDetails(id: number) {
         createdAt: {
           gte: today,
         },
+        status: 'Walk in Customer',
       },
     });
     
     const allocatedEnquiries = await this.prisma.customer.count({
       where: {
         ...dateFilter,
+        status: 'Walk in Customer',
         AND: [
           { assignedExecutive: { not: null } },
           { assignedExecutive: { not: '' } },
@@ -310,6 +315,7 @@ async getDetails(id: number) {
       },
       where: {
         ...dateFilter,
+        status: 'Walk in Customer',
         AND: [
           { assignedExecutive: { not: null } },
           { assignedExecutive: { not: '' } },
