@@ -84,7 +84,14 @@ const OverallServiceReport = ({ user }) => {
         }
 
         const receiptAmountTotal = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-        const additionalPlanTotal = jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0);
+        const additionalPlanAmountsStr = jcPayments
+          .flatMap(p => p.additionalPlanCollections && p.additionalPlanCollections.length > 0 
+            ? p.additionalPlanCollections.map(c => p.additionalPlanDetails?.[c.id] || 0)
+            : []
+          )
+          .join(', ');
+          
+        const additionalPlanTotal = additionalPlanAmountsStr || jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0);
         const additionalPlanTypes = jcPayments
           .flatMap(p => p.additionalPlanCollections?.map(c => c.typeOfCollect) || [])
           .filter(Boolean)
