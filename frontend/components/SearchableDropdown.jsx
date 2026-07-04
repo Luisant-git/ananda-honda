@@ -51,19 +51,37 @@ const SearchableDropdown = ({
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setIsOpen(true);
-        }}
-        onFocus={() => setIsOpen(true)}
-        placeholder={placeholder}
-        className={`w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent ${className}`}
-        required={required}
-        autoComplete="new-password"
-      />
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          className={`w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 pr-8 focus:ring-brand-accent focus:border-brand-accent ${className}`}
+          required={required}
+          autoComplete="new-password"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+              setSearchTerm('');
+              setIsOpen(false);
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
       {isOpen && (
         <div className="absolute z-50 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
           {filteredOptions.length > 0 ? (

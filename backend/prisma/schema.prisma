@@ -144,8 +144,8 @@ model ServicePaymentCollection {
   totalAmt                  Float?
   recAmt                    Float
   hasAdditionalPlan         Boolean?                 @default(false)
-  additionalPlanCollectionId Int?
   additionalPlanAmount      Float?                   @default(0)
+  additionalPlanDetails     Json?
   paymentType               String                   @default("full payment")
   paymentTypeId             Int?
   paymentTypeMaster         PaymentType?             @relation(fields: [paymentTypeId], references: [id])
@@ -172,7 +172,7 @@ model ServicePaymentCollection {
   paymentMode               ServicePaymentMode       @relation(fields: [paymentModeId], references: [id])
   typeOfPayment             ServiceTypeOfPayment?    @relation(fields: [typeOfPaymentId], references: [id])
   serviceTypeOfCollection   ServiceTypeOfCollection? @relation(fields: [serviceTypeOfCollectionId], references: [id])
-  additionalPlanCollection  ServiceTypeOfCollection? @relation("AdditionalPlanRelation", fields: [additionalPlanCollectionId], references: [id])
+  additionalPlanCollections ServiceTypeOfCollection[] @relation("AdditionalPlanRelation")
   serviceTypeRelation       ServiceType?             @relation(fields: [serviceTypeId], references: [id])
   vehicleModel              VehicleModel?            @relation(fields: [vehicleModelId], references: [id])
   user                      User?                    @relation(fields: [enteredBy], references: [id])

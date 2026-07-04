@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); prisma.servicePaymentCollection.findMany({orderBy: {id: 'desc'}, take: 1, include: {additionalPlanCollections: true}}).then(res => console.log(JSON.stringify(res, null, 2))).catch(e => console.error(e)).finally(() => prisma.$disconnect())

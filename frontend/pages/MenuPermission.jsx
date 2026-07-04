@@ -322,7 +322,7 @@ const MenuPermission = () => {
                       <div key={type}>
                         <label className="flex items-center space-x-2 mb-1">
                           <input type="checkbox" checked={!!editData.payment_collection[type]} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, [type]: prev.payment_collection[type] ? false : { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false } } }))} className="rounded" />
-                          <span className="font-medium text-sm sm:text-base">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                          <span className="font-medium text-sm sm:text-base">{type === 'sales' ? 'Sales Payments' : type === 'service' ? 'Service Payments' : type.charAt(0).toUpperCase() + type.slice(1)}</span>
                         </label>
                         {editData.payment_collection[type] && typeof editData.payment_collection[type] === 'object' && (
                           <div className="ml-4 sm:ml-6 space-y-1">
@@ -348,7 +348,7 @@ const MenuPermission = () => {
                         </label>
                         <label className="flex items-center space-x-2">
                           <input type="checkbox" checked={editData.payment_collection.service.service_plan_payment_menu || false} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, service: { ...prev.payment_collection.service, service_plan_payment_menu: !prev.payment_collection.service.service_plan_payment_menu } } }))} className="rounded" />
-                          <span className="text-sm">- Service Plan Payment</span>
+                          <span className="text-sm">- Additional Service Plan</span>
                         </label>
                       </div>
                     )}
@@ -386,7 +386,7 @@ const MenuPermission = () => {
             </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.service_reports} onChange={() => togglePermission('reports.service_reports')} className="rounded" />
-              <span className="text-sm">- Service Plan Payment report</span>
+              <span className="text-sm">- Service plan Report</span>
             </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.service_reminder_report} onChange={() => togglePermission('reports.service_reminder_report')} className="rounded" />

@@ -67,6 +67,11 @@ const FullPaymentReport = ({ user }) => {
           selectedParts: payment.selectedParts || [],
           paymentSessions: payment.paymentSessions || [],
           customerId: payment.customerId,
+          hasAdditionalPlan: payment.hasAdditionalPlan || false,
+          additionalPlanCollections: payment.additionalPlanCollections || [],
+          additionalPlanAmount: payment.additionalPlanAmount || '',
+          additionalPlanDetails: payment.additionalPlanDetails || {},
+          additionalPlanCollectionId: payment.additionalPlanCollectionId || null,
         };
       });
       setReportData(formattedData);
@@ -541,6 +546,44 @@ const FullPaymentReport = ({ user }) => {
                 </div>
               </div>
             </div>
+
+            {/* Additional Service Plans */}
+            {selectedPayment.hasAdditionalPlan && selectedPayment.additionalPlanCollections && selectedPayment.additionalPlanCollections.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-md font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Additional Service Plans</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-200">
+                      <tr>
+                        <th className="px-3 py-2 text-left">SNo</th>
+                        <th className="px-3 py-2 text-left">Plan Type</th>
+                        <th className="px-3 py-2 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPayment.additionalPlanCollections.map((plan, idx) => {
+                        const amount = selectedPayment.additionalPlanDetails && selectedPayment.additionalPlanDetails[plan.id] 
+                          ? selectedPayment.additionalPlanDetails[plan.id] 
+                          : "0";
+                        return (
+                          <tr key={idx} className="border-t border-gray-200">
+                            <td className="px-3 py-2">{idx + 1}</td>
+                            <td className="px-3 py-2">{plan.typeOfCollect}</td>
+                            <td className="px-3 py-2 text-right">₹{parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-gray-200 font-semibold border-t border-gray-300">
+                      <tr>
+                        <td className="px-3 py-2 text-right" colSpan={2}>Total Plan Amount</td>
+                        <td className="px-3 py-2 text-right">₹{parseFloat(selectedPayment.additionalPlanAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Type of Parts Details */}
             <div className="bg-gray-50 p-4 rounded-lg">

@@ -86,7 +86,7 @@ const OverallServiceReport = ({ user }) => {
         const receiptAmountTotal = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
         const additionalPlanTotal = jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0);
         const additionalPlanTypes = jcPayments
-          .map(p => p.additionalPlanCollection?.typeOfCollect)
+          .flatMap(p => p.additionalPlanCollections?.map(c => c.typeOfCollect) || [])
           .filter(Boolean)
           .join(', ');
         const invoicedAmount = Number(jc.totalRevenue || 0);
@@ -288,8 +288,6 @@ const OverallServiceReport = ({ user }) => {
   }
 
   const baseColumns2 = [
-    { header: "Service Plan Type", accessor: "additionalPlanTypes" },
-    { header: "Service Plan Payment", accessor: "additionalPlanTotal" },
     { header: "Receipt Amt Total", accessor: "receiptAmountTotal" },
     { header: "Invoice Amount", accessor: "invoiceAmount" },
     { header: "Difference", accessor: "difference" },
@@ -306,6 +304,8 @@ const OverallServiceReport = ({ user }) => {
         );
       }
     },
+    { header: "Service Plan Type", accessor: "additionalPlanTypes" },
+    { header: "Service Plan Amount", accessor: "additionalPlanTotal" },
   ];
 
   const columns = [...baseColumns1, ...receiptColumns, ...baseColumns2];

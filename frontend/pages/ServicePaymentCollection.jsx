@@ -74,7 +74,7 @@ const ServicePaymentCollection = ({ user, subType }) => {
     } else if (isAdvancePaymentMode) {
       setPageTitle('Service Payments - Advance Payment');
     } else if (isXyzPaymentMode) {
-      setPageTitle('Service Plan Payment');
+      setPageTitle('Additional Service Plan');
     } else {
       setPageTitle('Service Payments');
     }
@@ -98,8 +98,9 @@ const ServicePaymentCollection = ({ user, subType }) => {
     totalAmt: "",
     recAmt: "", // This will be the current payment amount
     hasAdditionalPlan: false,
-    additionalPlanCollectionId: "",
+    additionalPlanCollectionIds: [],
     additionalPlanAmount: "",
+    additionalPlanAmounts: {},
     paymentType: "full payment",
     paymentTypeId: "",
     // default to pending to avoid accidental 'completed' state
@@ -1758,6 +1759,11 @@ const handleCreateJobCard = async () => {
       serviceTypeId: payment.serviceTypeId,
       cancelledAt: payment.cancelledAt,
       cancelledBy: payment.cancelledByUser?.username || null,
+      hasAdditionalPlan: payment.hasAdditionalPlan || false,
+      additionalPlanCollections: payment.additionalPlanCollections || [],
+      additionalPlanAmount: payment.additionalPlanAmount || '',
+      additionalPlanDetails: payment.additionalPlanDetails || {},
+      additionalPlanCollectionId: payment.additionalPlanCollectionId || null,
     }));
     setPayments(formattedData);
     setFilteredPayments(formattedData);
@@ -1982,6 +1988,20 @@ if (requiresJobCard && !formData.jobCardNumber) {
   return;
 }
 
+if (formData.hasAdditionalPlan && (!formData.additionalPlanCollectionIds || formData.additionalPlanCollectionIds.length === 0)) {
+  toast.error("Please select at least one Additional Service Plan (e.g. AMC, EW, RSA)");
+  return;
+}
+
+// Validate additional plan amounts if plans are selected
+if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formData.additionalPlanCollectionIds.length > 0) {
+  const missingAmounts = formData.additionalPlanCollectionIds.some(id => !formData.additionalPlanAmounts || !formData.additionalPlanAmounts[id]);
+  if (missingAmounts) {
+    toast.error("Please enter the amount for all selected Additional Service Plans");
+    return;
+  }
+}
+
 // Validate Advance Payment has either Job Card or Parts
 if (isAdvancePaymentMode && normalizedPaymentType === "advance payment") {
   if (!formData.jobCardNumber && selectedParts.length === 0) {
@@ -2082,8 +2102,9 @@ if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "adva
       selectedParts: selectedParts,
       pineLabsTxnId: pineLabsTxnId,
       hasAdditionalPlan: formData.hasAdditionalPlan,
-      additionalPlanCollectionId: formData.additionalPlanCollectionId ? parseInt(formData.additionalPlanCollectionId) : undefined,
-      additionalPlanAmount: formData.additionalPlanAmount ? parseFloat(formData.additionalPlanAmount) : undefined,
+      additionalPlanCollectionIds: formData.additionalPlanCollectionIds && formData.additionalPlanCollectionIds.length > 0 ? formData.additionalPlanCollectionIds.map(id => parseInt(id)) : undefined,
+      additionalPlanAmount: formData.hasAdditionalPlan ? (formData.additionalPlanCollectionIds || []).reduce((sum, id) => sum + (parseFloat((formData.additionalPlanAmounts || {})[id]) || 0), 0) : undefined,
+      additionalPlanDetails: formData.hasAdditionalPlan ? Object.fromEntries(Object.entries(formData.additionalPlanAmounts || {}).filter(([k]) => (formData.additionalPlanCollectionIds || []).includes(k))) : undefined,
     };
 
     // FIRST: Create or update payment
@@ -2189,8 +2210,9 @@ if (finalJobCardNumber) {
       serviceType: "",
       serviceTypeId: "",
       hasAdditionalPlan: false,
-      additionalPlanCollectionId: "",
-      additionalPlanAmount: ""
+      additionalPlanCollectionIds: [],
+      additionalPlanAmount: "",
+      additionalPlanAmounts: {}
     });
 
     // Reset customer data
@@ -2321,8 +2343,9 @@ useEffect(() => {
       paymentType: defaultType,
       paymentTypeId: defaultTypeId,
       hasAdditionalPlan: false,
-      additionalPlanCollectionId: "",
-      additionalPlanAmount: ""
+      additionalPlanCollectionIds: [],
+      additionalPlanAmount: "",
+      additionalPlanAmounts: {}
     }));
     
     setIsPaymentModalOpen(true);
@@ -2341,8 +2364,9 @@ useEffect(() => {
       totalAmt: payment.totalAmt?.toString() || "",
       recAmt: payment.recAmt.toString(),
       hasAdditionalPlan: payment.hasAdditionalPlan || false,
-      additionalPlanCollectionId: payment.additionalPlanCollectionId?.toString() || "",
+      additionalPlanCollectionIds: payment.additionalPlanCollections ? payment.additionalPlanCollections.map(c => String(c.id)) : (payment.additionalPlanCollectionId ? [String(payment.additionalPlanCollectionId)] : []),
       additionalPlanAmount: payment.additionalPlanAmount?.toString() || "",
+      additionalPlanAmounts: payment.additionalPlanDetails || {},
       paymentType: canonicalType || payment.paymentType,
       paymentStatus: payment.paymentStatus,
       paymentTypeId: matchedMaster ? matchedMaster.id : (payment.paymentTypeId || ""),
@@ -2527,6 +2551,28 @@ useEffect(() => {
                 <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${payment.recAmt}<br>${amountInWords}</td>
                 <td style="border: 1px solid #000; padding: 10px; text-align: center;">${payment.remarks || "N/A"}</td>
               </tr>
+              ${payment.hasAdditionalPlan ? `
+              ${payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0 ? 
+                payment.additionalPlanCollections.map(c => `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan (${c.typeOfCollect}):</td>
+                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${(payment.additionalPlanDetails && payment.additionalPlanDetails[c.id]) || "0"}</td>
+                </tr>
+                `).join('')
+              : payment.additionalPlanCollectionId ? `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan Type:</td>
+                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">${(() => {
+                    const coll = serviceTypeOfCollections.find(c => String(c.id) === String(payment.additionalPlanCollectionId));
+                    return coll ? coll.typeOfCollect : "N/A";
+                  })()}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan Amount:</td>
+                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${payment.additionalPlanAmount || "0"}</td>
+                </tr>
+              ` : ''}
+              ` : ''}
             </table>
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
               <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
@@ -2593,6 +2639,7 @@ useEffect(() => {
     { header: "Amount", accessor: "recAmt" },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "Job Card No", accessor: "jobCardNumber" },
+
     { header: "Deleted By", accessor: "deletedBy" },
     { header: "Deleted At", accessor: "deletedAt" },
   ] : [
@@ -2643,6 +2690,7 @@ useEffect(() => {
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
     { header: "Type of Service", accessor: "serviceType" },
+
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
   ];
@@ -2730,19 +2778,37 @@ useEffect(() => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">{pageTitle}</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary whitespace-nowrap">{pageTitle}</h1>
+        
+        {(!subType || subType === 'full' || subType === 'advance') && !showDeleted && (
+          <div className="flex bg-gray-200 p-1 rounded-xl shadow-sm border border-gray-300 w-full md:max-w-md md:mx-auto">
+            <button
+              onClick={() => setInternalMode('full')}
+              className={`flex-1 py-1.5 px-3 text-sm sm:text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'full' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Full Payment
+            </button>
+            <button
+              onClick={() => setInternalMode('advance')}
+              className={`flex-1 py-1.5 px-3 text-sm sm:text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'advance' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Advance Payment
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-2 shrink-0">
           {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
             <button
               onClick={() => setIsClearModalOpen(true)}
-              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+              className="px-4 py-2 text-sm sm:text-base rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 whitespace-nowrap"
             >
               Clear All Data
             </button>
           )}
           {permissions?.payment_collection?.service?.view_deleted && (
-            <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 rounded-lg font-medium ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
+            <button onClick={() => { setShowDeleted(!showDeleted); if (!showDeleted) fetchDeletedPayments(); }} className={`px-4 py-2 text-sm sm:text-base rounded-lg font-medium whitespace-nowrap ${showDeleted ? "bg-gray-500 text-white hover:bg-gray-600" : "bg-orange-600 text-white hover:bg-orange-700"}`}>
               {showDeleted ? "Show Active" : "Show Trash"}
             </button>
           )}
@@ -3008,24 +3074,6 @@ useEffect(() => {
         </div>
       )}
 
-      {(!subType || subType === 'full' || subType === 'advance') && !showDeleted && (
-        <div className="flex justify-center mt-6 mb-2">
-          <div className="flex bg-gray-200 p-1 rounded-xl shadow-sm border border-gray-300 w-full max-w-md">
-            <button
-              onClick={() => setInternalMode('full')}
-              className={`flex-1 py-2 text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'full' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              Full Payment
-            </button>
-            <button
-              onClick={() => setInternalMode('advance')}
-              className={`flex-1 py-2 text-base font-bold rounded-lg transition-all duration-200 ${internalMode === 'advance' ? 'bg-white text-brand-accent shadow-md scale-[1.02]' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              Advance Payment
-            </button>
-          </div>
-        </div>
-      )}
 
       <DataTable
         columns={columns}
@@ -3173,35 +3221,69 @@ useEffect(() => {
                       setFormData({ 
                         ...formData, 
                         hasAdditionalPlan: e.target.checked,
-                        additionalPlanCollectionId: e.target.checked ? formData.additionalPlanCollectionId : "",
-                        additionalPlanAmount: e.target.checked ? formData.additionalPlanAmount : ""
+                        additionalPlanCollectionIds: e.target.checked ? formData.additionalPlanCollectionIds : [],
+                        additionalPlanAmount: e.target.checked ? formData.additionalPlanAmount : "",
+                        additionalPlanAmounts: e.target.checked ? formData.additionalPlanAmounts : {}
                       })
                     }}
                     className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                   />
-                  Service Plan Payment
+                  Additional Service Plan
                 </label>
                 
                 {formData.hasAdditionalPlan && (
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <SearchableDropdown
-                      label="Type of Collection"
-                      value={formData.additionalPlanCollectionId}
-                      onChange={(value) => setFormData({ ...formData, additionalPlanCollectionId: value })}
-                      options={additionalPlanCollections.map(type => ({ value: type.id.toString(), label: type.typeOfCollect }))}
-                      required={formData.hasAdditionalPlan}
-                    />
                     <div>
-                      <label className="block text-sm font-medium text-brand-text-secondary mb-1">Service Plan Amount <span className="text-red-500">*</span></label>
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        value={formData.additionalPlanAmount} 
-                        onChange={(e) => setFormData({ ...formData, additionalPlanAmount: e.target.value })} 
-                        className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" 
-                        required={formData.hasAdditionalPlan} 
-                        placeholder="Enter separate amount"
-                      />
+                      <label className="block text-sm font-medium text-brand-text-secondary mb-2">Type of Collection <span className="text-red-500">*</span></label>
+                      <div className="flex flex-wrap gap-4">
+                        {additionalPlanCollections.map(type => (
+                          <label key={type.id} className="flex items-center gap-2 cursor-pointer font-medium text-brand-text-primary">
+                            <input
+                              type="checkbox"
+                              checked={(formData.additionalPlanCollectionIds || []).includes(String(type.id))}
+                              onChange={(e) => {
+                                const newIds = e.target.checked 
+                                  ? [...(formData.additionalPlanCollectionIds || []), String(type.id)]
+                                  : (formData.additionalPlanCollectionIds || []).filter(id => id !== String(type.id));
+                                setFormData({ ...formData, additionalPlanCollectionIds: newIds });
+                              }}
+                              className="w-4 h-4 text-brand-accent rounded border-gray-300 focus:ring-brand-accent"
+                            />
+                            {type.typeOfCollect}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {(formData.additionalPlanCollectionIds || []).map(id => {
+                        const plan = additionalPlanCollections.find(p => String(p.id) === id);
+                        if (!plan) return null;
+                        return (
+                          <div key={id}>
+                            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+                              {plan.typeOfCollect} Amount <span className="text-red-500">*</span>
+                            </label>
+                            <input 
+                              type="number" 
+                              step="0.01" 
+                              value={(formData.additionalPlanAmounts || {})[id] || ""} 
+                              onChange={(e) => setFormData({ 
+                                ...formData, 
+                                additionalPlanAmounts: {
+                                  ...(formData.additionalPlanAmounts || {}),
+                                  [id]: e.target.value
+                                } 
+                              })} 
+                              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" 
+                              required={true} 
+                              placeholder={`Enter amount for ${plan.typeOfCollect}`}
+                            />
+                          </div>
+                        );
+                      })}
+                      {(!formData.additionalPlanCollectionIds || formData.additionalPlanCollectionIds.length === 0) && (
+                        <div className="text-sm text-brand-text-secondary italic">Select a plan to enter amount.</div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3673,6 +3755,44 @@ useEffect(() => {
                   </tr>
                 ))}
               </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Service Plans */}
+      {selectedPayment.hasAdditionalPlan && selectedPayment.additionalPlanCollections && selectedPayment.additionalPlanCollections.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Additional Service Plans</h3>
+          <div className="bg-gray-50 border border-brand-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-3 py-2 text-left">SNo</th>
+                  <th className="px-3 py-2 text-left">Plan Type</th>
+                  <th className="px-3 py-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPayment.additionalPlanCollections.map((plan, idx) => {
+                  const amount = selectedPayment.additionalPlanDetails && selectedPayment.additionalPlanDetails[plan.id] 
+                    ? selectedPayment.additionalPlanDetails[plan.id] 
+                    : "0";
+                  return (
+                    <tr key={idx} className="border-t border-brand-border">
+                      <td className="px-3 py-2">{idx + 1}</td>
+                      <td className="px-3 py-2">{plan.typeOfCollect}</td>
+                      <td className="px-3 py-2 text-right">₹{parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-gray-100 font-semibold border-t border-brand-border">
+                <tr>
+                  <td className="px-3 py-2 text-right" colSpan={2}>Total Plan Amount</td>
+                  <td className="px-3 py-2 text-right">₹{parseFloat(selectedPayment.additionalPlanAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>

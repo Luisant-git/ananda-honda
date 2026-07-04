@@ -1302,7 +1302,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <option>Online Enquiry</option>
                       </select>
                     </div>
-                    <div className="pt-2 flex justify-start">
+                    <div className="pt-2 flex justify-start gap-3">
                       {permissions?.payment_collection?.sales?.add && (
                         <button
                           onClick={() => setIsPaymentModalOpen(true)}
@@ -1316,6 +1316,9 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                           Pay
                         </button>
                       )}
+                      <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setSalesInvoiceInfo(null); setServiceJobCardInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1365,7 +1368,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                           {loadedCustomer.status}
                         </div>
                       </div>
-                      <div className="pt-2 flex justify-start">
+                      <div className="pt-2 flex justify-start gap-3">
                         {permissions?.payment_collection?.sales?.add && (
                           <button
                             onClick={() => setIsPaymentModalOpen(true)}
@@ -1374,6 +1377,9 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                             Pay
                           </button>
                         )}
+                        <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setSalesInvoiceInfo(null); setServiceJobCardInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   </div>

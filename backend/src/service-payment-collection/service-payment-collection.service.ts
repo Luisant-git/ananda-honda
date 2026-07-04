@@ -21,8 +21,9 @@ async create(data: {
   totalAmt?: number; 
   recAmt: number; 
   hasAdditionalPlan?: boolean;
-  additionalPlanCollectionId?: number;
+  additionalPlanCollectionIds?: number[];
   additionalPlanAmount?: number;
+  additionalPlanDetails?: any;
   paymentType?: string; 
   paymentStatus?: string; 
   vehicleNumber?: string; 
@@ -165,6 +166,13 @@ async create(data: {
   // Resolve paymentType again for final save (use early result)
   const resolvedPaymentType = resolvedPaymentTypeEarly;
 
+  console.log('--- CREATE DATA RECEIVED ---', JSON.stringify({
+    hasAdditionalPlan: data.hasAdditionalPlan,
+    additionalPlanCollectionIds: data.additionalPlanCollectionIds,
+    additionalPlanAmount: data.additionalPlanAmount,
+    additionalPlanDetails: data.additionalPlanDetails
+  }, null, 2));
+
   const savedPayment = await this.prisma.servicePaymentCollection.create({
     data: {
       date: new Date(data.date),
@@ -172,8 +180,11 @@ async create(data: {
       totalAmt: computedTotalAmt || null,
       recAmt: data.recAmt,
       hasAdditionalPlan: data.hasAdditionalPlan || false,
-      additionalPlanCollectionId: data.additionalPlanCollectionId || null,
+      additionalPlanCollections: data.additionalPlanCollectionIds && data.additionalPlanCollectionIds.length > 0 
+        ? { connect: data.additionalPlanCollectionIds.map(id => ({ id })) }
+        : undefined,
       additionalPlanAmount: data.additionalPlanAmount || 0,
+      additionalPlanDetails: data.additionalPlanDetails || null, 
       paymentTypeId: resolvedPaymentType.id,
       paymentType: resolvedPaymentType.name,
       paymentStatus: currentStatus,
@@ -200,7 +211,7 @@ async create(data: {
       serviceTypeRelation: true,
       user: true,
       paymentTypeMaster: true,
-      additionalPlanCollection: true
+      additionalPlanCollections: true
     }
   });
 
@@ -501,7 +512,7 @@ async completePartPayment(id: number, data: {
           user: true,
           cancelledByUser: true,
           paymentTypeMaster: true,
-          additionalPlanCollection: true
+          additionalPlanCollections: true
         },
         orderBy: { id: 'desc' },
         skip,
@@ -580,7 +591,7 @@ async completePartPayment(id: number, data: {
         user: true,
         cancelledByUser: true,
         paymentTypeMaster: true,
-        additionalPlanCollection: true
+        additionalPlanCollections: true
       }
     });
     
@@ -600,8 +611,9 @@ async completePartPayment(id: number, data: {
     totalAmt?: number; 
     recAmt?: number; 
     hasAdditionalPlan?: boolean;
-    additionalPlanCollectionId?: number;
+    additionalPlanCollectionIds?: number[];
     additionalPlanAmount?: number;
+    additionalPlanDetails?: any;
     paymentType?: string; 
     paymentStatus?: string; 
     vehicleNumber?: string; 
@@ -615,32 +627,34 @@ async completePartPayment(id: number, data: {
     jobCardNumber?: string; 
     serviceTypeId?: number;
     selectedParts?: any[];
+    pineLabsTxnId?: string;
   }) {
-    const updateData: any = { ...data };
-    if (data.date) {
-      updateData.date = new Date(data.date);
+    const updateData: any = {};
+    if (data.date !== undefined) updateData.date = new Date(data.date);
+    if (data.customerId !== undefined) updateData.customer = { connect: { id: data.customerId } };
+    if (data.totalAmt !== undefined) updateData.totalAmt = data.totalAmt;
+    if (data.recAmt !== undefined) updateData.recAmt = data.recAmt;
+    if (data.paymentType !== undefined) updateData.paymentType = data.paymentType;
+    if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
+    if (data.vehicleNumber !== undefined) updateData.vehicleNumber = data.vehicleNumber;
+    if (data.paymentModeId !== undefined) updateData.paymentMode = { connect: { id: data.paymentModeId } };
+    if (data.typeOfPaymentId !== undefined) updateData.typeOfPayment = { connect: { id: data.typeOfPaymentId } };
+    if (data.serviceTypeOfCollectionId !== undefined) updateData.serviceTypeOfCollection = { connect: { id: data.serviceTypeOfCollectionId } };
+    if (data.vehicleModelId !== undefined) updateData.vehicleModel = { connect: { id: data.vehicleModelId } };
+    if (data.enteredBy !== undefined) updateData.user = { connect: { id: data.enteredBy } };
+    if (data.remarks !== undefined) updateData.remarks = data.remarks;
+    if (data.refNo !== undefined) updateData.refNo = data.refNo;
+    if (data.jobCardNumber !== undefined) updateData.jobCardNumber = data.jobCardNumber;
+    if (data.serviceTypeId !== undefined) updateData.serviceTypeRelation = { connect: { id: data.serviceTypeId } };
+    if (data.selectedParts !== undefined) updateData.selectedParts = data.selectedParts;
+    
+    if (data.hasAdditionalPlan !== undefined) updateData.hasAdditionalPlan = data.hasAdditionalPlan;
+    if (data.additionalPlanAmount !== undefined) updateData.additionalPlanAmount = data.additionalPlanAmount;
+    if (data.additionalPlanDetails !== undefined) updateData.additionalPlanDetails = data.additionalPlanDetails;
+    if (data.additionalPlanCollectionIds !== undefined) {
+      updateData.additionalPlanCollections = { set: data.additionalPlanCollectionIds.map(id => ({ id })) };
     }
-    if (data.typeOfPaymentId === undefined) {
-      delete updateData.typeOfPaymentId;
-    }
-    if (data.serviceTypeOfCollectionId === undefined) {
-      delete updateData.serviceTypeOfCollectionId; 
-    }
-    if (data.additionalPlanCollectionId === undefined) {
-      delete updateData.additionalPlanCollectionId;
-    }
-    if (data.vehicleModelId === undefined) {
-      delete updateData.vehicleModelId;
-    }
-    if (data.enteredBy === undefined) {
-      delete updateData.enteredBy;
-    }
-    if (data.serviceTypeId === undefined) {
-      delete updateData.serviceTypeId;
-    }
-    if (data.selectedParts === undefined) {
-      delete updateData.selectedParts;
-    }
+
 
     return this.prisma.servicePaymentCollection.update({
       where: { id },
