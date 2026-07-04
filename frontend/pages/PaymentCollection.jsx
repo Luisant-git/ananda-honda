@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import DataTable from "../components/DataTable";
-import hondaLogo from '../assets/honda.png';
+import hondaLogo from '../assets/honda-logo.svg';
 import ConfirmModal from '../components/ConfirmModal';
 import Modal from "../components/Modal";
 import SearchableDropdown from "../components/SearchableDropdown";

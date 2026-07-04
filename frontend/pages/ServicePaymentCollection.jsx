@@ -13,7 +13,7 @@ import { paymentTypeApi } from "../api/paymentTypeApi.js";
 import { vehicleModelApi } from "../api/vehicleModelApi.js";
 import { menuPermissionApi } from "../api/menuPermissionApi";
 import ConfirmModal from '../components/ConfirmModal';
-import hondaLogo from "../assets/honda.png";
+import hondaLogo from "../assets/honda-logo.svg";
 import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
@@ -2516,21 +2516,21 @@ useEffect(() => {
       const logoDataUrl = canvas.toDataURL("image/png");
 
       const printContent = `
-        <div style="width: 210mm; height: 297mm; font-family: Arial, sans-serif; font-size: 14px; padding: 20px; box-sizing: border-box;">
+        <div style="width: 210mm; height: 297mm; font-family: Arial, sans-serif; font-size: 15px; padding: 20px; box-sizing: border-box;">
           <div style="border: 1px solid #000; padding: 20px; height: 100%; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 25px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 20px;">
               <div style="flex: 1;">
-                <h3 style="margin: 0; font-size: 28px; font-weight: bold; margin-bottom: 15px;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
-                <p style="margin: 0; font-size: 16px; line-height: 1.6;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
+                <h3 style="margin: 0; font-size: 26px; font-weight: bold; margin-bottom: 12px;">ANANDA MOTOWINGS PRIVATE LIMITED</h3>
+                <p style="margin: 0; font-size: 15px; line-height: 1.6;">Sy no, 53/2 and 53/3, Carvan Compound, Hosur Road, 6th Mile,<br>Near Silk board Junction, Bomannahalli, Bengaluru,<br>Bengaluru Urban, Karnataka, 560068<br><strong>Contact No :</strong> +919071755550<br><strong>GSTIN:</strong> 29ABBCA7185M1Z2</p>
               </div>
               <div style="margin-left: 20px;">
-                <img src="${logoDataUrl}" alt="Honda Logo" style="width: 120px; height: 90px;" />
+                <img src="${logoDataUrl}" alt="Honda Logo" style="width: 110px; height: 82px;" />
               </div>
             </div>
-            <div style="text-align: center; color: #000; background: white; padding: 15px; margin-bottom: 30px; font-size: 24px; border: 3px solid #000;">
+            <div style="text-align: center; color: #000; background: white; padding: 12px; margin-bottom: 20px; font-size: 22px; border: 2px solid #000;">
               <strong>SERVICE RECEIPT</strong>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; font-size: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; font-size: 15px;">
               <div><strong>Customer ID:</strong> ${payment.custId}</div>
               <div><strong>Date:</strong> ${new Date(payment.date).toLocaleDateString("en-GB")}</div>
               <div><strong>To:</strong> ${payment.name}</div>
@@ -2541,60 +2541,62 @@ useEffect(() => {
               <div><strong>Vehicle Model:</strong> ${payment.vehicleModel || "N/A"}</div>
               <div><strong>Job Card Number:</strong> ${payment.jobCardNumber || "N/A"}</div>
             </div>
-            <p style="margin: 25px 0; font-size: 16px;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || "N/A"}</p>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 16px;">
+            <p style="margin: 20px 0; font-size: 15px;">We thankfully acknowledge the receipt of your payment towards for Collection - ${payment.typeOfCollection || "N/A"}</p>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 15px;">
               <tr>
-                <td style="border: 1px solid #000; padding: 10px; font-weight: bold; width: 50%;">Received Amount:</td>
-                <td style="border: 1px solid #000; padding: 10px; font-weight: bold; width: 50%;">REMARKS</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${payment.recAmt}<br>${amountInWords}</td>
-                <td style="border: 1px solid #000; padding: 10px; text-align: center;">${payment.remarks || "N/A"}</td>
+                <td style="border: 1px solid #000; padding: 8px; font-weight: bold; width: 40%;">Received Amount:</td>
+                <td style="border: 1px solid #000; padding: 8px; width: 60%;"><strong>₹${payment.recAmt}</strong> <span style="font-weight: normal; margin-left: 8px;">${amountInWords}</span></td>
               </tr>
               ${payment.hasAdditionalPlan ? `
               ${payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0 ? 
-                payment.additionalPlanCollections.map(c => `
-                <tr>
-                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan (${c.typeOfCollect}):</td>
-                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${(payment.additionalPlanDetails && payment.additionalPlanDetails[c.id]) || "0"}</td>
-                </tr>
-                `).join('')
+                `<tr>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; vertical-align: top;">Additional Service Plans:</td>
+                  <td style="border: 1px solid #000; padding: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      ${payment.additionalPlanCollections.map(c => `
+                        <div>${payment.additionalPlanCollections.length > 1 ? '• ' : ''}${c.typeOfCollect}: <strong>₹${(payment.additionalPlanDetails && payment.additionalPlanDetails[c.id]) || "0"}</strong></div>
+                      `).join('')}
+                    </div>
+                  </td>
+                </tr>`
               : payment.additionalPlanCollectionId ? `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan Type:</td>
-                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">${(() => {
-                    const coll = serviceTypeOfCollections.find(c => String(c.id) === String(payment.additionalPlanCollectionId));
-                    return coll ? coll.typeOfCollect : "N/A";
-                  })()}</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 10px; font-weight: bold;">Additional Service Plan Amount:</td>
-                  <td style="border: 1px solid #000; padding: 10px; text-align: center;">₹${payment.additionalPlanAmount || "0"}</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Additional Service Plan:</td>
+                  <td style="border: 1px solid #000; padding: 8px;">
+                    ${(() => {
+                      const coll = serviceTypeOfCollections.find(c => String(c.id) === String(payment.additionalPlanCollectionId));
+                      return coll ? coll.typeOfCollect : "N/A";
+                    })()} - <strong>₹${payment.additionalPlanAmount || "0"}</strong>
+                  </td>
                 </tr>
               ` : ''}
               ` : ''}
+              <tr>
+                <td style="border: 1px solid #000; padding: 8px; font-weight: bold; vertical-align: top;">Remarks:</td>
+                <td style="border: 1px solid #000; padding: 8px;">${payment.remarks || "N/A"}</td>
+              </tr>
             </table>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 15px;">
               <div><strong>Mode Of Payment:</strong> ${payment.paymentMode}</div>
               <div><strong>Customer Opting ${payment.paymentMode}</strong></div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 15px;">
               <div><strong>Ref No:</strong> ${payment.refNo || "N/A"}</div>
               <div>${payment.typeOfPayment || "N/A"}</div>
             </div>
-            <div style="border: 1px solid #000; padding: 15px; margin-bottom: 30px; font-size: 14px;">
+            <div style="border: 1px solid #000; padding: 12px; margin-bottom: 25px; font-size: 13px;">
               <div>Issued Subject to Realisation of Cheque.</div>
               <div>Price ruling at the time of delivery will be charged.</div>
               <div>Any refund through cheques only within 25 working days.</div>
               <div>Subject To BANGALORE Jurisdiction.</div>
             </div>
-            <div style="text-align: right; margin-bottom: 40px; margin-top: 20px; font-size: 16px;">
+            <div style="text-align: right; margin-bottom: 25px; margin-top: 15px; font-size: 15px;">
               <strong>Received and Verified By</strong>
             </div>
-            <div style="text-align: right; margin-bottom: 20px;">
-              <div style="margin-top: 60px; font-size: 16px;"><strong>Authorised Signatory with Seal</strong></div>
+            <div style="text-align: right; margin-bottom: 15px;">
+              <div style="margin-top: 50px; font-size: 15px;"><strong>Authorised Signatory with Seal</strong></div>
             </div>
-            <div style="font-size: 10px; text-align: center; border-top: 1px solid #000; padding-top: 10px; margin-top: 20px;">
+            <div style="font-size: 11px; text-align: center; border-top: 1px solid #000; padding-top: 12px; margin-top: 20px;">
               <strong>Entered by:</strong> ${payment.enteredBy} &nbsp;&nbsp; <strong>Printed by:</strong> ${currentUser?.username || "N/A"} &nbsp;&nbsp; <strong>Printed on:</strong> ${formattedDate}
             </div>
           </div>

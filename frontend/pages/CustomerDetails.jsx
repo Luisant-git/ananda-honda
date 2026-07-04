@@ -139,7 +139,7 @@ const CustomerDetails = ({ user, defaultStatus = "", title = "Customer Details" 
   
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [detailedCustomer, setDetailedCustomer] = useState(null);
-  const [activeTab, setActiveTab] = useState("invoices");
+  const [activeTab, setActiveTab] = useState("enquiries");
   const [filters, setFilters] = useState({
     selectedCustomer: "",
     fromDate: "",
@@ -745,7 +745,7 @@ const fetchPermissions = async () => {
       const details = await customerApi.getDetails(customer.id);
       setDetailedCustomer(details);
       setIsDetailsModalOpen(true);
-      setActiveTab("invoices");
+      setActiveTab("enquiries");
     } catch (error) {
       toast.error("Error fetching details");
     }
@@ -1400,7 +1400,7 @@ const fetchPermissions = async () => {
           </div>
 
           <div className="flex border-b border-gray-200 overflow-x-auto">
-            {["invoices", "enquiries", "bigwing_enquiries", "sales_payments", "service_payments"].map((tab) => (
+            {["enquiries", "bigwing_enquiries", "invoices", "sales_payments", "service_payments"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1491,6 +1491,14 @@ const fetchPermissions = async () => {
                   <div className="col-span-1 md:col-span-2">
                     <p className="text-xs text-gray-500 uppercase font-bold">Remarks</p>
                     <p className="text-gray-800 font-medium">{detailedCustomer?.remarks || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold">Branch</p>
+                    <p className="text-gray-800 font-medium">{detailedCustomer?.branch || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-bold">Assigned Executive</p>
+                    <p className="text-gray-800 font-medium">{detailedCustomer?.assignedExecutive || 'N/A'}</p>
                   </div>
                 </div>
               </div>
