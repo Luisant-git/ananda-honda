@@ -83,7 +83,7 @@ const OverallServiceReport = ({ user }) => {
           currentMaxReceipts = receipts.length;
         }
 
-        const receiptAmountTotal = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const receiptAmountTotal = Number(receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2));
         const additionalPlanAmountsStr = jcPayments
           .flatMap(p => p.additionalPlanCollections && p.additionalPlanCollections.length > 0 
             ? p.additionalPlanCollections.map(c => p.additionalPlanDetails?.[c.id] || 0)
@@ -91,14 +91,14 @@ const OverallServiceReport = ({ user }) => {
           )
           .join(', ');
           
-        const additionalPlanTotal = additionalPlanAmountsStr || jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0);
+        const additionalPlanTotal = additionalPlanAmountsStr || Number(jcPayments.reduce((sum, payment) => sum + Number(payment.additionalPlanAmount || 0), 0).toFixed(2));
         const additionalPlanTypes = jcPayments
           .flatMap(p => p.additionalPlanCollections?.map(c => c.typeOfCollect) || [])
           .filter(Boolean)
           .join(', ');
-        const invoicedAmount = Number(jc.totalRevenue || 0);
-        const differenceRaw = receiptAmountTotal - invoicedAmount;
-        const difference = differenceRaw % 1 !== 0 ? Number(differenceRaw.toFixed(2)) : differenceRaw;
+        const invoicedAmount = Number(Number(jc.totalRevenue || 0).toFixed(2));
+        const differenceRaw = Number((receiptAmountTotal - invoicedAmount).toFixed(2));
+        const difference = differenceRaw % 1 !== 0 ? differenceRaw : Math.round(differenceRaw);
 
         if (invoicedAmount === 0) {
           status = 'Invoice Pending';
