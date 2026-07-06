@@ -25,35 +25,72 @@ const ServiceReports = ({ user }) => {
   const fetchReportData = async () => {
     try {
       const response = await servicePaymentCollectionApi.getAll(1, 999999);
-      const formattedData = response.data.map((payment, index) => ({
-        sNo: index + 1,
-        id: payment.id,
-        date: payment.date,
-        receiptNo: payment.receiptNo,
-        custId: payment.customer.custId,
-        name: payment.customer.name,
-        contactNo: payment.customer.contactNo,
-        address: payment.customer.address,
-        recAmt: payment.recAmt,
-        paymentType: payment.paymentType,
-        paymentStatus: payment.paymentStatus,
-        vehicleNumber: payment.vehicleNumber || 'N/A',
-        paymentMode: payment.paymentMode.paymentMode,
-        typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
-        typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
-        additionalPlanType: payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0 ? payment.additionalPlanCollections.map(c => c.typeOfCollect).join(", ") : 'N/A',
-        additionalPlanAmount: payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0 ? payment.additionalPlanCollections.map(c => payment.additionalPlanDetails?.[c.id] || 0).join(", ") : (payment.additionalPlanAmount || 0),
-        vehicleModel: payment.vehicleModel?.model || 'N/A',
-        enteredBy: payment.user?.username || 'N/A',
-        refNo: payment.refNo || 'N/A',
-        remarks: payment.remarks || 'N/A',
-        jobCardNumber: payment.jobCardNumber || 'N/A',
-        customerId: payment.customerId,
-        paymentModeId: payment.paymentModeId,
-        typeOfPaymentId: payment.typeOfPaymentId,
-        typeOfCollectionId: payment.typeOfCollectionId,
-        vehicleModelId: payment.vehicleModelId,
-      }));
+      const formattedData = response.data
+        .filter(payment => {
+          const hasPlanCollections = payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0;
+          const hasPlanAmount = payment.additionalPlanAmount && Number(payment.additionalPlanAmount) > 0;
+          const isPlanPayment = payment.paymentType === 'service plan payment';
+          return hasPlanCollections || hasPlanAmount || isPlanPayment;
+        })
+        .map((payment, index) => {
+          let amcAmount = 0; let amcType = '-';
+          let ewAmount = 0; let ewType = '-';
+          let rsaAmount = 0; let rsaType = '-';
+          
+          if (payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0) {
+            payment.additionalPlanCollections.forEach(c => {
+               const amt = Number(payment.additionalPlanDetails?.[c.id] || 0);
+               const typeStr = c.typeOfCollect || '';
+               const type = typeStr.toUpperCase();
+               if (type.includes('AMC')) { amcAmount += amt; amcType = typeStr; }
+               else if (type.includes('EW')) { ewAmount += amt; ewType = typeStr; }
+               else if (type.includes('RSA')) { rsaAmount += amt; rsaType = typeStr; }
+            });
+          } else if (payment.paymentType === 'service plan payment') {
+             const amt = Number(payment.additionalPlanAmount || 0);
+             const typeStr = payment.serviceTypeOfCollection?.typeOfCollect || '';
+             const type = typeStr.toUpperCase();
+             if (type.includes('AMC')) { amcAmount += amt; amcType = typeStr; }
+             else if (type.includes('EW')) { ewAmount += amt; ewType = typeStr; }
+             else if (type.includes('RSA')) { rsaAmount += amt; rsaType = typeStr; }
+          }
+
+          return {
+            sNo: index + 1,
+            id: payment.id,
+            date: payment.date,
+            receiptNo: payment.receiptNo,
+            custId: payment.customer.custId,
+            name: payment.customer.name,
+            contactNo: payment.customer.contactNo,
+            address: payment.customer.address,
+            recAmt: payment.recAmt,
+            paymentType: payment.paymentType,
+            paymentStatus: payment.paymentStatus,
+            vehicleNumber: payment.vehicleNumber || 'N/A',
+            paymentMode: payment.paymentMode.paymentMode,
+            typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
+            typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || 'N/A',
+            
+            amcType: amcType,
+            amcAmount: amcAmount || '-',
+            ewType: ewType,
+            ewAmount: ewAmount || '-',
+            rsaType: rsaType,
+            rsaAmount: rsaAmount || '-',
+            
+            vehicleModel: payment.vehicleModel?.model || 'N/A',
+            enteredBy: payment.user?.username || 'N/A',
+            refNo: payment.refNo || 'N/A',
+            remarks: payment.remarks || 'N/A',
+            jobCardNumber: payment.jobCardNumber || 'N/A',
+            customerId: payment.customerId,
+            paymentModeId: payment.paymentModeId,
+            typeOfPaymentId: payment.typeOfPaymentId,
+            typeOfCollectionId: payment.typeOfCollectionId,
+            vehicleModelId: payment.vehicleModelId,
+          };
+        });
       setReportData(formattedData);
       setFilteredData(formattedData);
     } catch (error) {
@@ -232,8 +269,12 @@ const ServiceReports = ({ user }) => {
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
-    { header: "Service Plan Type", accessor: "additionalPlanType" },
-    { header: "Service Plan Amount", accessor: "additionalPlanAmount" },
+    { header: "AMC Type", accessor: "amcType" },
+    { header: "AMC Amount", accessor: "amcAmount" },
+    { header: "EW Type", accessor: "ewType" },
+    { header: "EW Amount", accessor: "ewAmount" },
+    { header: "RSA Type", accessor: "rsaType" },
+    { header: "RSA Amount", accessor: "rsaAmount" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
     { header: "Job Card No", accessor: "jobCardNumber" },
     { header: "Ref No", accessor: "refNo" },

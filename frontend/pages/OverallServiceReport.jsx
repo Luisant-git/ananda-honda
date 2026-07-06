@@ -97,11 +97,12 @@ const OverallServiceReport = ({ user }) => {
           .filter(Boolean)
           .join(', ');
         const invoicedAmount = Number(jc.totalRevenue || 0);
-        const difference = receiptAmountTotal - invoicedAmount;
+        const differenceRaw = receiptAmountTotal - invoicedAmount;
+        const difference = differenceRaw % 1 !== 0 ? Number(differenceRaw.toFixed(2)) : differenceRaw;
 
         if (invoicedAmount === 0) {
           status = 'Invoice Pending';
-        } else if (receiptAmountTotal >= invoicedAmount) {
+        } else if (receiptAmountTotal >= invoicedAmount || Math.abs(differenceRaw) < 1) {
           status = 'Completed';
         } else {
           status = 'Pending';
@@ -218,7 +219,7 @@ const OverallServiceReport = ({ user }) => {
       filteredData.forEach(row => {
         html += '<tr>';
         columns.forEach(col => {
-          let value = row[col.accessor] || '';
+          let value = row[col.accessor] !== undefined && row[col.accessor] !== null ? row[col.accessor] : '';
           let style = 'padding: 5px;';
           
           if (col.accessor === 'status') {
