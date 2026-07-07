@@ -109,7 +109,16 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
       <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)}></div>
       <aside className={`bg-brand-surface text-brand-text-primary ${isSidebarCollapsed ? 'w-16' : 'w-64'} fixed top-0 left-0 h-full z-40 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:relative md:translate-x-0 md:flex-shrink-0 flex flex-col border-r border-brand-border`}>
         <div className="flex items-center justify-between p-4 border-b border-brand-border">
-          {!isSidebarCollapsed && <img src={hondaLogo} alt="Ananda Motowings Private Limited" className="h-16 object-contain" />}
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col items-center">
+              <img src={hondaLogo} alt="Ananda Motowings Private Limited" className="h-12 object-contain" />
+              {user && (
+                <span className="mt-1 text-xs font-bold tracking-widest text-brand-accent uppercase">
+                  {user.brand} CRM
+                </span>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:block p-1 text-brand-text-secondary hover:text-brand-text-primary">
               <MenuIcon />
