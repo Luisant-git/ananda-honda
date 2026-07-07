@@ -32,6 +32,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                   const brand = this.cls.get('brand');
                   
                   if (brand) {
+                    // Bypass RLS for findUnique on 'user' model so users from any brand can log in!
+                    const isUserLoginQuery = modelName === 'user' && action === 'findUnique';
+                    
+                    if (isUserLoginQuery) {
+                       return modelTarget[action](args);
+                    }
+
                     // INTERCEPT READ QUERIES
                     if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(action)) {
                       args.where = { ...args.where, brand };
