@@ -244,6 +244,109 @@ async sendServiceReminderTemplate(
   }
 }
 
+  async sendFeedbackRequestTemplate(
+    toPhoneNumber: string,
+    customerName: string,
+    vehicleModel: string,
+    registrationNo: string,
+  ): Promise<any> {
+    let formattedNumber = toPhoneNumber.trim();
+    if (/^\d{10}$/.test(formattedNumber)) {
+      formattedNumber = `91${formattedNumber}`;
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.apiUrl}/${this.phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedNumber,
+          type: 'template',
+          template: {
+            name: 'feedback_request',
+            language: { code: 'en' },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(customerName || 'Customer') },
+                  { type: 'text', text: String(vehicleModel || 'Honda 2-Wheeler') },
+                  { type: 'text', text: String(registrationNo || 'Your Vehicle') },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      this.logger.log(`Feedback request template sent to ${formattedNumber}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Error sending WhatsApp feedback request template',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
+
+  // Send Manager Negative Feedback Alert
+  async sendManagerNegativeFeedbackAlert(
+    toPhoneNumber: string,
+    billedDate: string,
+    customerName: string,
+    customerPhone: string,
+  ): Promise<any> {
+    let formattedNumber = toPhoneNumber.trim();
+    if (/^\d{10}$/.test(formattedNumber)) {
+      formattedNumber = `91${formattedNumber}`;
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.apiUrl}/${this.phoneNumberId}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: formattedNumber,
+          type: 'template',
+          template: {
+            name: 'manager_negative_feedback_alert',
+            language: { code: 'en' },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: String(billedDate || 'Unknown Date') },
+                  { type: 'text', text: String(customerName || 'Customer') },
+                  { type: 'text', text: String(customerPhone || 'N/A') },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      this.logger.log(`Negative feedback alert template sent to ${formattedNumber}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(
+        'Error sending WhatsApp negative feedback alert template',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
+
   // Optional: Send simple text message (as fallback)
   async sendTextMessage(toPhoneNumber: string, message: string): Promise<any> {
     let formattedNumber = toPhoneNumber.trim();

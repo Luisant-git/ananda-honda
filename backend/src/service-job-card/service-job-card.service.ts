@@ -409,6 +409,75 @@ export class ServiceJobCardService {
           this.logger.error(`Failed sending welcome template for uploaded job ${jobCardNumber}`, waErr?.response || waErr?.message || waErr);
         }
       }
+
+      // 🚩 Invoice feedback logic
+      if (type === 'INVOICE' && totalRevenue > 0) {
+        try {
+          const jobCard = await this.prisma.serviceJobCard.findUnique({
+            where: { jobCardNumber },
+            include: { serviceType: true },
+          });
+
+          // Only proceed if it was NOT already closed before this upload
+          // Wait, we updated it above. But we know `isAlreadyClosed`.
+          // Let's rely on calculating the paid amount.
+          if (jobCard && jobCard.totalRevenue && jobCard.totalRevenue > 0) {
+            const currentTotalRevenue = jobCard.totalRevenue;
+            const allPayments = await this.prisma.servicePaymentCollection.findMany({
+              where: {
+                jobCardNumber: jobCard.jobCardNumber,
+                deletedAt: null,
+                cancelledAt: null
+              }
+            });
+            const paidAmount = allPayments.reduce((sum, p) => sum + p.recAmt, 0);
+            
+            const hasFullPayment = allPayments.some(p => 
+              (p.paymentType || '').toLowerCase().trim() === 'full payment' && p.recAmt > 0
+            );
+
+            if ((paidAmount >= currentTotalRevenue || currentTotalRevenue - paidAmount <= 2.0) && hasFullPayment) {
+              let closedNow = false;
+              if (jobCard.status !== 'Closed') {
+                await this.prisma.serviceJobCard.update({
+                  where: { jobCardNumber },
+                  data: { status: 'Closed', closedDate: new Date() }
+                });
+                
+                await this.prisma.servicePaymentCollection.updateMany({
+                   where: {
+                     jobCardNumber: jobCard.jobCardNumber,
+                     deletedAt: null,
+                     cancelledAt: null,
+                     paymentStatus: 'pending'
+                   },
+                   data: { paymentStatus: 'completed' }
+                });
+                closedNow = true;
+              }
+
+              // Send feedback if we just closed it via this invoice upload
+              // This prevents duplicate sends if it was already closed before.
+              if (closedNow) {
+                const mobile = jobCard.mobileNumber;
+                if (mobile && mobile !== 'N/A') {
+                  const vehicleModel = jobCard.vehicleDetails || 'Honda 2-Wheeler';
+                  const registrationNo = jobCard.registrationNumber || 'Your Vehicle';
+                  const serviceName = jobCard.serviceType?.name || 'Service';
+                  const custName = jobCard.customerName || 'Customer';
+
+                  await this.whatsappService.sendFeedbackRequestTemplate(
+                    mobile, custName, vehicleModel, registrationNo
+                  );
+                  this.logger.log(`Sent feedback request to ${mobile} for job ${jobCardNumber} after INVOICE upload`);
+                }
+              }
+            }
+          }
+        } catch (fbErr) {
+          this.logger.error(`Failed sending feedback request for uploaded job ${jobCardNumber}`, fbErr?.response || fbErr?.message || fbErr);
+        }
+      }
     }
 
     console.log('DEBUG UNIQUE PART CATEGORIES SEEN IN UPLOAD:', Array.from(seenPartCategories));

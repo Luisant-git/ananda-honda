@@ -340,6 +340,19 @@ async create(data: {
         mediaId,
         filename,
       );
+
+      const paymentTypeName = (payment.paymentType || '').toString().toLowerCase().trim();
+      if (paymentTypeName === 'full payment' && parseFloat(payment.recAmt) > 0) {
+        const vehicleModel = payment.vehicleModel?.model || 'Honda 2-Wheeler';
+        const registrationNo = payment.vehicleNumber || 'Your Vehicle';
+        
+        await this.whatsappService.sendFeedbackRequestTemplate(
+          contactNo,
+          customerName,
+          vehicleModel,
+          registrationNo
+        );
+      }
     } catch (error) {
       this.logger.error('Failed to send WhatsApp service receipt process', error);
     }
