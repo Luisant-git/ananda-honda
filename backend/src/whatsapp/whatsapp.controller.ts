@@ -32,6 +32,7 @@ export class WhatsappController {
   async handleIncomingMessage(@Req() req: Request, @Res() res: Response) {
     try {
       const body = req.body;
+      this.logger.debug(`Incoming webhook body: ${JSON.stringify(body)}`);
 
       if (body.object === 'whatsapp_business_account') {
         for (const entry of body.entry) {
@@ -42,6 +43,9 @@ export class WhatsappController {
                 
                 let feedbackText = '';
                 
+                this.logger.log(`Received WhatsApp message of type: ${message.type} from ${from}`);
+                this.logger.debug(`Message payload: ${JSON.stringify(message)}`);
+
                 if (message.type === 'button') {
                   feedbackText = message.button.text;
                 } else if (message.type === 'interactive') {
@@ -56,6 +60,7 @@ export class WhatsappController {
                 }
 
                 if (feedbackText) {
+                  this.logger.log(`Extracted feedback text: "${feedbackText}"`);
                   // Normalize phone number to match the DB
                   let mobileToSearch = from;
                   if (mobileToSearch.startsWith('91') && mobileToSearch.length === 12) {
