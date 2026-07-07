@@ -52,7 +52,7 @@ const MenuPermission = () => {
         overall_service_report: false,
         service_feedback_report: false
       },
-      settings: { change_password: false, user_management: false, menu_permission: false }
+      settings: { change_password: false, user_management: false, menu_permission: false, feedback_notification: false }
     });
   };
 
@@ -436,6 +436,10 @@ const MenuPermission = () => {
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.settings.menu_permission} onChange={() => togglePermission('settings.menu_permission')} className="rounded" />
                       <span className="text-sm">Menu Permission</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.settings.feedback_notification} onChange={() => togglePermission('settings.feedback_notification')} className="rounded" />
+                      <span className="text-sm">Feedback Notification</span>
                     </label>
                   </div>
                 )}

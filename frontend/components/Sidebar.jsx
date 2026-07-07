@@ -272,7 +272,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {permissions.settings.change_password && <li><NavLink view="change_password" label="Change Password" isSubmenu /></li>}
                 {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
-                {permissions.settings.user_management && <li><NavLink view="feedback_notification" label="Feedback Notification" isSubmenu /></li>}
+                {permissions.settings.feedback_notification && <li><NavLink view="feedback_notification" label="Feedback Notification" isSubmenu /></li>}
                 <li><NavLink view="pine_labs_config" label="Pine Labs Config" isSubmenu /></li>
               </NavGroup>
             )}
