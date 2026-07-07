@@ -8,7 +8,15 @@ const MenuPermission = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const roles = ['SUPER_ADMIN', 'ADMIN', 'USER', 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'DEVELOPER', 'PART_EXECUTIVE'];
+  const roles = [
+    'USER', 
+    'SUPER_ADMIN', 
+    'ADMIN', 
+    'SERVICE_EXECUTIVE', 
+    'SALES_EXECUTIVE', 
+    'CRM_EXECUTIVE'
+    /* 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'DEVELOPER', 'PART_EXECUTIVE' */
+  ];
 
   useEffect(() => {
     fetchPermissions();
@@ -40,7 +48,8 @@ const MenuPermission = () => {
         part_payment_report: false,
         service_reports: false,
         service_reminder_report: false,
-        overall_service_report: false
+        overall_service_report: false,
+        service_feedback_report: false
       },
       settings: { change_password: false, user_management: false, menu_permission: false }
     });
@@ -395,6 +404,10 @@ const MenuPermission = () => {
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.overall_service_report} onChange={() => togglePermission('reports.overall_service_report')} className="rounded" />
               <span className="text-sm">- Overall Service Report</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={editData.reports.service_feedback_report} onChange={() => togglePermission('reports.service_feedback_report')} className="rounded" />
+              <span className="text-sm">- Service Feedback Report</span>
             </label>
           </div>
         )}

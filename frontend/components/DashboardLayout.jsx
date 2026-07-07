@@ -18,6 +18,7 @@ import Reports from '../pages/Reports';
 import ServiceReports from '../pages/ServiceReports';
 import Dashboard from '../pages/Dashboard';
 import UserManagement from '../pages/UserManagement';
+import FeedbackNotificationSettings from '../pages/FeedbackNotificationSettings';
 import MenuPermission from '../pages/MenuPermission';
 import EnquiryManagement from '../pages/EnquiryManagement';
 import VehicleEnquiryForm from '../pages/VehicleEnquiryForm';
@@ -29,6 +30,7 @@ import FullPaymentReport from '../pages/FullPaymentReport';
 import PartPaymentReport from '../pages/PartPaymentReport';
 import ServiceTypeOfPart from '../pages/ServiceTypeOfPart';
 import ServiceReminderReport from '../pages/ServiceReminderReport';
+import ServiceFeedbackReport from '../pages/ServiceFeedbackReport';
 import OverallServiceReport from '../pages/OverallServiceReport';
 import QuickStart from '../pages/QuickStart';
 import LocationMaster from '../pages/LocationMaster';
@@ -101,6 +103,8 @@ const DashboardLayout = ({ user, onLogout }) => {
        return <OverallServiceReport user={user} />;
       case 'service_reminder_report':  
         return <ServiceReminderReport user={user} />;
+      case 'service_feedback_report':
+        return <ServiceFeedbackReport user={user} />;
       case 'change_password':
         return <ChangePassword />;
       case 'user_management':
@@ -113,6 +117,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <PineLabsConfig />;
       case 'pine_labs_transactions':
         return <PineLabsTransactions />;
+      case 'feedback_notification':
+        return <FeedbackNotificationSettings />;
       case 'dashboard':
       default:
         return <Dashboard />;
