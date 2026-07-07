@@ -29,7 +29,7 @@ import { PaymentTypeModule } from './payment-type/payment-type.module';
 
 import { PineLabsModule } from './pine-labs/pine-labs.module';
 import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module';
-
+import { FeedbackNotificationModule } from './feedback-notification/feedback-notification.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -82,7 +82,8 @@ import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module
     LocationModule, 
     PaymentTypeModule,
     PineLabsModule, 
-    PineLabsConfigModule
+    PineLabsConfigModule,
+    FeedbackNotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],
