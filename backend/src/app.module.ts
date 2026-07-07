@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CustomerModule } from './customer/customer.module';
@@ -30,6 +30,8 @@ import { PaymentTypeModule } from './payment-type/payment-type.module';
 import { PineLabsModule } from './pine-labs/pine-labs.module';
 import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module';
 import { FeedbackNotificationModule } from './feedback-notification/feedback-notification.module';
+import { BrandMiddleware } from './common/brand.middleware';
+
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -88,4 +90,8 @@ import { FeedbackNotificationModule } from './feedback-notification/feedback-not
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(BrandMiddleware).forRoutes('*');
+  }
+}
