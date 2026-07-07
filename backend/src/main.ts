@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import session = require('express-session');
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
+  // REQUIRED FOR NGINX / HTTPS REVERSE PROXY:
+  app.set('trust proxy', 1);
+
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'ananda-honda-secret-key',
@@ -13,7 +17,8 @@ async function bootstrap() {
       cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: false,
+        secure: process.env.NODE_ENV === 'production', // true on HTTPS
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       },
     }),
   );
