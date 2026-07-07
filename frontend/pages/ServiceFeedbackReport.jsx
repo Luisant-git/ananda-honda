@@ -34,8 +34,10 @@ const ServiceFeedbackReport = () => {
 
   const getFeedbackStatus = (feedback) => {
     if (!feedback) return 'No Feedback';
-    if (feedback.toLowerCase().includes('satisf')) return 'Satisfied';
-    return 'Dissatisfied';
+    const lower = feedback.toLowerCase();
+    if (lower.includes('dissatisf')) return 'Dissatisfied';
+    if (lower.includes('satisf')) return 'Satisfied';
+    return feedback;
   };
 
   useEffect(() => {
