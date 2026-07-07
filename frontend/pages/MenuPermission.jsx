@@ -12,10 +12,11 @@ const MenuPermission = () => {
     'USER', 
     'SUPER_ADMIN', 
     'ADMIN', 
+    'DEVELOPER',
     'SERVICE_EXECUTIVE', 
     'SALES_EXECUTIVE', 
     'CRM_EXECUTIVE'
-    /* 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'DEVELOPER', 'PART_EXECUTIVE' */
+    /* 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'PART_EXECUTIVE' */
   ];
 
   useEffect(() => {
