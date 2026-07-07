@@ -31,9 +31,14 @@ import { PineLabsModule } from './pine-labs/pine-labs.module';
 import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module';
 import { FeedbackNotificationModule } from './feedback-notification/feedback-notification.module';
 import { BrandMiddleware } from './common/brand.middleware';
+import { ClsModule } from 'nestjs-cls';
 
 @Module({
   imports: [
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     ScheduleModule.forRoot(),
     CustomerModule,
     PaymentModeModule,

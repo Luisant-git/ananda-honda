@@ -1,10 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { brandContext } from '../common/brand.context';
+import { ClsService } from 'nestjs-cls';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor() {
+  constructor(private readonly cls: ClsService) {
     super({
       datasources: {
         db: {
@@ -19,7 +19,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     
     // Multi-tenant Row-Level Security Middleware
     this.$use(async (params, next) => {
-      const brand = brandContext.getStore();
+      const brand = this.cls.get('brand');
       
       if (brand) {
         const action = params.action;
