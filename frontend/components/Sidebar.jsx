@@ -113,7 +113,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             <div className="flex flex-col items-center">
               <img src={hondaLogo} alt="Ananda Motowings Private Limited" className="h-12 object-contain" />
               {user && (
-                <span className="mt-1 text-xs font-bold tracking-widest text-brand-accent uppercase">
+                <span className={`mt-1 text-xs font-bold tracking-widest uppercase ${user.brand === 'REDWINGS' ? 'text-red-600' : 'text-brand-accent'}`}>
                   {user.brand} CRM
                 </span>
               )}
