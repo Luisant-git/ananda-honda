@@ -214,6 +214,15 @@ model MenuPermission {
   updatedAt   DateTime @updatedAt
 }
 
+model FeedbackNotificationSetting {
+  id           Int      @id @default(autoincrement())
+  role         Role     @unique
+  mobileNumber String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
 enum Role {
   SUPER_ADMIN
   ADMIN
@@ -223,6 +232,9 @@ enum Role {
   SERVICE
   DEVELOPER
   PART_EXECUTIVE
+  SERVICE_EXECUTIVE
+  SALES_EXECUTIVE
+  CRM_EXECUTIVE
 }
 
 model Enquiry {
@@ -285,6 +297,7 @@ model ServiceJobCard {
   invoiceNumber         String?
   currentKM             Float?
   otpNo                 String?
+  feedback              String?
   amcStartDate          DateTime?
   amcEndDate            DateTime?
   estimatedDeliveryDate DateTime?
