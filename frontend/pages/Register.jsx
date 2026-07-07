@@ -8,7 +8,8 @@ const Register = ({ onRegister, onBackToLogin }) => {
   const [formData, setFormData] = useState({ 
     username: '', 
     password: '', 
-    role: 'USER' 
+    role: 'USER',
+    brand: 'BIGWINGS'
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,6 +56,17 @@ const Register = ({ onRegister, onBackToLogin }) => {
                 <option value="PART_EXECUTIVE">Part Executive</option>
                 <option value="ACCOUNT">Account</option> 
                 */}
+              </select>
+            </div>
+            <div>
+              <select 
+                value={formData.brand}
+                onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                className="w-full px-4 py-3 bg-white border border-brand-border rounded-lg text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                required
+              >
+                <option value="BIGWINGS">Bigwings</option>
+                <option value="REDWINGS">Redwings</option>
               </select>
             </div>
             <div className="relative">

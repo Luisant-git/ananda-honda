@@ -12,6 +12,7 @@ export class UserService {
         id: true,
         username: true,
         role: true,
+        brand: true,
         isActive: true,
         createdAt: true
       },
@@ -19,18 +20,20 @@ export class UserService {
     });
   }
 
-  async create(data: { username: string; password: string; role: 'SUPER_ADMIN' | 'USER' | 'ENQUIRY' | 'ACCOUNT' | 'DEVELOPER' | 'PART_EXECUTIVE' }) {
+  async create(data: { username: string; password: string; role: any; brand?: string }) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     return this.prisma.user.create({
       data: {
         username: data.username,
         password: hashedPassword,
-        role: data.role
+        role: data.role,
+        brand: data.brand || 'BIGWINGS'
       },
       select: {
         id: true,
         username: true,
         role: true,
+        brand: true,
         isActive: true,
         createdAt: true
       }
@@ -48,6 +51,7 @@ export class UserService {
         id: true,
         username: true,
         role: true,
+        brand: true,
         isActive: true,
         createdAt: true
       }

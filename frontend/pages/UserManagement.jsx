@@ -7,7 +7,7 @@ import { userApi } from '../api/userApi.js';
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ username: '', password: '', role: 'USER' });
+  const [formData, setFormData] = useState({ username: '', password: '', role: 'USER', brand: 'BIGWINGS' });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -143,6 +143,20 @@ const UserManagement = () => {
               <option value="ACCOUNT">Account</option>
               <option value="SERVICE">Service</option> 
               */}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Brand <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.brand}
+              onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+              required
+            >
+              <option value="BIGWINGS">Bigwings</option>
+              <option value="REDWINGS">Redwings</option>
             </select>
           </div>
           <div className="flex justify-end gap-4 pt-4">
