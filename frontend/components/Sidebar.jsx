@@ -52,7 +52,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
           isActive
             ? 'bg-brand-accent text-white shadow-md font-medium'
             : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'
-        } ${isSubmenu ? `text-sm ${isSidebarCollapsed ? '' : 'ml-11 pl-4 pr-3'}` : 'text-[15px]'} ${isSidebarCollapsed && isSubmenu ? 'hidden' : ''}`}
+        } ${isSubmenu ? `text-sm ${isSidebarCollapsed ? '' : 'ml-10 pl-3 pr-2'}` : 'text-[15px]'} ${isSidebarCollapsed && isSubmenu ? 'hidden' : ''}`}
       >
         {isActive && !isSubmenu && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30 rounded-r-full"></div>}
         <div className={`flex-shrink-0 ${!isSidebarCollapsed ? (isSubmenu ? 'mr-3' : 'mr-4') : ''} ${isActive ? 'text-white' : 'text-brand-text-secondary group-hover:text-brand-accent transition-colors'}`}>
@@ -108,7 +108,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
       <div
         className={`fixed md:relative top-0 left-0 h-full bg-white border-r border-brand-border z-30 transform transition-transform duration-300 ease-in-out flex flex-col shadow-floating md:flex-shrink-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-72 w-64'}`}
+        } md:translate-x-0 ${isSidebarCollapsed ? 'md:w-20' : 'w-72 md:w-[290px]'}`}
       >
         <div className={`flex items-center border-b border-brand-border bg-white sticky top-0 z-10 shadow-sm ${isSidebarCollapsed ? 'justify-center px-0 h-16' : 'justify-between px-5 py-3'}`}>
           {!isSidebarCollapsed && (
