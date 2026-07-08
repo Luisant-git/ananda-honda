@@ -11,9 +11,18 @@ export class UserController {
   }
 
   @Post()
-  async create(@Body() createUserDto: { username: string; password: string; role: any; brand?: string }) {
+  async create(@Body() createUserDto: { username: string; password: string; role: any; brand?: string; branchId?: number; branchCode?: string }) {
     try {
       return await this.userService.create(createUserDto);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() updateUserDto: { username?: string; password?: string; role?: any; brand?: string; branchId?: number; branchCode?: string }) {
+    try {
+      return await this.userService.update(parseInt(id), updateUserDto);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
