@@ -32,6 +32,7 @@ import { PineLabsConfigModule } from './pine-labs-config/pine-labs-config.module
 import { FeedbackNotificationModule } from './feedback-notification/feedback-notification.module';
 import { BrandMiddleware } from './common/brand.middleware';
 import { ClsModule } from 'nestjs-cls';
+import { BranchModule } from './branch/branch.module';
 
 @Module({
   imports: [
@@ -90,7 +91,8 @@ import { ClsModule } from 'nestjs-cls';
     PaymentTypeModule,
     PineLabsModule, 
     PineLabsConfigModule,
-    FeedbackNotificationModule
+    FeedbackNotificationModule,
+    BranchModule
   ],
   controllers: [AppController],
   providers: [AppService],

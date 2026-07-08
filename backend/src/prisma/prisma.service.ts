@@ -21,7 +21,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           const modelName = prop;
           
           // Skip global tables
-          if (['menuPermission'].includes(modelName)) {
+          if (['menuPermission', 'branch'].includes(modelName)) {
             return target[prop];
           }
 
@@ -30,9 +30,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
               if (typeof modelTarget[action] === 'function') {
                 return async (args: any = {}) => {
                   const brand = this.cls.get('brand');
+                  const branchCode = this.cls.get('branchCode');
                   
-                  if (brand) {
-                    // Bypass RLS for findUnique on 'user' model so users from any brand can log in!
+                  // Collect filters to apply based on what is available in the current context
+                  const filters: any = {};
+                  if (brand) filters.brand = brand;
+                  
+                  // Only apply branchCode filter to transactional tables that have this field
+                  const branchCodeModels = [
+                    'user', 'customer', 'paymentCollection', 'servicePaymentCollection',
+                    'serviceJobCard', 'salesInvoice', 'paymentTransaction', 'enquiry', 'lead'
+                  ];
+                  
+                  if (branchCode && branchCodeModels.includes(modelName)) {
+                    filters.branchCode = branchCode;
+                  }
+                  
+                  if (Object.keys(filters).length > 0) {
+                    // Bypass RLS for findUnique on 'user' model so users from any brand/branch can log in!
                     const isUserLoginQuery = modelName === 'user' && action === 'findUnique';
                     
                     if (isUserLoginQuery) {
@@ -41,12 +56,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
                     // INTERCEPT READ QUERIES
                     if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(action)) {
-                      args.where = { ...args.where, brand };
+                      args.where = { ...args.where, ...filters };
                     }
                     
                     // HANDLE FIND UNIQUE (Prisma strict unique constraint workaround)
                     if (action === 'findUnique') {
-                      return modelTarget['findFirst']({ ...args, where: { ...args.where, brand } });
+                      return modelTarget['findFirst']({ ...args, where: { ...args.where, ...filters } });
                     }
                     
                     // PRE-CHECK FOR UPDATE & DELETE
@@ -55,17 +70,22 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                         where: args.where
                       });
                       
-                      if (existingRecord && existingRecord.brand !== brand) {
-                        throw new Error('Unauthorized: You do not have permission to modify this record.');
+                      if (existingRecord) {
+                        if (brand && existingRecord.brand !== brand) {
+                           throw new Error('Unauthorized: You do not have permission to modify this record (Brand mismatch).');
+                        }
+                        if (branchCode && existingRecord.branchCode && existingRecord.branchCode !== branchCode) {
+                           throw new Error('Unauthorized: You do not have permission to modify this record (Branch mismatch).');
+                        }
                       }
                     }
                     
                     // INTERCEPT CREATE QUERIES
                     if (['create', 'createMany'].includes(action)) {
                       if (action === 'create') {
-                        args.data = { ...args.data, brand };
+                        args.data = { ...args.data, ...filters };
                       } else if (action === 'createMany' && Array.isArray(args.data)) {
-                        args.data = args.data.map((d: any) => ({ ...d, brand }));
+                        args.data = args.data.map((d: any) => ({ ...d, ...filters }));
                       }
                     }
                   }

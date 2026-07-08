@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Branch {
+  id          Int      @id @default(autoincrement())
+  branchName  String
+  branchCode  String   @unique
+  networkType String?
+  inventoryLocation String?
+  brand       String   @default("BIGWINGS")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+}
+
+
 model Customer {
   id        Int     @id @default(autoincrement())
   custId    String  @unique
@@ -33,6 +47,7 @@ model Customer {
   paymentCollections        PaymentCollection[]
   servicePaymentCollections ServicePaymentCollection[]
   brand String @default("BIGWINGS")
+  branchCode String?
 }
 
 model PaymentMode {
@@ -120,6 +135,7 @@ model PaymentCollection {
   deletedByUser      User?             @relation("DeletedPayments", fields: [deletedBy], references: [id])
   cancelledByUser    User?             @relation("CancelledPayments", fields: [cancelledBy], references: [id])
   brand String @default("BIGWINGS")
+  branchCode String?
 }
 
 model ServicePaymentMode {
@@ -188,6 +204,7 @@ model ServicePaymentCollection {
   deletedByUser             User?                    @relation("DeletedServicePayments", fields: [deletedBy], references: [id])
   cancelledByUser           User?                    @relation("CancelledServicePayments", fields: [cancelledBy], references: [id])
   brand String @default("BIGWINGS")
+  branchCode String?
 }
 
 model PaymentType {
@@ -216,6 +233,9 @@ model User {
   cancelledServicePayments  ServicePaymentCollection[] @relation("CancelledServicePayments")
   paymentTransactions       PaymentTransaction[]
   brand String @default("BIGWINGS")
+  branchId                  Int?
+  branch                    Branch?                  @relation(fields: [branchId], references: [id])
+  branchCode                String?
 }
 
 model MenuPermission {
@@ -262,6 +282,7 @@ model Enquiry {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   brand String @default("BIGWINGS")
+  branchCode String?
 }
 
 model SalesInvoice {
@@ -286,6 +307,7 @@ model SalesInvoice {
   @@index([contactInfo])
   @@index([vehicleRegNo])
   brand String @default("BIGWINGS")
+  branchCode String?
 }
 
 model ServiceJobCard {
@@ -326,6 +348,7 @@ model ServiceJobCard {
   @@index([registrationNumber])
   @@index([closedDate])
   brand String @default("BIGWINGS")
+  // branchCode is already present in this model
 }
 
 model ServiceType {
@@ -415,4 +438,5 @@ model PaymentTransaction {
 
   user User? @relation(fields: [createdBy], references: [id])
   brand String @default("BIGWINGS")
+  branchCode String?
 }
