@@ -22,6 +22,20 @@ export const userApi = {
     return response.json();
   },
 
+  update: async (id, data) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Update failed');
+    }
+    return response.json();
+  },
+
   toggleActive: async (id) => {
     const response = await fetch(`${API_URL}/${id}/toggle-active`, {
       method: 'PATCH',

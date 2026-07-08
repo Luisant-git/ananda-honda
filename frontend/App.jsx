@@ -31,19 +31,6 @@ const App = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Set brand theme dynamically
-  useEffect(() => {
-    if (user?.brand === 'REDWINGS') {
-      document.body.classList.add('theme-redwings');
-      document.body.classList.remove('theme-bigwings');
-      document.title = "REDWINGS CRM";
-    } else {
-      document.body.classList.add('theme-bigwings');
-      document.body.classList.remove('theme-redwings');
-      document.title = "BIGWINGS CRM";
-    }
-  }, [user]);
-
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);

@@ -3,15 +3,19 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { userApi } from '../api/userApi.js';
+import config from '../config.js';
 
-const UserManagement = () => {
+const UserManagement = ({ user: currentUser }) => {
   const [users, setUsers] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ username: '', password: '', role: 'USER', brand: 'BIGWINGS' });
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
+    fetchBranches();
   }, []);
 
   const fetchUsers = async () => {
@@ -23,14 +27,34 @@ const UserManagement = () => {
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/branch`, {credentials: 'include'});
+      if (response.ok) {
+        const data = await response.json();
+        setBranches(data);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await userApi.create(formData);
-      toast.success('User created successfully!');
+      if (editingId) {
+        const payload = { ...formData };
+        if (!payload.password) delete payload.password; // Don't send empty password
+        await userApi.update(editingId, payload);
+        toast.success('User updated successfully!');
+      } else {
+        await userApi.create(formData);
+        toast.success('User created successfully!');
+      }
       setIsModalOpen(false);
-      setFormData({ username: '', password: '', role: 'USER' });
+      setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' });
+      setEditingId(null);
       fetchUsers();
     } catch (error) {
       toast.error(error.message || 'Error creating user');
@@ -49,9 +73,22 @@ const UserManagement = () => {
     }
   };
 
+  const handleEdit = (user) => {
+    setEditingId(user.id);
+    setFormData({
+      username: user.username,
+      password: '', // Blank out password
+      role: user.role,
+      brand: user.brand || 'BIGWINGS',
+      branchCode: user.branchCode || ''
+    });
+    setIsModalOpen(true);
+  };
+
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Username', accessor: 'username' },
+    { header: 'Branch Code', accessor: 'branchCode' },
     { header: 'Role', accessor: 'role' },
     { 
       header: 'Status', 
@@ -85,16 +122,26 @@ const UserManagement = () => {
         columns={columns}
         data={users}
         actionButtons={(user) => (
-          <button
-            onClick={() => handleToggleActive(user)}
-            className={`${user.isActive ? 'text-red-600' : 'text-green-600'} hover:underline`}
-          >
-            {user.isActive ? 'Deactivate' : 'Activate'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleToggleActive(user)}
+              className={`${user.isActive ? 'text-red-600' : 'text-green-600'} hover:underline`}
+            >
+              {user.isActive ? 'Deactivate' : 'Activate'}
+            </button>
+            {currentUser?.role === 'DEVELOPER' && (
+              <button
+                onClick={() => handleEdit(user)}
+                className="text-blue-600 hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
         )}
       />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add User">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' }); }} title={editingId ? "Edit User" : "Add User"}>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -110,14 +157,14 @@ const UserManagement = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
-              Password <span className="text-red-500">*</span>
+              Password {editingId ? <span className="text-gray-400 font-normal">(Leave blank to keep unchanged)</span> : <span className="text-red-500">*</span>}
             </label>
             <input
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-              required
+              required={!editingId}
             />
           </div>
           <div>
@@ -159,10 +206,31 @@ const UserManagement = () => {
               <option value="REDWINGS">Redwings</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-text-secondary mb-1">
+              Branch (Optional)
+            </label>
+            <select
+              value={formData.branchCode}
+              onChange={(e) => {
+                 const branchCode = e.target.value;
+                 const branch = branches.find(b => b.branchCode === branchCode);
+                 setFormData({ ...formData, branchCode, branchId: branch ? branch.id : null });
+              }}
+              className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+            >
+              <option value="">Select Branch</option>
+              {branches.filter(b => b.brand === formData.brand).map((branch) => (
+                <option key={branch.id} value={branch.branchCode}>
+                  {branch.branchName} ({branch.branchCode})
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' }); }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
               Cancel
@@ -172,7 +240,7 @@ const UserManagement = () => {
               disabled={isLoading}
               className="px-4 py-2 rounded-lg bg-brand-accent hover:bg-brand-accent-hover text-white font-bold disabled:opacity-50"
             >
-              {isLoading ? 'Creating...' : 'Create'}
+              {isLoading ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
