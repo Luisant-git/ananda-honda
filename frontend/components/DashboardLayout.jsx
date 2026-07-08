@@ -42,10 +42,20 @@ import BranchMaster from '../pages/BranchMaster';
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
   const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'quick_start');
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const renderView = () => {
     switch (currentView) {
       case 'branch_master':

@@ -143,22 +143,34 @@ else setActiveTab(null);
     const highest = Math.max(...(modes || []).map(m => m.amount), 0);
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-sm font-medium text-brand-text-secondary mb-2">Total Collection</p>
-          <h3 className="text-2xl font-bold text-brand-accent">₹{total.toLocaleString()}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/></svg>
+          </div>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Total Collection</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary">₹{total.toLocaleString()}</h3>
         </div>
-        <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-sm font-medium text-brand-text-secondary mb-2">Payment Collection Count</p>
-          <h3 className="text-2xl font-bold text-brand-accent">{totalCount || 0}</h3>
+        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+          </div>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Transaction Count</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary">{totalCount || 0}</h3>
         </div>
-        <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-sm font-medium text-brand-text-secondary mb-2">Average Amount</p>
-          <h3 className="text-2xl font-bold text-brand-accent">₹{Math.round(avg).toLocaleString()}</h3>
+        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/></svg>
+          </div>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Average Amount</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary">₹{Math.round(avg).toLocaleString()}</h3>
         </div>
-        <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-sm font-medium text-brand-text-secondary mb-2">Highest Payment</p>
-          <h3 className="text-2xl font-bold text-brand-accent">₹{highest.toLocaleString()}</h3>
+        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd"/></svg>
+          </div>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Highest Payment</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary">₹{highest.toLocaleString()}</h3>
         </div>
       </div>
     );
@@ -173,29 +185,14 @@ else setActiveTab(null);
     const reportTitle = activeTab === 'sales' ? 'Sales Payment Collection Report' : 'Services Payment Collection Report';
 
     return (
-      <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
-        <div className="bg-brand-accent p-3 sm:p-4">
+      <div className="bg-brand-surface rounded-xl shadow-card border border-brand-border overflow-hidden">
+        <div className="bg-gradient-to-r from-brand-accent to-brand-accent-hover p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-white">{reportTitle}</h3>
-              <p className="text-white text-xs sm:text-sm mt-1 opacity-90">
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">{reportTitle}</h3>
+              <p className="text-white/80 text-xs sm:text-sm mt-1 font-medium">
                 {fromDate && toDate ? `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 'All Time Overview'}
               </p>
-            </div>
-            <div className="flex gap-2 items-center w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white border border-white rounded-lg px-3 py-2 text-xs sm:text-sm text-brand-text-primary focus:ring-2 focus:ring-white focus:outline-none flex-1 sm:flex-none"
-              />
-              <button
-                onClick={downloadXML}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 sm:px-6 rounded-lg text-xs sm:text-sm whitespace-nowrap"
-              >
-                XML
-              </button>
             </div>
           </div>
         </div>
@@ -351,28 +348,28 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       
       {/* Tabs */}
 {(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business) && (
-  <div className="bg-brand-surface rounded-lg shadow-sm border border-brand-border overflow-hidden">
-    <div className="flex border-b border-brand-border">
+  <div className="bg-brand-surface rounded-xl shadow-soft p-2 mb-6">
+    <div className="flex flex-wrap gap-2">
       {permissions?.dashboard?.sales && (
-        <button onClick={() => handleTabChange('walkin')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'walkin' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+        <button onClick={() => handleTabChange('walkin')} className={`flex-1 min-w-[150px] px-4 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'walkin' ? 'bg-brand-accent text-white shadow-md' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}>
           Walk-in Dashboard
         </button>
       )}
 
       {permissions?.dashboard?.sales && (
-        <button onClick={() => handleTabChange('sales')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'sales' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+        <button onClick={() => handleTabChange('sales')} className={`flex-1 min-w-[150px] px-4 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'sales' ? 'bg-brand-accent text-white shadow-md' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}>
           Sales Dashboard
         </button>
       )}
 
       {permissions?.dashboard?.service && (
-        <button onClick={() => handleTabChange('services')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'services' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+        <button onClick={() => handleTabChange('services')} className={`flex-1 min-w-[150px] px-4 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'services' ? 'bg-brand-accent text-white shadow-md' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}>
           Services Dashboard
         </button>
       )}
 
       {permissions?.dashboard?.service_business && (
-        <button onClick={() => handleTabChange('service_business')} className={`flex-1 px-4 py-3 font-semibold ${activeTab === 'service_business' ? 'bg-brand-accent text-white' : 'bg-gray-50'}`}>
+        <button onClick={() => handleTabChange('service_business')} className={`flex-1 min-w-[150px] px-4 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'service_business' ? 'bg-brand-accent text-white shadow-md' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}>
           Service Business Dashboard
         </button>
       )}
@@ -381,40 +378,46 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
 )}
 
       {/* Date Filter Section */}
-      <div className="bg-brand-surface p-3 rounded-lg shadow-sm border border-brand-border flex flex-wrap items-end gap-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-brand-surface p-5 rounded-xl shadow-card border border-brand-border/50 flex flex-wrap items-end gap-6 mb-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-brand-accent"></div>
+        <div className="flex items-center gap-6">
             <div className="flex flex-col">
-              <label className="text-xs font-medium text-brand-text-secondary mb-1">From:</label>
+              <label className="text-sm font-semibold text-brand-text-secondary mb-1.5 uppercase tracking-wide">Start Date</label>
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
+                className="bg-brand-hover border border-brand-border text-brand-text-primary text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-brand-accent focus:bg-white outline-none transition-all w-[160px]"
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs font-medium text-brand-text-secondary mb-1">To:</label>
+              <label className="text-sm font-semibold text-brand-text-secondary mb-1.5 uppercase tracking-wide">End Date</label>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="bg-white border border-brand-border text-brand-text-primary text-sm rounded p-1.5 focus:ring-brand-accent focus:border-brand-accent outline-none"
+                className="bg-brand-hover border border-brand-border text-brand-text-primary text-sm rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-brand-accent focus:bg-white outline-none transition-all w-[160px]"
               />
             </div>
           </div>
-        <div className="flex gap-2 mb-0.5">
+        <div className="flex gap-3 h-[42px] mt-2 sm:mt-0">
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="bg-brand-accent hover:bg-brand-accent-hover text-white text-sm font-semibold py-1.5 px-4 rounded disabled:opacity-50 transition-colors"
+            className="bg-brand-text-primary hover:bg-black text-white text-sm font-bold px-6 rounded-lg disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
           >
-            {loading ? '...' : 'Load'}
+            {loading ? (
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            )}
+            Filter Data
           </button>
           <button
             onClick={handleReset}
-            className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-1.5 px-4 rounded transition-colors"
+            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold px-6 rounded-lg transition-colors shadow-sm flex items-center"
           >
-            Reset
+            Clear Filters
           </button>
         </div>
       </div>

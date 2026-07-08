@@ -85,7 +85,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
   };
 
   return (
-    <div className="bg-brand-surface p-4 sm:p-6 rounded-lg shadow-sm border border-brand-border">
+    <div className="bg-brand-surface p-4 sm:p-6 rounded-xl shadow-card border border-brand-border/50">
       {!isBackendPagination && (
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
           <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
 
       <div className="sm:hidden space-y-3">
         {currentData.map((item, rowIndex) => (
-          <div key={rowIndex} className="bg-white border border-brand-border rounded-lg p-4 shadow-sm">
+          <div key={rowIndex} className="bg-white border border-brand-border/50 rounded-xl p-4 shadow-soft">
             <div className="grid grid-cols-1 gap-3">
               {columns.map((col, colIndex) => (
                 <div key={colIndex} className="flex flex-col gap-1 text-sm">

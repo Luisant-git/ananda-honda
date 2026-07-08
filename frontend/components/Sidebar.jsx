@@ -48,83 +48,82 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             setSidebarOpen(false);
           }
         }}
-        className={`flex items-center p-2 text-base font-normal rounded-lg transition-colors duration-150 ${isSidebarCollapsed ? 'justify-center' : ''}
-          ${isSubmenu ? (isSidebarCollapsed ? '' : 'pl-11') : ''}
-          ${isActive ? 'bg-brand-accent text-white' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}
-        title={isSidebarCollapsed ? label : ''}
+        className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-0 py-3 mx-2' : 'px-4 py-2.5 mx-3'} my-1 rounded-lg transition-all duration-200 group relative overflow-hidden ${
+          isActive
+            ? 'bg-brand-accent text-white shadow-md font-medium'
+            : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'
+        } ${isSubmenu ? `text-sm ${isSidebarCollapsed ? '' : 'ml-11 pl-4 pr-3'}` : 'text-[15px]'} ${isSidebarCollapsed && isSubmenu ? 'hidden' : ''}`}
       >
-        {!isSubmenu && <span className={isSidebarCollapsed ? '' : 'mr-3'}>{icon}</span>}
-        {!isSidebarCollapsed && <span>{label}</span>}
+        {isActive && !isSubmenu && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/30 rounded-r-full"></div>}
+        <div className={`flex-shrink-0 ${!isSidebarCollapsed ? (isSubmenu ? 'mr-3' : 'mr-4') : ''} ${isActive ? 'text-white' : 'text-brand-text-secondary group-hover:text-brand-accent transition-colors'}`}>
+          {icon}
+        </div>
+        {!isSidebarCollapsed && <span className="flex-1 whitespace-nowrap tracking-wide">{label}</span>}
       </a>
     );
   };
 
-  const NavGroup = ({ menuKey, label, icon, children }) => {
+  const NavGroup = ({ label, icon, menuKey, children }) => {
     const isOpen = openMenus[menuKey];
-
-    if (isSidebarCollapsed) {
-      return (
-        <li className="mt-2">
-          <div
-            className="flex items-center justify-center p-2 text-base font-normal text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
-            title={label}
-          >
-            {icon}
-          </div>
-        </li>
-      );
-    }
-
-    if (!permissions) return null;
-
     return (
-      <li className="mt-2">
+      <div className="mb-2">
         <button
-          type="button"
-          className="flex items-center w-full px-2 py-2 text-sm font-medium text-brand-text-secondary rounded-lg hover:bg-brand-hover hover:text-brand-text-primary transition-all duration-150"
           onClick={() => toggleMenu(menuKey)}
+          className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0 py-3 mx-2' : 'justify-between px-4 py-3 mx-3'} my-1 rounded-lg transition-all duration-200 group hover:bg-brand-hover text-brand-text-primary`}
+          style={{ width: isSidebarCollapsed ? 'calc(100% - 16px)' : 'calc(100% - 24px)' }}
         >
-          <span className="mr-3 text-lg">{icon}</span>
-          <span className="flex-1 text-left whitespace-nowrap">{label}</span>
-          <ChevronDownIcon
-            className={`w-5 h-5 transform transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
-          />
+          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
+            <div className={`${!isSidebarCollapsed ? 'mr-4' : ''} text-brand-text-secondary group-hover:text-brand-accent transition-colors ${isOpen ? 'text-brand-accent' : ''}`}>
+              {icon}
+            </div>
+            {!isSidebarCollapsed && <span className={`font-semibold tracking-wide whitespace-nowrap text-left text-[15px] ${isOpen ? 'text-brand-accent' : ''}`}>{label}</span>}
+          </div>
+          {!isSidebarCollapsed && (
+            <ChevronDownIcon
+              className={`w-4 h-4 text-brand-text-secondary transition-transform duration-300 ${
+                isOpen ? 'rotate-180 text-brand-accent' : ''
+              }`}
+            />
+          )}
         </button>
-        <div
-          className={`mt-1 transition-all duration-300 ease-in-out ${
-            isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-          } overflow-hidden`}
-        >
-          <ul className="space-y-1">
-            {isOpen && children}
-          </ul>
-        </div>
-      </li>
+        {!isSidebarCollapsed && (
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+            {children}
+          </div>
+        )}
+      </div>
     );
   };
 
+  const logoToUse = user?.brand === 'REDWINGS' ? hondaRedLogo : hondaLogo;
+
   return (
     <>
-      <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)}></div>
-      <aside className={`bg-brand-surface text-brand-text-primary ${isSidebarCollapsed ? 'w-16' : 'w-64'} fixed top-0 left-0 h-full z-40 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out md:relative md:translate-x-0 md:flex-shrink-0 flex flex-col border-r border-brand-border`}>
-        <div className="flex items-center justify-between p-4 border-b border-brand-border">
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-20 md:hidden transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+      <div
+        className={`fixed md:relative top-0 left-0 h-full bg-white border-r border-brand-border z-30 transform transition-transform duration-300 ease-in-out flex flex-col shadow-floating md:flex-shrink-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-72 w-64'}`}
+      >
+        <div className={`flex items-center border-b border-brand-border bg-white sticky top-0 z-10 shadow-sm ${isSidebarCollapsed ? 'justify-center px-0 h-16' : 'justify-between px-5 py-3'}`}>
           {!isSidebarCollapsed && (
-            <div className="flex flex-col items-center">
-              <img src={user?.brand === 'REDWINGS' ? hondaRedLogo : hondaLogo} alt="Ananda Motowings Private Limited" className="h-20 object-contain" />
-              {user && (
-                <span className={`mt-1 text-xs font-bold tracking-widest uppercase ${user.brand === 'REDWINGS' ? 'text-red-600' : 'text-brand-accent'}`}>
-                  {user.brand} CRM
+            <div className="flex flex-col items-center justify-center">
+                <img src={logoToUse} alt="Honda Logo" className="h-14 w-auto object-contain" />
+                <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest mt-1 text-center w-full">
+                  {user?.brand === 'REDWINGS' ? 'Redwing CRM' : 'Bigwing CRM'}
                 </span>
-              )}
             </div>
           )}
           <div className="flex items-center gap-2">
-            <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:block p-1 text-brand-text-secondary hover:text-brand-text-primary">
+            <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:block p-1 text-brand-text-secondary hover:text-brand-accent transition-colors rounded-lg hover:bg-brand-hover">
               <MenuIcon />
             </button>
-            <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-brand-text-secondary hover:text-brand-text-primary">
+            <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 text-brand-text-secondary hover:text-brand-accent transition-colors rounded-lg hover:bg-brand-hover">
               <CloseIcon />
             </button>
           </div>
@@ -223,13 +222,13 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                     <div>
                       <div
                         onClick={() => toggleMenu('service_report')}
-                        className={`flex items-center w-full p-2 text-base font-normal rounded-lg transition-colors duration-150 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary`}
-                        style={{ paddingLeft: '2.75rem' }}
+                        className={`flex items-center justify-between w-full p-2.5 mx-3 rounded-lg transition-colors duration-200 cursor-pointer text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary text-sm font-medium`}
+                        style={{ paddingLeft: '2.5rem', width: 'calc(100% - 24px)' }}
                       >
                         <span className="flex-1 text-left">Service Report</span>
                         <ChevronDownIcon
                           className={`w-4 h-4 transform transition-transform duration-200 ${
-                            openMenus.service_report ? 'rotate-180' : ''
+                            openMenus.service_report ? 'rotate-180 text-brand-accent' : ''
                           }`}
                         />
                       </div>
@@ -289,7 +288,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             )}
           </ul>
         </nav>
-      </aside>
+      </div>
     </>
   );
 };
