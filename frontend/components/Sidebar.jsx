@@ -113,8 +113,8 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
         <div className={`flex items-center border-b border-brand-border bg-white sticky top-0 z-10 shadow-sm ${isSidebarCollapsed ? 'justify-center px-0 h-16' : 'justify-between px-5 py-3'}`}>
           {!isSidebarCollapsed && (
             <div className="flex flex-col items-center justify-center">
-                <img src={logoToUse} alt="Honda Logo" className="h-14 w-auto object-contain" />
-                <span className="text-[10px] font-bold text-brand-text-secondary uppercase tracking-widest mt-1 text-center w-full">
+                <img src={logoToUse} alt="Honda Logo" className="h-20 w-auto object-contain" />
+                <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 text-center w-full ${user?.brand === 'REDWINGS' ? 'text-red-600' : 'text-blue-600'}`}>
                   {user?.brand === 'REDWINGS' ? 'Redwing CRM' : 'Bigwing CRM'}
                 </span>
             </div>
