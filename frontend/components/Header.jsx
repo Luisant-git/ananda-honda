@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MenuIcon, UserIcon } from './icons/Icons';
+import { MenuIcon, UserIcon, LocationIcon } from './icons/Icons';
 
 const Header = ({ user, onLogout, toggleSidebar }) => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -41,6 +41,15 @@ const Header = ({ user, onLogout, toggleSidebar }) => {
                 <MenuIcon />
             </button>
             <h1 className="text-xl font-semibold hidden md:block">Ananda Motowings Private Limited</h1>
+            {user?.branchCode && (
+              <span className={`hidden md:inline-flex ml-4 px-3 py-1 border rounded-lg text-sm font-bold items-center shadow-sm ${
+                user.brand === 'REDWINGS' 
+                  ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' 
+                  : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+              }`}>
+                <LocationIcon /> {user.branchName || 'Branch'} ({user.branchCode})
+              </span>
+            )}
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-sm text-brand-text-secondary hidden sm:block">{formatDate(currentDateTime)}</span>

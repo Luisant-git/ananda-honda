@@ -134,6 +134,7 @@ const MenuPermission = () => {
       'jobcard_master': 'Service Import',
       'location_master': 'Locations',
       'walk_in_customer': 'Walk-in Customers',
+      'branch_master': 'Branch Master',
     };
     return customLabels[module] || module.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
@@ -292,7 +293,7 @@ const MenuPermission = () => {
                 </label>
                 {editData.master && typeof editData.master === 'object' && (
                   <div className="ml-4 sm:ml-6 space-y-3">
-                    {['customer_details', 'walk_in_customer', 'sales_invoice_master', 'jobcard_master','payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment', 'payment_type', 'service_type_of_collection', 'service_type', 'service_type_of_part', 'location_master'].map(module => (
+                    {['branch_master', 'customer_details', 'walk_in_customer', 'sales_invoice_master', 'jobcard_master','payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment', 'payment_type', 'service_type_of_collection', 'service_type', 'service_type_of_part', 'location_master'].map(module => (
                       <div key={module}>
                         <label className="flex items-center space-x-2 mb-1">
                           <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : { add: false, edit: false, delete: false } } }))} className="rounded" />

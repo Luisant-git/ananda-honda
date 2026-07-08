@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardIcon, MasterIcon, PaymentIcon, ReportIcon, SettingsIcon, ChevronDownIcon, CloseIcon, MenuIcon } from './icons/Icons';
 import { menuPermissionApi } from '../api/menuPermissionApi';
 import hondaLogo from '../assets/honda.png';
+import hondaRedLogo from '../assets/honda_red.png';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, isSidebarCollapsed, setSidebarCollapsed, user }) => {
   const [openMenus, setOpenMenus] = useState({
@@ -111,7 +112,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
         <div className="flex items-center justify-between p-4 border-b border-brand-border">
           {!isSidebarCollapsed && (
             <div className="flex flex-col items-center">
-              <img src={hondaLogo} alt="Ananda Motowings Private Limited" className="h-12 object-contain" />
+              <img src={user?.brand === 'REDWINGS' ? hondaRedLogo : hondaLogo} alt="Ananda Motowings Private Limited" className="h-20 object-contain" />
               {user && (
                 <span className={`mt-1 text-xs font-bold tracking-widest uppercase ${user.brand === 'REDWINGS' ? 'text-red-600' : 'text-brand-accent'}`}>
                   {user.brand} CRM
@@ -145,6 +146,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
 
             {permissions?.master && (
               <NavGroup menuKey="master" label="Master" icon={<MasterIcon />}>
+                {permissions.master.branch_master !== false && <li><NavLink view="branch_master" label="Branch Master" isSubmenu /></li>}
                 {permissions.master.customer_details && <li><NavLink view="customer_details" label="Customer Details" isSubmenu /></li>}
                 {permissions.master.walk_in_customer && <li><NavLink view="walk_in_customer" label="Walk-in Customers" isSubmenu /></li>}
                 {/* Fixed: Now wrapped in permission check */}

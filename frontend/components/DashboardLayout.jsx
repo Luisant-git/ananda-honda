@@ -36,6 +36,7 @@ import QuickStart from '../pages/QuickStart';
 import LocationMaster from '../pages/LocationMaster';
 import PineLabsConfig from '../pages/PineLabsConfig';
 import PineLabsTransactions from '../pages/PineLabsTransactions';
+import BranchMaster from '../pages/BranchMaster';
 
 
 const DashboardLayout = ({ user, onLogout }) => {
@@ -47,6 +48,8 @@ const DashboardLayout = ({ user, onLogout }) => {
 
   const renderView = () => {
     switch (currentView) {
+      case 'branch_master':
+        return <BranchMaster user={user} />;
       case 'customer_details':
         return <CustomerDetails key="customer_details" user={user} />;
       case 'walk_in_customer':
@@ -108,7 +111,7 @@ const DashboardLayout = ({ user, onLogout }) => {
       case 'change_password':
         return <ChangePassword />;
       case 'user_management':
-        return <UserManagement />;
+        return <UserManagement user={user} />;
       case 'menu_permission':
         return <MenuPermission />;
       case 'quick_start':
