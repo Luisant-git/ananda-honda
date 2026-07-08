@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SortAscIcon, SortDescIcon } from './icons/Icons';
 
-const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) => {
+const DataTable = ({ columns, data, actionButtons, pagination, rowClassName, disablePagination }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,7 +54,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
   const totalPages = isBackendPagination ? pagination.totalPages : Math.ceil(totalEntries / entriesPerPage);
   const startIndex = isBackendPagination ? (pagination.page - 1) * pagination.limit + 1 : (currentPage - 1) * entriesPerPage + 1;
   const endIndex = isBackendPagination ? Math.min(startIndex + data.length - 1, totalEntries) : Math.min(startIndex + entriesPerPage - 1, totalEntries);
-  const currentData = isBackendPagination ? data : sortedAndFilteredData.slice(startIndex - 1, endIndex);
+  const currentData = disablePagination ? data : (isBackendPagination ? data : sortedAndFilteredData.slice(startIndex - 1, endIndex));
 
   const requestSort = (key) => {
     let direction = 'ascending';
@@ -86,7 +86,7 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
 
   return (
     <div className="bg-brand-surface p-4 sm:p-6 rounded-xl shadow-card border border-brand-border/50">
-      {!isBackendPagination && (
+      {!isBackendPagination && !disablePagination && (
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
           <div className="flex items-center gap-2">
             <label htmlFor="entries" className="text-brand-text-secondary text-sm">Show</label>
@@ -172,40 +172,42 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName }) =
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-center mt-4">
-        <span className="text-brand-text-secondary text-sm mb-4 sm:mb-0">
-          Showing {startIndex} to {endIndex} of {totalEntries} entries
-        </span>
-        <div className="flex items-center">
-          <button
-            onClick={() => {
-              if (isBackendPagination) {
-                pagination.onPageChange(pagination.page - 1);
-              } else {
-                setCurrentPage(prev => Math.max(prev - 1, 1));
-              }
-            }}
-            disabled={isBackendPagination ? pagination.page === 1 : currentPage === 1}
-            className="px-3 py-1 rounded-l-lg bg-white text-brand-text-primary hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed border border-r-0 border-brand-border"
-          >
-            Previous
-          </button>
-          <span className="px-4 py-1 bg-brand-accent text-white border-y border-brand-accent">{isBackendPagination ? pagination.page : currentPage}</span>
-          <button
-            onClick={() => {
-              if (isBackendPagination) {
-                pagination.onPageChange(pagination.page + 1);
-              } else {
-                setCurrentPage(prev => Math.min(prev + 1, totalPages));
-              }
-            }}
-            disabled={isBackendPagination ? pagination.page === totalPages : (currentPage === totalPages || totalEntries === 0)}
-            className="px-3 py-1 rounded-r-lg bg-white text-brand-text-primary hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed border border-l-0 border-brand-border"
-          >
-            Next
-          </button>
+      {!disablePagination && (
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-4">
+          <span className="text-brand-text-secondary text-sm mb-4 sm:mb-0">
+            Showing {startIndex} to {endIndex} of {totalEntries} entries
+          </span>
+          <div className="flex items-center">
+            <button
+              onClick={() => {
+                if (isBackendPagination) {
+                  pagination.onPageChange(pagination.page - 1);
+                } else {
+                  setCurrentPage(prev => Math.max(prev - 1, 1));
+                }
+              }}
+              disabled={isBackendPagination ? pagination.page === 1 : currentPage === 1}
+              className="px-3 py-1 rounded-l-lg bg-white text-brand-text-primary hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed border border-r-0 border-brand-border"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-1 bg-brand-accent text-white border-y border-brand-accent">{isBackendPagination ? pagination.page : currentPage}</span>
+            <button
+              onClick={() => {
+                if (isBackendPagination) {
+                  pagination.onPageChange(pagination.page + 1);
+                } else {
+                  setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                }
+              }}
+              disabled={isBackendPagination ? pagination.page === totalPages : (currentPage === totalPages || totalEntries === 0)}
+              className="px-3 py-1 rounded-r-lg bg-white text-brand-text-primary hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed border border-l-0 border-brand-border"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

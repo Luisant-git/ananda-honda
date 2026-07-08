@@ -721,6 +721,57 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     }
     
     setCustomerHistory(historyResponse.data || []);
+    
+    // Fetch ALL payments for this customer to display in the table (no pagination)
+    const allPaymentsResponse = await servicePaymentCollectionApi.getAll(1, 10000, customer.id);
+    
+    if (customerSelectionId.current !== thisFetchId) {
+      console.log('Selection changed after fetching all payments, aborting for:', customer.name);
+      return;
+    }
+    
+    const allCustomerPayments = Array.isArray(allPaymentsResponse) ? allPaymentsResponse : allPaymentsResponse?.data || [];
+    const formattedPayments = allCustomerPayments.map((payment, index) => ({
+      sNo: index + 1,
+      id: payment.id,
+      date: payment.date,
+      receiptNo: payment.receiptNo,
+      custId: payment.customer?.custId || payment.custId,
+      name: payment.customer?.name || payment.name,
+      contactNo: payment.customer?.contactNo || payment.contactNo,
+      address: payment.customer?.address || payment.address,
+      totalAmt: payment.totalAmt !== undefined && payment.totalAmt !== null ? payment.totalAmt : payment.recAmt || "N/A",
+      recAmt: payment.recAmt,
+      paymentType: payment.paymentTypeMaster?.name || payment.paymentType,
+      paymentTypeLabel: getPaymentTypeLabel(payment.paymentTypeMaster?.name || payment.paymentType),
+      paymentStatus: payment.paymentStatus,
+      vehicleNumber: payment.vehicleNumber || "N/A",
+      paymentMode: payment.paymentMode?.paymentMode || payment.paymentMode,
+      typeOfPayment: payment.typeOfPayment?.typeOfMode || payment.typeOfPayment || "N/A",
+      typeOfCollection: payment.serviceTypeOfCollection?.typeOfCollect || payment.typeOfCollection || "N/A",
+      vehicleModel: payment.vehicleModel?.model || payment.vehicleModel || "N/A",
+      enteredBy: payment.user?.username || payment.enteredBy || "N/A",
+      refNo: payment.refNo || "N/A",
+      remarks: payment.remarks || "N/A",
+      jobCardNumber: payment.jobCardNumber || "N/A",
+      serviceType: payment.serviceTypeRelation?.name || payment.serviceType || "N/A",
+      paymentSessions: payment.paymentSessions || [],
+      selectedParts: payment.selectedParts || [],
+      customerId: payment.customerId,
+      paymentModeId: payment.paymentModeId,
+      typeOfPaymentId: payment.typeOfPaymentId,
+      serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
+      vehicleModelId: payment.vehicleModelId,
+      serviceTypeId: payment.serviceTypeId,
+      cancelledAt: payment.cancelledAt,
+      cancelledBy: payment.cancelledByUser?.username || null,
+      hasAdditionalPlan: payment.hasAdditionalPlan || false,
+      additionalPlanCollections: payment.additionalPlanCollections || [],
+      additionalPlanAmount: payment.additionalPlanAmount || '',
+      additionalPlanDetails: payment.additionalPlanDetails || {},
+      additionalPlanCollectionId: payment.additionalPlanCollectionId || null,
+    }));
+    setFilteredPayments(formattedPayments);
   } catch (error) {
     console.error("Error fetching history:", error);
   }
@@ -3082,7 +3133,8 @@ useEffect(() => {
         data={showDeleted ? deletedPayments : filteredPayments}
         actionButtons={renderActions}
         rowClassName={(row) => row.cancelledAt ? '!bg-red-100' : ''}
-        pagination={!showDeleted ? { page: currentPage, limit: itemsPerPage, total: totalEntries, totalPages: totalPages, onPageChange: (page) => { setCurrentPage(page); fetchPayments(page); } } : undefined}
+        pagination={!showDeleted && !loadedCustomer ? { page: currentPage, limit: itemsPerPage, total: totalEntries, totalPages: totalPages, onPageChange: (page) => { setCurrentPage(page); fetchPayments(page); } } : undefined}
+        disablePagination={!!loadedCustomer}
       />
 
       <Modal isOpen={isPaymentModalOpen} onClose={() => { setIsPaymentModalOpen(false); setPendingPayments([]); setSelectedParts([]); setPartSearchTerm(''); }} title={isEditMode ? "Edit Service Payment" : "Service Payment Entry"} maxWidth="max-w-4xl">
