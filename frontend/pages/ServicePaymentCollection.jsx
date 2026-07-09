@@ -1980,6 +1980,7 @@ const checkAndUpdateJobCardStatus = async (jobCardNumber, customerId, paymentTyp
       if (updated) {
         setServiceJobCardInfo(updated);
         setFoundJobCard(updated);
+        fetchCustomers();
       }
     }
   } catch (error) {
@@ -2011,6 +2012,7 @@ const refreshJobCardStatus = async (jobCardNumber) => {
         setFormData(prev => ({ ...prev, jobCardNumber: "" }));
         toast.success(`Job Card ${jobCardNumber} is now CLOSED. Full payment received.`);
         fetchPayments(1);
+        fetchCustomers();
       }
     }
   } catch (error) {
@@ -2333,10 +2335,27 @@ useEffect(() => {
 
 useEffect(() => { // This useEffect now correctly uses formData.paymentType for fetchCustomerPayments
   const fetchHistory = async () => {
-    if (isPaymentModalOpen && loadedCustomer) {
+    if (loadedCustomer) {
       try {
         const response = await servicePaymentCollectionApi.getAll(1, 1000, loadedCustomer.id);
-        setCustomerHistory(response.data || []);
+        const historyData = response.data || [];
+        setCustomerHistory(historyData);
+        
+        // Ensure pending payments is updated with the full history
+        const validHistory = historyData.filter((p) => String(p.customerId) === String(loadedCustomer.id) && !p.cancelledAt);
+        const jcNo = formData.jobCardNumber || (serviceJobCardInfo ? serviceJobCardInfo.jobCardNumber : null);
+        const vNo = formData.vehicleNumber || (serviceJobCardInfo ? serviceJobCardInfo.registrationNumber : null);
+        
+        if (jcNo && jcNo !== 'N/A') {
+          setPendingPayments(validHistory.filter(p => 
+            p.jobCardNumber === jcNo || 
+            (vNo && p.vehicleNumber === vNo && p.paymentStatus === 'pending')
+          ));
+        } else if (vNo) {
+          setPendingPayments(validHistory.filter(p => 
+            p.vehicleNumber === vNo && p.paymentStatus === 'pending'
+          ));
+        }
       } catch (error) {
         console.error("Error fetching customer history:", error);
       }
@@ -2711,31 +2730,90 @@ useEffect(() => {
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
     { header: "Payment Type", accessor: "paymentTypeLabel" },
-    { header: "Status", accessor: "paymentStatus" },
+    { 
+      header: "Status", 
+      accessor: "paymentStatus",
+      render: (value) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+          value?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {value}
+        </span>
+      )
+    },
     { header: "Vehicle No", accessor: "vehicleNumber" },
-    { header: "Total Amt", accessor: "totalAmt" },
-    { header: "Received Amt", accessor: "recAmt" },
+    { 
+      header: "Total Amt", 
+      accessor: "totalAmt",
+      render: (value, row) => {
+        if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
+          const customer = customers.find(c => c.id === row.customerId);
+          if (customer) {
+            const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
+                       customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
+                       customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
+            if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null && parseFloat(jc.totalRevenue) > 0) {
+               return jc.totalRevenue;
+            }
+          }
+          if (serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber && parseFloat(serviceJobCardInfo.totalRevenue) > 0) {
+             return serviceJobCardInfo.totalRevenue;
+          }
+        }
+        return value;
+      }
+    },
+    { 
+      header: "Received Amt", 
+      accessor: "recAmt",
+      render: (value) => (
+        <span className="text-green-600 font-bold">
+          {value}
+        </span>
+      )
+    },
     {
       header: "Pending Amt",
       accessor: "pendingAmount",
       render: (value, row) => {
+        let balance = 0;
         if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
           // Calculate pending for job card: sum all payments for this job card - invoice amount
           const jobCardPayments = payments.filter(p => p.jobCardNumber === row.jobCardNumber && p.customerId === row.customerId && !p.cancelledAt);
           const totalReceivedForJobCard = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
           
-          // Find the job card to get invoice amount
-          const jobCardInfo = serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber ? serviceJobCardInfo : null;
-          const invoiceAmount = jobCardInfo?.totalRevenue || parseFloat(row.totalAmt) || 0;
-          const balance = Math.max(0, invoiceAmount - totalReceivedForJobCard);
+          let invoiceAmount = parseFloat(row.totalAmt) || 0;
           
-          return balance > 0 ? `₹${balance.toFixed(2)}` : 'N/A';
+          // Find the job card to get actual invoice amount
+          const customer = customers.find(c => c.id === row.customerId);
+          if (customer) {
+            const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
+                       customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
+                       customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
+            if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null && parseFloat(jc.totalRevenue) > 0) {
+               invoiceAmount = parseFloat(jc.totalRevenue);
+            }
+          }
+          
+          if (serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber && parseFloat(serviceJobCardInfo.totalRevenue) > 0) {
+             invoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue);
+          }
+          
+          balance = Math.max(0, invoiceAmount - totalReceivedForJobCard);
         } else if (row.totalAmt && row.totalAmt !== 'N/A') {
           // For non-job-card payments, show difference between total and received
-          const balance = parseFloat(row.totalAmt) - parseFloat(row.recAmt);
-          return balance > 0 ? `₹${balance.toFixed(2)}` : 'N/A';
+          balance = Math.max(0, parseFloat(row.totalAmt) - parseFloat(row.recAmt));
         }
-        return 'N/A';
+        // Apply 2 rupees tolerance
+        if (balance <= 2) {
+          balance = 0;
+        }
+        
+        return (
+          <span className={balance > 0 ? "text-red-600 font-semibold" : ""}>
+            {balance.toFixed(2)}
+          </span>
+        );
       }
     },
     { header: "PaymentMode", accessor: "paymentMode" },
@@ -2762,15 +2840,43 @@ useEffect(() => {
     if (!normalizedName.includes("FREE")) return true;
 
     const activeHistory = (history || []).filter(p => !p.cancelledAt);
-
-    const usedNames = activeHistory.map(p => {
-      const name = p.serviceTypeRelation?.name || p.serviceType || "";
-      return normalizeServiceName(name);
+    const fullyPaidServiceTypes = new Set();
+    
+    // Group payments by job card
+    const paymentsByJc = {};
+    activeHistory.forEach(p => {
+       const jcNo = p.jobCardNumber;
+       if (!jcNo || jcNo === 'N/A') return;
+       if (!paymentsByJc[jcNo]) paymentsByJc[jcNo] = { received: 0, serviceType: normalizeServiceName(p.serviceTypeRelation?.name || p.serviceType || ""), payments: [] };
+       paymentsByJc[jcNo].received += (parseFloat(p.recAmt) || 0);
+       paymentsByJc[jcNo].payments.push(p);
+    });
+    
+    Object.keys(paymentsByJc).forEach(jcNo => {
+       let invoiceAmount = 0;
+       if (loadedCustomer) {
+          const jc = loadedCustomer.activeJobCard?.jobCardNumber === jcNo ? loadedCustomer.activeJobCard :
+                     loadedCustomer.closedJobCard?.jobCardNumber === jcNo ? loadedCustomer.closedJobCard :
+                     loadedCustomer.jobCardData?.jobCardNumber === jcNo ? loadedCustomer.jobCardData : null;
+          
+          if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null) {
+             invoiceAmount = parseFloat(jc.totalRevenue) || 0;
+          } else {
+             invoiceAmount = parseFloat(paymentsByJc[jcNo].payments[0].totalAmt) || 0;
+          }
+       } else {
+          invoiceAmount = parseFloat(paymentsByJc[jcNo].payments[0].totalAmt) || 0;
+       }
+       
+       // If invoiceAmount is > 0 and fully paid (with 1 rupee tolerance)
+       if (invoiceAmount > 0 && paymentsByJc[jcNo].received >= (invoiceAmount - 1)) {
+          fullyPaidServiceTypes.add(paymentsByJc[jcNo].serviceType);
+       }
     });
 
-    const hasFree1 = usedNames.includes("FREE1");
-    const hasFree2 = usedNames.includes("FREE2");
-    const hasFree3 = usedNames.includes("FREE3");
+    const hasFree1 = fullyPaidServiceTypes.has("FREE1");
+    const hasFree2 = fullyPaidServiceTypes.has("FREE2");
+    const hasFree3 = fullyPaidServiceTypes.has("FREE3");
 
     if (normalizedName === "FREE1") {
       return !hasFree1;
@@ -3028,7 +3134,13 @@ useEffect(() => {
     return null;
   }
   
-  const jobCardPayments = payments.filter(p => p.jobCardNumber === serviceJobCardInfo.jobCardNumber && p.customerId === loadedCustomer?.id && !p.cancelledAt);
+  // Do not show if job card is closed
+  if (isJobCardClosed(serviceJobCardInfo.status)) {
+    return null;
+  }
+  
+  const sourcePayments = customerHistory.length > 0 && String(customerHistory[0]?.customerId) === String(loadedCustomer?.id) ? customerHistory : payments;
+  const jobCardPayments = sourcePayments.filter(p => p.jobCardNumber === serviceJobCardInfo.jobCardNumber && String(p.customerId) === String(loadedCustomer?.id) && !p.cancelledAt);
   const totalJobCardReceived = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
   const jobCardInvoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue) || 0;
   const jobCardBalance = Math.max(0, jobCardInvoiceAmount - totalJobCardReceived);
@@ -3096,22 +3208,26 @@ useEffect(() => {
             <span className="ml-2 font-semibold">{serviceJobCardInfo.invoiceNumber}</span>
           </div>
         )}
-        {!isJobCardClosed(serviceJobCardInfo.status) && serviceJobCardInfo.totalRevenue > 0 && (
+        {!isJobCardClosed(serviceJobCardInfo.status) && (
           <>
-            <div>
-              <span className="font-medium text-gray-600">Total Invoice Amount:</span>
-              <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
-            </div>
+            {serviceJobCardInfo.totalRevenue > 0 && (
+              <div>
+                <span className="font-medium text-gray-600">Total Invoice Amount:</span>
+                <span className="ml-2 font-semibold">₹{serviceJobCardInfo.totalRevenue}</span>
+              </div>
+            )}
             <div>
               <span className="font-medium text-gray-600">Total Amount Received:</span>
-              <span className="ml-2 font-semibold">₹{pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)}</span>
+              <span className="ml-2 font-semibold">₹{totalJobCardReceived}</span>
             </div>
-            <div>
-              <span className="font-medium text-gray-600">Balance to Pay:</span>
-              <span className={`ml-2 font-semibold ${((serviceJobCardInfo.totalRevenue || 0) - pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)) > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                ₹{Math.max(0, (parseFloat(serviceJobCardInfo.totalRevenue) || 0) - pendingPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0)).toFixed(2)}
-              </span>
-            </div>
+            {serviceJobCardInfo.totalRevenue > 0 && (
+              <div>
+                <span className="font-medium text-gray-600">Balance to Pay:</span>
+                <span className={`ml-2 font-semibold ${((serviceJobCardInfo.totalRevenue || 0) - totalJobCardReceived) > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                  ₹{Math.max(0, (parseFloat(serviceJobCardInfo.totalRevenue) || 0) - totalJobCardReceived).toFixed(2)}
+                </span>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -3680,7 +3796,7 @@ useEffect(() => {
     </div>
     <div>
       <label className="text-xs text-brand-text-secondary uppercase">Received Amount</label>
-      <div className="text-brand-text-primary font-medium text-lg">₹{selectedPayment.recAmt}</div>
+      <div className="text-green-600 font-bold text-lg">₹{selectedPayment.recAmt}</div>
     </div>
     <div>
       <label className="text-xs text-brand-text-secondary uppercase">Total Amount</label>
@@ -3697,7 +3813,7 @@ useEffect(() => {
       <>
         <div>
           <label className="text-xs text-brand-text-secondary uppercase">Total Invoice Amount</label>
-          <div className="text-brand-text-primary font-medium">₹{selectedPayment.totalInvoiceAmount.toLocaleString('en-IN')}</div>
+          <div className="text-blue-600 font-bold">₹{selectedPayment.totalInvoiceAmount.toLocaleString('en-IN')}</div>
         </div>
         {/* Show Payment Summary with Extra Amount */}
         {(() => {

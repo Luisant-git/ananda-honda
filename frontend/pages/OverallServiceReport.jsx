@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import DateFilterButtons from '../components/DateFilterButtons';
 import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
+import ConfirmModal from '../components/ConfirmModal';
+import { serviceJobCardApi } from '../api/serviceJobcard.js';
 
 const OverallServiceReport = ({ user }) => {
   const [reportData, setReportData] = useState([]);
@@ -13,6 +15,7 @@ const OverallServiceReport = ({ user }) => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [maxReceipts, setMaxReceipts] = useState(0);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
     fetchReportData();
@@ -22,7 +25,6 @@ const OverallServiceReport = ({ user }) => {
     setLoading(true);
     try {
       // 1. Fetch Job Cards (Base Data)
-      const { serviceJobCardApi } = await import('../api/serviceJobcard.js');
       const jobCards = await serviceJobCardApi.getAll('', false);
       const jcList = Array.isArray(jobCards) ? jobCards : [];
 
@@ -205,6 +207,17 @@ const OverallServiceReport = ({ user }) => {
     fetchReportData();
   };
 
+  const handleClearAll = async () => {
+    try {
+      await serviceJobCardApi.clearAll();
+      toast.success('All job card records cleared');
+      setIsClearModalOpen(false);
+      handleReset();
+    } catch {
+      toast.error('Error clearing records');
+    }
+  };
+
   const downloadExcel = () => {
     try {
       let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
@@ -333,7 +346,17 @@ const OverallServiceReport = ({ user }) => {
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Overall Service Report</h1>
-        <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
+        <div className="flex gap-2 items-center">
+          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setIsClearModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm whitespace-nowrap"
+            >
+              Clear All Data
+            </button>
+          )}
+          <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
+        </div>
       </div>
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
@@ -414,6 +437,15 @@ const OverallServiceReport = ({ user }) => {
           data={filteredData}
         />
       </div>
+
+      <ConfirmModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={handleClearAll}
+        title="Confirm Clear All"
+        message="Are you sure you want to delete ALL job card records? This action cannot be undone and will permanently erase the data."
+        confirmText="Yes, Clear All"
+      />
     </div>
   );
 };
