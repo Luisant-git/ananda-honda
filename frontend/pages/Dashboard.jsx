@@ -38,8 +38,16 @@ else setActiveTab(null);
   fetchPerms();
 }, []);
   const fetchDashboardData = async (fDate, tDate) => {
-    const activeFrom = (fDate && typeof fDate === 'string') ? fDate : fromDate;
-    const activeTo = (tDate && typeof tDate === 'string') ? tDate : toDate;
+    let activeFrom = typeof fDate === 'string' ? fDate : fromDate;
+    let activeTo = typeof tDate === 'string' ? tDate : toDate;
+
+    // Force default to today if dates are cleared for sales/services
+    if (!activeFrom && !activeTo && (activeTab === 'sales' || activeTab === 'services')) {
+      activeFrom = today;
+      activeTo = today;
+      setFromDate(today);
+      setToDate(today);
+    }
 
     if ((activeFrom && !activeTo) || (!activeFrom && activeTo)) {
       toast.error('Please select both from and to dates or clear both for overall data');
@@ -68,22 +76,29 @@ else setActiveTab(null);
   };
 
   const handleReset = async () => {
+    let resetFrom = '';
+    let resetTo = '';
+    
+    if (activeTab === 'sales' || activeTab === 'services') {
+      resetFrom = today;
+      resetTo = today;
+    }
 
-    setFromDate('');
-    setToDate('');
+    setFromDate(resetFrom);
+    setToDate(resetTo);
     setSearchTerm('');
     setExpandedMode(null);
     setLoading(true);
     try {
       let data = { modes: [], totalCount: 0 };
       if (activeTab === 'sales') {
-        data = await dashboardApi.getDashboardStats('', '');
+        data = await dashboardApi.getDashboardStats(resetFrom, resetTo);
       } else if (activeTab === 'services') {
-        data = await dashboardApi.getServicesDashboardStats('', '');
+        data = await dashboardApi.getServicesDashboardStats(resetFrom, resetTo);
       } else if (activeTab === 'service_business') {
-        data = await dashboardApi.getBusinessDashboardStats('', '');
+        data = await dashboardApi.getBusinessDashboardStats(resetFrom, resetTo);
       } else if (activeTab === 'walkin') {
-        data = await customerApi.getWalkinDashboardStats('', '');
+        data = await customerApi.getWalkinDashboardStats(resetFrom, resetTo);
       }
       setChartData(data);
       setLoading(false);
@@ -98,6 +113,13 @@ else setActiveTab(null);
     setActiveTab(tab);
     setSearchTerm('');
     setExpandedMode(null);
+    if (tab === 'sales' || tab === 'services') {
+      setFromDate(today);
+      setToDate(today);
+    } else {
+      setFromDate('');
+      setToDate('');
+    }
   };
 
   const toggleExpand = (modeName) => {
@@ -139,8 +161,20 @@ else setActiveTab(null);
   const renderSummaryCards = (modes, totalCount) => {
     const total = (modes || []).reduce((sum, m) => sum + m.amount, 0);
     const count = (modes || []).filter(m => m.amount > 0).length;
-    const avg = totalCount > 0 ? total / totalCount : 0;
-    const highest = Math.max(...(modes || []).map(m => m.amount), 0);
+    const cashAmount = (modes || []).filter(m => m.mode.toLowerCase().includes('cash')).reduce((sum, m) => sum + m.amount, 0);
+    const onlineModes = (modes || []).filter(m => !m.mode.toLowerCase().includes('cash') && !m.mode.toLowerCase().includes('cheque'));
+    const onlineAmount = onlineModes.reduce((sum, m) => sum + m.amount, 0);
+
+    const onlineBreakdown = [];
+    onlineModes.forEach(m => {
+      if (m.types && m.types.length > 0) {
+        m.types.forEach(t => {
+          onlineBreakdown.push({ name: t.type, amount: t.amount, count: t.count });
+        });
+      } else if (m.amount > 0) {
+        onlineBreakdown.push({ name: m.mode, amount: m.amount, count: m.count || 1 });
+      }
+    });
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -160,17 +194,31 @@ else setActiveTab(null);
         </div>
         <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/></svg>
+            <svg className="w-12 h-12 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
           </div>
-          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Average Amount</p>
-          <h3 className="text-3xl font-bold text-brand-text-primary">₹{Math.round(avg).toLocaleString()}</h3>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Cash Amount</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary">₹{cashAmount.toLocaleString()}</h3>
         </div>
-        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group">
+        <div className="bg-brand-surface border border-brand-border/50 rounded-xl p-6 shadow-card hover:shadow-floating transition-all duration-300 relative overflow-hidden group flex flex-col">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <svg className="w-12 h-12 text-brand-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd"/></svg>
+            <svg className="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/></svg>
           </div>
-          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Highest Payment</p>
-          <h3 className="text-3xl font-bold text-brand-text-primary">₹{highest.toLocaleString()}</h3>
+          <p className="text-sm font-semibold text-brand-text-secondary uppercase tracking-wider mb-2">Online Amount</p>
+          <h3 className="text-3xl font-bold text-brand-text-primary mb-3">₹{onlineAmount.toLocaleString()}</h3>
+          
+          {onlineBreakdown.length > 0 && (
+            <div className="pt-3 border-t border-brand-border/50 space-y-2 mt-auto relative z-10">
+              {onlineBreakdown.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center text-sm">
+                  <span className="text-brand-text-secondary capitalize flex items-center gap-1.5 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    {item.name}
+                  </span>
+                  <span className="font-semibold text-brand-text-primary">₹{item.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -429,7 +477,7 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       {activeTab !== 'service_business' && activeTab !== 'walkin' && renderSummaryCards(chartData?.modes || [], chartData?.totalCount || 0)}
       
       {/* Data Table */}
-      {activeTab !== 'service_business' && activeTab !== 'walkin' && renderTable(chartData?.modes || [])}
+      {/* Table removed per request */}
 
       {/* Service Business Dashboard */}
       {activeTab === 'service_business' && <ServiceBusinessDashboard data={chartData} />}

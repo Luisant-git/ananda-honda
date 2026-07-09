@@ -39,7 +39,7 @@ export class ServiceJobCardController {
     }
 
     try {
-      return await this.serviceJobCardService.uploadFile(file.buffer, type);
+      return await this.serviceJobCardService.uploadFile(file.buffer, type, file.originalname);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
@@ -120,6 +120,23 @@ export class ServiceJobCardController {
   @Delete('clear')
   clearAll() {
     return this.serviceJobCardService.clearAll();
+  }
+
+  // ✅ Get Developer Logs
+  @Get('developer/logs')
+  async getDeveloperLogs() {
+    const fs = require('fs');
+    const path = require('path');
+    const logFile = path.join(process.cwd(), 'logs', 'developer_import.log');
+    try {
+      if (fs.existsSync(logFile)) {
+        const content = fs.readFileSync(logFile, 'utf8');
+        return { logs: content };
+      }
+      return { logs: 'No logs found.' };
+    } catch (err) {
+      throw new HttpException('Failed to read logs', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   // ✅ Get One with include

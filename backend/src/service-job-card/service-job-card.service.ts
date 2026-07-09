@@ -8,6 +8,8 @@ import {
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as XLSX from 'xlsx';
 
 @Injectable()
@@ -124,7 +126,7 @@ export class ServiceJobCardService {
   }
 
   // ✅ Multi-format Upload
-  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE') {
+  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE', fileName: string = 'unknown.xlsx') {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
@@ -481,6 +483,21 @@ export class ServiceJobCardService {
     }
 
     console.log('DEBUG UNIQUE PART CATEGORIES SEEN IN UPLOAD:', Array.from(seenPartCategories));
+
+    // 🚩 Developer Log
+    try {
+      const logDir = path.join(process.cwd(), 'logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      const logFile = path.join(logDir, 'developer_import.log');
+      const timestamp = new Date().toLocaleString('en-GB');
+      const logEntry = `[${timestamp}] REPORT: ${type} | FILE: ${fileName} | IMPORTED_RECORDS: ${imported}\n`;
+      fs.appendFileSync(logFile, logEntry);
+    } catch (logErr) {
+      this.logger.error('Failed to write developer import log', logErr);
+    }
+
     return { imported };
   }
 

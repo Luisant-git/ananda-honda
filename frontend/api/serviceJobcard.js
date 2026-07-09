@@ -191,6 +191,17 @@ export const serviceJobCardApi = {
     return response.json();
   },
 
+  getDeveloperLogs: async () => {
+    const response = await fetch(`${API_URL}/developer/logs`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch developer logs');
+    }
+    return response.json();
+  },
+
   getActiveJobCards: async (search = '') => {
     let url = `${API_URL}/active`;
     if (search) url += `?search=${encodeURIComponent(search)}`;

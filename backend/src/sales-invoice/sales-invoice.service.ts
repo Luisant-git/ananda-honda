@@ -1,12 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as XLSX from 'xlsx';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class SalesInvoiceService {
   constructor(private prisma: PrismaService) { }
 
-  async uploadFile(buffer: Buffer) {
+  async uploadFile(buffer: Buffer, fileName: string = 'unknown.xlsx') {
     let workbook;
     try {
       workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
@@ -98,6 +100,20 @@ export class SalesInvoiceService {
           }
         });
       }
+    }
+
+    // 🚩 Developer Log
+    try {
+      const logDir = path.join(process.cwd(), 'logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      const logFile = path.join(logDir, 'developer_import.log');
+      const timestamp = new Date().toLocaleString('en-GB');
+      const logEntry = `[${timestamp}] REPORT: SALES INVOICE | FILE: ${fileName} | IMPORTED_RECORDS: ${records.length}\n`;
+      fs.appendFileSync(logFile, logEntry);
+    } catch (logErr) {
+      console.error('Failed to write developer import log', logErr);
     }
 
     return { imported: records.length };

@@ -14,7 +14,7 @@ export class SalesInvoiceController {
   async upload(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
     try {
-      return await this.salesInvoiceService.uploadFile(file.buffer);
+      return await this.salesInvoiceService.uploadFile(file.buffer, file.originalname);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

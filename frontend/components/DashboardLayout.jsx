@@ -37,7 +37,7 @@ import LocationMaster from '../pages/LocationMaster';
 import PineLabsConfig from '../pages/PineLabsConfig';
 import PineLabsTransactions from '../pages/PineLabsTransactions';
 import BranchMaster from '../pages/BranchMaster';
-
+import DeveloperLogs from '../pages/DeveloperLogs';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
@@ -132,6 +132,8 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <PineLabsTransactions />;
       case 'feedback_notification':
         return <FeedbackNotificationSettings />;
+      case 'developer_logs':
+        return <DeveloperLogs />;
       case 'dashboard':
       default:
         return <Dashboard />;

@@ -284,6 +284,9 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
                 {permissions.settings.feedback_notification && <li><NavLink view="feedback_notification" label="Feedback Notification" isSubmenu /></li>}
                 <li><NavLink view="pine_labs_config" label="Pine Labs Config" isSubmenu /></li>
+                {(user?.role === 'SUPER_ADMIN' || user?.role === 'DEVELOPER') && (
+                  <li><NavLink view="developer_logs" label="Developer Logs" isSubmenu /></li>
+                )}
               </NavGroup>
             )}
           </ul>

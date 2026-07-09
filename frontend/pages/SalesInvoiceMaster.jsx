@@ -192,7 +192,7 @@ const SalesInvoiceMaster = ({ user }) => {
       XLSX.utils.book_append_sheet(wb, ws, 'Import');
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([wbout], { type: 'application/octet-stream' });
-      const file = new File([blob], `import_valid_${previewResult.fileName || 'upload'}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const file = new File([blob], previewResult.fileName || 'upload.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
       const result = await salesInvoiceApi.upload(file);
       const importedCount = result.imported || previewResult.validRows.length;
