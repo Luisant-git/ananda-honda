@@ -12,7 +12,9 @@ import {
   HttpStatus,
   Body,
   Patch,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ServiceJobCardService } from './service-job-card.service';
 
@@ -137,6 +139,21 @@ export class ServiceJobCardController {
     } catch (err) {
       throw new HttpException('Failed to read logs', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  // ✅ Download Developer Log File
+  @Get('developer/download/:filename')
+  async downloadLogFile(@Param('filename') filename: string, @Res() res: Response) {
+    const fs = require('fs');
+    const path = require('path');
+    const safeFilename = path.basename(filename);
+    const filePath = path.join(process.cwd(), 'logs', 'uploads', safeFilename);
+    
+    if (!fs.existsSync(filePath)) {
+      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
+    }
+    
+    res.download(filePath, safeFilename);
   }
 
   // ✅ Get One with include

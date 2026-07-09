@@ -8,8 +8,8 @@ const FeedbackNotificationSettings = () => {
   const [settings, setSettings] = useState({
     SUPER_ADMIN: '',
     ADMIN: '',
-    SERVICE_EXECUTIVE: '',
-    CRM_EXECUTIVE: ''
+    CASHIER_SERVICE: '',
+    CASHIER_SALES: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,8 +30,8 @@ const FeedbackNotificationSettings = () => {
       const newSettings = {
         SUPER_ADMIN: '',
         ADMIN: '',
-        SERVICE_EXECUTIVE: '',
-        CRM_EXECUTIVE: ''
+        CASHIER_SERVICE: '',
+        CASHIER_SALES: ''
       };
       
       data.forEach(item => {
@@ -75,8 +75,8 @@ const FeedbackNotificationSettings = () => {
   const rolesToConfigure = [
     { key: 'SUPER_ADMIN', label: 'Super Admin' },
     { key: 'ADMIN', label: 'Admin' },
-    { key: 'SERVICE_EXECUTIVE', label: 'Service Executive' },
-    { key: 'CRM_EXECUTIVE', label: 'CRM Executive' }
+    { key: 'CASHIER_SERVICE', label: 'Cashier Service' },
+    { key: 'CASHIER_SALES', label: 'Cashier Sales' }
   ];
 
   return (

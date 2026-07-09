@@ -8,7 +8,7 @@ const Register = ({ onRegister, onBackToLogin }) => {
   const [formData, setFormData] = useState({ 
     username: '', 
     password: '', 
-    role: 'USER',
+    role: 'ADMIN',
     brand: 'BIGWINGS'
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -44,18 +44,13 @@ const Register = ({ onRegister, onBackToLogin }) => {
                 className="w-full px-4 py-3 bg-white border border-brand-border rounded-lg text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-brand-accent"
                 required
               >
-                <option value="USER">User</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
                 <option value="ADMIN">Admin</option>
                 <option value="DEVELOPER">Developer</option>
-                <option value="SERVICE_EXECUTIVE">Service Executive</option>
-                <option value="SALES_EXECUTIVE">Sales Executive</option>
-                <option value="CRM_EXECUTIVE">CRM Executive</option>
-                {/* 
-                <option value="ENQUIRY">Enquiry</option>
+                <option value="ACCOUNTS">Accounts</option>
                 <option value="PART_EXECUTIVE">Part Executive</option>
-                <option value="ACCOUNT">Account</option> 
-                */}
+                <option value="BILLING_EXECUTIVE">Billing Executive</option>
+                <option value="CASHIER_SALES">Cashier Sales</option>
+                <option value="CASHIER_SERVICE">Cashier Service</option>
               </select>
             </div>
             <div>

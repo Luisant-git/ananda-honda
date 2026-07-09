@@ -108,9 +108,16 @@ export class SalesInvoiceService {
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
       }
+      const uploadsDir = path.join(logDir, 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const uniqueFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      fs.writeFileSync(path.join(uploadsDir, uniqueFileName), buffer);
+
       const logFile = path.join(logDir, 'developer_import.log');
       const timestamp = new Date().toLocaleString('en-GB');
-      const logEntry = `[${timestamp}] REPORT: SALES INVOICE | FILE: ${fileName} | IMPORTED_RECORDS: ${records.length}\n`;
+      const logEntry = `[${timestamp}] REPORT: SALES INVOICE | FILE: ${fileName} | IMPORTED_RECORDS: ${records.length} | SERVER_FILE: ${uniqueFileName}\n`;
       fs.appendFileSync(logFile, logEntry);
     } catch (logErr) {
       console.error('Failed to write developer import log', logErr);

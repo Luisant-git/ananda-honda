@@ -9,14 +9,14 @@ const MenuPermission = () => {
   const [loading, setLoading] = useState(false);
 
   const roles = [
-    'USER', 
     'SUPER_ADMIN', 
     'ADMIN', 
     'DEVELOPER',
-    'SERVICE_EXECUTIVE', 
-    'SALES_EXECUTIVE', 
-    'CRM_EXECUTIVE'
-    /* 'ENQUIRY', 'ACCOUNT', 'SERVICE', 'PART_EXECUTIVE' */
+    'ACCOUNTS',
+    'PART_EXECUTIVE',
+    'BILLING_EXECUTIVE',
+    'CASHIER_SALES',
+    'CASHIER_SERVICE'
   ];
 
   useEffect(() => {

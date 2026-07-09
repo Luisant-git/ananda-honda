@@ -18,7 +18,7 @@ export class UserService {
         isActive: true,
         createdAt: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { id: 'asc' }
     });
   }
 

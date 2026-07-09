@@ -490,9 +490,16 @@ export class ServiceJobCardService {
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });
       }
+      const uploadsDir = path.join(logDir, 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const uniqueFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      fs.writeFileSync(path.join(uploadsDir, uniqueFileName), buffer);
+
       const logFile = path.join(logDir, 'developer_import.log');
       const timestamp = new Date().toLocaleString('en-GB');
-      const logEntry = `[${timestamp}] REPORT: ${type} | FILE: ${fileName} | IMPORTED_RECORDS: ${imported}\n`;
+      const logEntry = `[${timestamp}] REPORT: SERVICE ${type} | FILE: ${fileName} | IMPORTED_RECORDS: ${imported} | SERVER_FILE: ${uniqueFileName}\n`;
       fs.appendFileSync(logFile, logEntry);
     } catch (logErr) {
       this.logger.error('Failed to write developer import log', logErr);

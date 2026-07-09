@@ -10,7 +10,7 @@ const UserManagement = ({ user: currentUser }) => {
   const [branches, setBranches] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' });
+  const [formData, setFormData] = useState({ username: '', password: '', role: 'ADMIN', brand: 'BIGWINGS', branchCode: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ const UserManagement = ({ user: currentUser }) => {
         toast.success('User created successfully!');
       }
       setIsModalOpen(false);
-      setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' });
+      setFormData({ username: '', password: '', role: 'ADMIN', brand: 'BIGWINGS', branchCode: '' });
       setEditingId(null);
       fetchUsers();
     } catch (error) {
@@ -142,7 +142,7 @@ const UserManagement = ({ user: currentUser }) => {
         )}
       />
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' }); }} title={editingId ? "Edit User" : "Add User"}>
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'ADMIN', brand: 'BIGWINGS', branchCode: '' }); }} title={editingId ? "Edit User" : "Add User"}>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium text-brand-text-secondary mb-1">
@@ -178,19 +178,13 @@ const UserManagement = ({ user: currentUser }) => {
               className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
               required
             >
-              <option value="USER">User</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
               <option value="ADMIN">Admin</option>
               <option value="DEVELOPER">Developer</option>
-              <option value="SERVICE_EXECUTIVE">Service Executive</option>
-              <option value="SALES_EXECUTIVE">Sales Executive</option>
-              <option value="CRM_EXECUTIVE">CRM Executive</option>
-              {/* 
-              <option value="ENQUIRY">Enquiry</option>
+              <option value="ACCOUNTS">Accounts</option>
               <option value="PART_EXECUTIVE">Part Executive</option>
-              <option value="ACCOUNT">Account</option>
-              <option value="SERVICE">Service</option> 
-              */}
+              <option value="BILLING_EXECUTIVE">Billing Executive</option>
+              <option value="CASHIER_SALES">Cashier Sales</option>
+              <option value="CASHIER_SERVICE">Cashier Service</option>
             </select>
           </div>
           <div>
@@ -231,7 +225,7 @@ const UserManagement = ({ user: currentUser }) => {
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
-              onClick={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'USER', brand: 'BIGWINGS', branchCode: '' }); }}
+              onClick={() => { setIsModalOpen(false); setEditingId(null); setFormData({ username: '', password: '', role: 'ADMIN', brand: 'BIGWINGS', branchCode: '' }); }}
               className="px-4 py-2 rounded-lg bg-white hover:bg-brand-hover text-brand-text-secondary font-bold border border-brand-border"
             >
               Cancel
