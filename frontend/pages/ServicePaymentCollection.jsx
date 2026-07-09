@@ -2352,12 +2352,12 @@ useEffect(() => { // This useEffect now correctly uses formData.paymentType for 
           
           // Auto-fill service type if missing and a previous payment for this job card exists
           if (jcPayments.length > 0 && !formData.serviceTypeId && !isEditMode) {
-            const lastPaymentWithService = jcPayments.find(p => p.serviceTypeId || p.serviceTypeRelation?.name);
+            const lastPaymentWithService = jcPayments.find(p => p.serviceTypeId || p.serviceTypeRelation?.name || p.serviceType);
             if (lastPaymentWithService) {
               setFormData(prev => ({
                 ...prev,
                 serviceTypeId: lastPaymentWithService.serviceTypeId ? String(lastPaymentWithService.serviceTypeId) : prev.serviceTypeId,
-                serviceType: lastPaymentWithService.serviceTypeRelation?.name || prev.serviceType,
+                serviceType: lastPaymentWithService.serviceTypeRelation?.name || lastPaymentWithService.serviceType || prev.serviceType,
                 // Also attempt to set the collection type if we can map it
                 serviceTypeOfCollectionId: prev.serviceTypeOfCollectionId || String(lastPaymentWithService.serviceTypeOfCollectionId || "")
               }));
@@ -2791,7 +2791,7 @@ useEffect(() => {
         let balance = 0;
         if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
           // Calculate pending for job card: sum all payments for this job card - invoice amount
-          const jobCardPayments = payments.filter(p => p.jobCardNumber === row.jobCardNumber && p.customerId === row.customerId && !p.cancelledAt);
+          const jobCardPayments = payments.filter(p => p.jobCardNumber === row.jobCardNumber && String(p.customerId) === String(row.customerId) && !p.cancelledAt);
           const totalReceivedForJobCard = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
           
           let invoiceAmount = parseFloat(row.totalAmt) || 0;
