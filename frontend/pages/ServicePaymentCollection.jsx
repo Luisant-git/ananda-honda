@@ -2347,10 +2347,22 @@ useEffect(() => { // This useEffect now correctly uses formData.paymentType for 
         const vNo = formData.vehicleNumber || (serviceJobCardInfo ? serviceJobCardInfo.registrationNumber : null);
         
         if (jcNo && jcNo !== 'N/A') {
-          setPendingPayments(validHistory.filter(p => 
-            p.jobCardNumber === jcNo || 
-            (vNo && p.vehicleNumber === vNo && p.paymentStatus === 'pending')
-          ));
+          const jcPayments = validHistory.filter(p => p.jobCardNumber === jcNo || (vNo && p.vehicleNumber === vNo && p.paymentStatus === 'pending'));
+          setPendingPayments(jcPayments);
+          
+          // Auto-fill service type if missing and a previous payment for this job card exists
+          if (jcPayments.length > 0 && !formData.serviceTypeId && !isEditMode) {
+            const lastPaymentWithService = jcPayments.find(p => p.serviceTypeId || p.serviceTypeRelation?.name);
+            if (lastPaymentWithService) {
+              setFormData(prev => ({
+                ...prev,
+                serviceTypeId: lastPaymentWithService.serviceTypeId ? String(lastPaymentWithService.serviceTypeId) : prev.serviceTypeId,
+                serviceType: lastPaymentWithService.serviceTypeRelation?.name || prev.serviceType,
+                // Also attempt to set the collection type if we can map it
+                serviceTypeOfCollectionId: prev.serviceTypeOfCollectionId || String(lastPaymentWithService.serviceTypeOfCollectionId || "")
+              }));
+            }
+          }
         } else if (vNo) {
           setPendingPayments(validHistory.filter(p => 
             p.vehicleNumber === vNo && p.paymentStatus === 'pending'
