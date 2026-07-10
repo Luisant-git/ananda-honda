@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { userApi } from '../api/userApi.js';
 import config from '../config.js';
 
@@ -10,6 +11,7 @@ const UserManagement = ({ user: currentUser }) => {
   const [branches, setBranches] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [formData, setFormData] = useState({ username: '', password: '', role: 'ADMIN', brand: 'BIGWINGS', branchCode: '' });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -73,6 +75,21 @@ const UserManagement = ({ user: currentUser }) => {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    setIsLoading(true);
+    try {
+      await userApi.delete(userToDelete.id);
+      toast.success('User permanently deleted!');
+      setUserToDelete(null);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.message || 'Error deleting user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleEdit = (user) => {
     setEditingId(user.id);
     setFormData({
@@ -88,6 +105,15 @@ const UserManagement = ({ user: currentUser }) => {
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Username', accessor: 'username' },
+    { 
+      header: 'Brand', 
+      accessor: 'brand',
+      render: (value) => (
+        <span className={`px-2 py-1 rounded text-xs font-bold ${value === 'REDWINGS' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+          {value || 'BIGWINGS'}
+        </span>
+      )
+    },
     { header: 'Branch Code', accessor: 'branchCode' },
     { header: 'Role', accessor: 'role' },
     { 
@@ -131,12 +157,20 @@ const UserManagement = ({ user: currentUser }) => {
               {user.isActive ? 'Deactivate' : 'Activate'}
             </button>
             {currentUser?.role === 'DEVELOPER' && (
-              <button
-                onClick={() => handleEdit(user)}
-                className="text-blue-600 hover:underline"
-              >
-                Edit
-              </button>
+              <>
+                <button
+                  onClick={() => handleEdit(user)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setUserToDelete(user)}
+                  className="text-red-600 hover:underline ml-2"
+                >
+                  Delete
+                </button>
+              </>
             )}
           </div>
         )}
@@ -240,6 +274,16 @@ const UserManagement = ({ user: currentUser }) => {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete User"
+        message={`Are you sure you want to permanently delete the user "${userToDelete?.username}"? This action cannot be undone.`}
+        confirmText={isLoading ? "Deleting..." : "Delete"}
+        isDestructive={true}
+      />
     </div>
   );
 };

@@ -8,7 +8,9 @@ export class BrandMiddleware implements NestMiddleware {
   use(req: any, res: any, next: () => void) {
     const brand = req.session?.user?.brand || 'BIGWINGS';
     const branchCode = req.session?.user?.branchCode || null;
+    const role = req.session?.user?.role || null;
     this.cls.set('brand', brand);
+    this.cls.set('role', role);
     if (branchCode) {
       this.cls.set('branchCode', branchCode);
     }

@@ -115,7 +115,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
             <div className="flex flex-col items-center justify-center">
                 <img src={logoToUse} alt="Honda Logo" className="h-20 w-auto object-contain" />
                 <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 text-center w-full ${user?.brand === 'REDWINGS' ? 'text-red-600' : 'text-blue-600'}`}>
-                  {user?.brand === 'REDWINGS' ? 'Redwing CRM' : 'Bigwing CRM'}
+                  {user?.brand === 'REDWINGS' ? 'Redwing' : 'Bigwing'}
                 </span>
             </div>
           )}

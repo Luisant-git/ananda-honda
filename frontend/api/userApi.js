@@ -46,5 +46,17 @@ export const userApi = {
       throw new Error(errorData.message || 'Toggle failed');
     }
     return response.json();
+  },
+
+  delete: async (id) => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Delete failed');
+    }
+    return response.json();
   }
 };

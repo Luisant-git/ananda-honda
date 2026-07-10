@@ -31,10 +31,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                 return async (args: any = {}) => {
                   const brand = this.cls.get('brand');
                   const branchCode = this.cls.get('branchCode');
+                  const role = this.cls.get('role');
                   
                   // Collect filters to apply based on what is available in the current context
                   const filters: any = {};
-                  if (brand) filters.brand = brand;
+                  
+                  // DEVELOPER role bypasses brand filter for User Management
+                  const bypassBrandFilter = role === 'DEVELOPER' && modelName === 'user';
+                  
+                  if (brand && !bypassBrandFilter) filters.brand = brand;
                   
                   // Only apply branchCode filter to transactional tables that have this field
                   const branchCodeModels = [
@@ -42,7 +47,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                     'serviceJobCard', 'salesInvoice', 'paymentTransaction', 'enquiry', 'lead'
                   ];
                   
-                  if (branchCode && branchCodeModels.includes(modelName)) {
+                  if (branchCode && branchCodeModels.includes(modelName) && !bypassBrandFilter) {
                     filters.branchCode = branchCode;
                   }
                   
@@ -71,17 +76,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
                       });
                       
                       if (existingRecord) {
-                        if (brand && existingRecord.brand !== brand) {
+                        if (brand && existingRecord.brand !== brand && !bypassBrandFilter) {
                            throw new Error('Unauthorized: You do not have permission to modify this record (Brand mismatch).');
                         }
-                        if (branchCode && existingRecord.branchCode && existingRecord.branchCode !== branchCode) {
+                        if (branchCode && existingRecord.branchCode && existingRecord.branchCode !== branchCode && !bypassBrandFilter) {
                            throw new Error('Unauthorized: You do not have permission to modify this record (Branch mismatch).');
                         }
                       }
                     }
                     
                     // INTERCEPT CREATE QUERIES
-                    if (['create', 'createMany'].includes(action)) {
+                    if (['create', 'createMany'].includes(action) && !bypassBrandFilter) {
                       if (action === 'create') {
                         args.data = { ...args.data, ...filters };
                       } else if (action === 'createMany' && Array.isArray(args.data)) {
