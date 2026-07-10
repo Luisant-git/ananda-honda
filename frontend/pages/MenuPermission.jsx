@@ -9,7 +9,6 @@ const MenuPermission = () => {
   const [loading, setLoading] = useState(false);
 
   const roles = [
-    'SUPER_ADMIN', 
     'ADMIN', 
     'DEVELOPER',
     'ACCOUNTS',

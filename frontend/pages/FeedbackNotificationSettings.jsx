@@ -6,7 +6,6 @@ const API_URL = `${config.API_BASE_URL}/feedback-notification`;
 
 const FeedbackNotificationSettings = () => {
   const [settings, setSettings] = useState({
-    SUPER_ADMIN: '',
     ADMIN: '',
     CASHIER_SERVICE: '',
     CASHIER_SALES: ''
@@ -28,7 +27,6 @@ const FeedbackNotificationSettings = () => {
       const data = await response.json();
       
       const newSettings = {
-        SUPER_ADMIN: '',
         ADMIN: '',
         CASHIER_SERVICE: '',
         CASHIER_SALES: ''
@@ -73,7 +71,6 @@ const FeedbackNotificationSettings = () => {
   };
 
   const rolesToConfigure = [
-    { key: 'SUPER_ADMIN', label: 'Super Admin' },
     { key: 'ADMIN', label: 'Admin' },
     { key: 'CASHIER_SERVICE', label: 'Cashier Service' },
     { key: 'CASHIER_SALES', label: 'Cashier Sales' }
