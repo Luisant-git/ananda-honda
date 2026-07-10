@@ -249,7 +249,7 @@ model MenuPermission {
 
 model FeedbackNotificationSetting {
   id           Int      @id @default(autoincrement())
-  role         Role     @unique
+  role         String   @unique
   mobileNumber String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

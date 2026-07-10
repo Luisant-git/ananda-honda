@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '@prisma/client';
-
 @Injectable()
 export class FeedbackNotificationService {
   constructor(private prisma: PrismaService) {}
@@ -10,7 +8,7 @@ export class FeedbackNotificationService {
     return this.prisma.feedbackNotificationSetting.findMany();
   }
 
-  async upsert(role: Role, mobileNumber: string) {
+  async upsert(role: string, mobileNumber: string) {
     if (!mobileNumber) {
         // If empty, we can just delete it
         return this.prisma.feedbackNotificationSetting.deleteMany({
