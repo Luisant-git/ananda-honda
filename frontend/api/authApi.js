@@ -48,8 +48,10 @@ export const authApi = {
       credentials: 'include'
     });
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Not authenticated');
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.message || 'Not authenticated');
+      error.status = response.status;
+      throw error;
     }
     return response.json();
   },

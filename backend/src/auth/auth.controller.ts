@@ -25,7 +25,7 @@ export class AuthController {
       return user;
     } catch (error) {
       if (error.code === 'P2037' || error.message?.includes('connection') || error.message?.includes('closed')) {
-        throw new HttpException('Session timeout error. Please log in again.', HttpStatus.SERVICE_UNAVAILABLE);
+        throw new HttpException('Database connection temporarily lost. Please try again.', HttpStatus.SERVICE_UNAVAILABLE);
       }
       throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
     }
@@ -51,7 +51,7 @@ export class AuthController {
       return session.user;
     } catch (error) {
       if (error.code === 'P2037' || error.message?.includes('connection') || error.message?.includes('closed')) {
-        throw new HttpException('Session timeout. Please log in again.', HttpStatus.SERVICE_UNAVAILABLE);
+        throw new HttpException('Database connection temporarily lost.', HttpStatus.SERVICE_UNAVAILABLE);
       }
       throw error;
     }

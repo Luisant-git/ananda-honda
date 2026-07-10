@@ -17,13 +17,18 @@ const App = () => {
         setUser(userData);
         setIsAuthenticated(true);
         wasAuthenticated = true;
-      } catch (error) {
-        if (wasAuthenticated) {
-          toast.error(error.message || 'Session expired');
+        // Only log out if it's a real authentication error (401)
+        // Ignore 503 (Database connection dropped temporarily) or network errors
+        if (error.status === 401) {
+          if (wasAuthenticated) {
+            toast.error(error.message || 'Session expired. Please log in again.');
+          }
+          setIsAuthenticated(false);
+          setUser(null);
+          wasAuthenticated = false;
+        } else {
+          console.warn('Temporary validation error ignored:', error.message);
         }
-        setIsAuthenticated(false);
-        setUser(null);
-        wasAuthenticated = false;
       }
     };
     validateSession();
