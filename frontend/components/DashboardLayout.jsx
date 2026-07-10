@@ -41,7 +41,10 @@ import DeveloperLogs from '../pages/DeveloperLogs';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
-  const [currentView, setCurrentView] = useState(isEnquiry ? 'customer_details' : 'quick_start');
+  const [currentView, setCurrentView] = useState(() => {
+    const savedView = localStorage.getItem('currentView');
+    return savedView || (isEnquiry ? 'customer_details' : 'quick_start');
+  });
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -56,6 +59,10 @@ const DashboardLayout = ({ user, onLogout }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem('currentView', currentView);
+  }, [currentView]);
   const renderView = () => {
     switch (currentView) {
       case 'branch_master':

@@ -5,14 +5,28 @@ import hondaLogo from '../assets/honda.png';
 import hondaRedLogo from '../assets/honda_red.png';
 
 const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, isSidebarCollapsed, setSidebarCollapsed, user }) => {
-  const [openMenus, setOpenMenus] = useState({
-    master: true,
-    payment_collection: false,
-    settings: false,
-    reports: false,
-    service_report: false,
-    service_payment: false,
+  const [openMenus, setOpenMenus] = useState(() => {
+    const savedMenus = localStorage.getItem('openMenus');
+    if (savedMenus) {
+      try {
+        return JSON.parse(savedMenus);
+      } catch (e) {
+        console.error('Error parsing openMenus from localStorage:', e);
+      }
+    }
+    return {
+      master: true,
+      payment_collection: false,
+      settings: false,
+      reports: false,
+      service_report: false,
+      service_payment: false,
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('openMenus', JSON.stringify(openMenus));
+  }, [openMenus]);
   const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
@@ -29,7 +43,30 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
   }, [user]);
 
   const toggleMenu = (menu) => {
-    setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+    setOpenMenus(prev => {
+      const isCurrentlyOpen = prev[menu];
+      
+      // Sub-menus should only toggle themselves without affecting main menus
+      if (menu === 'service_report' || menu === 'service_payment') {
+        return { ...prev, [menu]: !isCurrentlyOpen };
+      }
+
+      // Opening a new main menu
+      if (!isCurrentlyOpen) {
+        return {
+          master: menu === 'master',
+          payment_collection: menu === 'payment_collection',
+          settings: menu === 'settings',
+          reports: menu === 'reports',
+          // preserve sub-menu state if opening its parent, otherwise close it
+          service_report: menu === 'reports' ? prev.service_report : false,
+          service_payment: menu === 'payment_collection' ? prev.service_payment : false,
+        };
+      } 
+      
+      // Closing a main menu
+      return { ...prev, [menu]: false };
+    });
   };
 
   const hasDashboardAccess =
