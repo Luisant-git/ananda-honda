@@ -17,6 +17,7 @@ const App = () => {
         setUser(userData);
         setIsAuthenticated(true);
         wasAuthenticated = true;
+      } catch (error) {
         // Only log out if it's a real authentication error (401)
         // Ignore 503 (Database connection dropped temporarily) or network errors
         if (error.status === 401) {
