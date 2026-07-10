@@ -14,7 +14,10 @@ export class UserController {
   async create(@Body() createUserDto: { username: string; password: string; role: any; brand?: string; branchId?: number; branchCode?: string }) {
     try {
       return await this.userService.create(createUserDto);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new HttpException('Username already exists', HttpStatus.CONFLICT);
+      }
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -23,7 +26,10 @@ export class UserController {
   async update(@Param('id') id: string, @Body() updateUserDto: { username?: string; password?: string; role?: any; brand?: string; branchId?: number; branchCode?: string }) {
     try {
       return await this.userService.update(parseInt(id), updateUserDto);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new HttpException('Username already exists', HttpStatus.CONFLICT);
+      }
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
