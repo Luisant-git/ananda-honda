@@ -110,10 +110,6 @@ export class WhatsappController {
                                  recentJobCard.customerName || 'N/A',
                                  recentJobCard.mobileNumber || 'N/A'
                                );
-                            } else {
-                               const statusEmoji = feedbackText.toLowerCase().includes('satisf') ? '✅' : '📝';
-                               const notificationMessage = `${statusEmoji} *New Service Feedback*\n\n*Customer:* ${recentJobCard.customerName || 'N/A'}\n*Job Card No:* ${recentJobCard.jobCardNumber}\n*Phone:* ${recentJobCard.mobileNumber || 'N/A'}\n\n*Feedback:* ${feedbackText}`;
-                               await this.whatsappService.sendTextMessage(adminNumber, notificationMessage);
                             }
                           } catch (err) {
                              this.logger.error(`Failed to notify ${adminNumber}`, err);
