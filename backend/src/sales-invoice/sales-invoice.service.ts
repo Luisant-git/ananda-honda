@@ -116,7 +116,7 @@ export class SalesInvoiceService {
       fs.writeFileSync(path.join(uploadsDir, uniqueFileName), buffer);
 
       const logFile = path.join(logDir, 'developer_import.log');
-      const timestamp = new Date().toLocaleString('en-GB');
+      const timestamp = new Date().toLocaleString('en-GB', { hour12: true }).toUpperCase();
       const logEntry = `[${timestamp}] REPORT: SALES INVOICE | FILE: ${fileName} | IMPORTED_RECORDS: ${records.length} | SERVER_FILE: ${uniqueFileName}\n`;
       fs.appendFileSync(logFile, logEntry);
     } catch (logErr) {
