@@ -552,6 +552,7 @@ const handleCustomerSelect = async (customer) => {
             vehicleNumber: closedJobCard.registrationNumber || prev.vehicleNumber,
             serviceTypeId: "",
             serviceType: "",
+            serviceTypeOfCollectionId: "",
             vehicleModelId: matchedModelId || prev.vehicleModelId,
           }));
         } else {
@@ -808,6 +809,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
       }
     }
     
+    let isClosed = false;
     // Only auto-fill job card number if it belongs to this customer and not closed
     if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
       try {
@@ -818,30 +820,34 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
           updatedFormData.jobCardNumber = lastPaymentInfo.jobCardNumber;
         } else {
           updatedFormData.jobCardNumber = "";
+          isClosed = true;
         }
       } catch (err) {
         updatedFormData.jobCardNumber = "";
+        isClosed = true;
       }
     } else {
       updatedFormData.jobCardNumber = "";
     }
     
-    if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
-      updatedFormData.serviceType = lastPaymentInfo.serviceType;
-      const matchedServiceType = serviceTypes.find(
-        st => st.name.toLowerCase() === lastPaymentInfo.serviceType.toLowerCase()
-      );
-      if (matchedServiceType) {
-        updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+    if (!isClosed) {
+      if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
+        updatedFormData.serviceType = lastPaymentInfo.serviceType;
+        const matchedServiceType = serviceTypes.find(
+          st => st.name.toLowerCase() === lastPaymentInfo.serviceType.toLowerCase()
+        );
+        if (matchedServiceType) {
+          updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+        }
       }
-    }
-    
-    if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
-      const matchedCollection = serviceTypeOfCollections.find(
-        type => type.typeOfCollect?.toLowerCase() === lastPaymentInfo.typeOfCollection.toLowerCase()
-      );
-      if (matchedCollection) {
-        updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+      
+      if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
+        const matchedCollection = serviceTypeOfCollections.find(
+          type => type.typeOfCollect?.toLowerCase() === lastPaymentInfo.typeOfCollection.toLowerCase()
+        );
+        if (matchedCollection) {
+          updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+        }
       }
     }
     
@@ -969,16 +975,19 @@ useEffect(() => {
             }
           }
           
+          const isClosed = isJobCardClosed(jobCard.status);
+          
           setFormData(prev => ({
             ...prev,
             vehicleNumber: jobCard.registrationNumber || prev.vehicleNumber,
-            serviceTypeId: matchedServiceTypeId || prev.serviceTypeId,
-            serviceType: serviceTypeName || prev.serviceType,
+            serviceTypeId: isClosed ? "" : (matchedServiceTypeId || prev.serviceTypeId),
+            serviceType: isClosed ? "" : (serviceTypeName || prev.serviceType),
+            serviceTypeOfCollectionId: isClosed ? "" : prev.serviceTypeOfCollectionId,
             vehicleModelId: matchedModelId || prev.vehicleModelId,
           }));
           
           // Find matching collection type
-          if (serviceTypeName && serviceTypeOfCollections.length > 0) {
+          if (!isClosed && serviceTypeName && serviceTypeOfCollections.length > 0) {
             const matchedTypeOfCollection = serviceTypeOfCollections.find(
               (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
             );
@@ -3347,10 +3356,13 @@ useEffect(() => {
                       setServiceJobCardInfo(null);
                       setPendingPayments([]);
                     }}
-                    className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"
+                    className={`w-full bg-white border ${serviceJobCardInfo && isJobCardClosed(serviceJobCardInfo.status) ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-brand-border'} text-brand-text-primary rounded-lg p-2`}
                     placeholder="JC-BWKA0105-02-2526-000000"
                     required={true}
                   />
+                  {serviceJobCardInfo && isJobCardClosed(serviceJobCardInfo.status) && (
+                    <p className="text-sm text-red-500 font-medium">This job card is closed.</p>
+                  )}
                 </div>
               </div>
             )}
