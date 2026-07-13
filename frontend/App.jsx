@@ -8,6 +8,7 @@ import { authApi } from './api/authApi';
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let wasAuthenticated = false;
@@ -30,6 +31,8 @@ const App = () => {
         } else {
           console.warn('Temporary validation error ignored:', error.message);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
     validateSession();
@@ -52,6 +55,14 @@ const App = () => {
       toast.error('Logout failed');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-brand-accent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text-primary">
