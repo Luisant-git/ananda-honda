@@ -83,7 +83,7 @@ const DeveloperLogs = () => {
         </button>
       </div>
 
-      <div className="bg-[#1e1e1e] text-[#d4d4d4] p-6 rounded-xl shadow-lg border border-gray-800 font-mono text-sm min-h-[500px]">
+      <div className="bg-[#1e1e1e] text-[#d4d4d4] p-6 rounded-xl shadow-lg border border-gray-800 font-mono text-sm min-h-[500px] max-h-[600px] overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full text-brand-accent animate-pulse">
             Loading logs...
