@@ -36,7 +36,7 @@ export class PineLabsService {
     });
 
     try {
-      const payload = {
+      const payload: any = {
         TransactionNumber: transactionId,
         SequenceNumber: 1,
         AllowedPaymentMode: "0", // 0 = Allow all modes
@@ -48,6 +48,10 @@ export class PineLabsService {
         StoreId: config.storeId,
         AutoCancelDurationInMinutes: 5,
       };
+
+      if (config.hardwareSn) {
+        payload.IMEI = config.hardwareSn;
+      }
 
       const apiUrl = config.environment === 'Production'
         ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/UploadBilledTransaction'
