@@ -403,8 +403,8 @@ useEffect(() => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, forcedPineLabsTxnId = null) => {
+    if (e && e.preventDefault) e.preventDefault();
 
     if (isNewCustomer && !/^\d{10}$/.test(newCustomerData.contactNo)) {
       toast.error("Mobile number must be exactly 10 digits");
@@ -412,9 +412,13 @@ useEffect(() => {
     }
 
     const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
-    const isPineLabs = selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'));
+    const selectedTypeOfMode = typeOfPayments.find(t => t.id === parseInt(formData.typeOfPaymentId));
 
-    if (isPineLabs && !pineLabsTxnId && !isEditMode) {
+    const isPineLabs = (selectedMode && (selectedMode.paymentMode.toLowerCase().includes('pos') || selectedMode.paymentMode.toLowerCase().includes('pine'))) ||
+                       (selectedTypeOfMode && (selectedTypeOfMode.typeOfMode.toLowerCase().includes('pos') || selectedTypeOfMode.typeOfMode.toLowerCase().includes('pine')));
+    const activePineLabsTxnId = forcedPineLabsTxnId || pineLabsTxnId;
+
+    if (isPineLabs && !activePineLabsTxnId && !isEditMode) {
       setIsPineLabsModalOpen(true);
       return;
     }
@@ -448,7 +452,7 @@ useEffect(() => {
         enteredBy: user?.id,
         refNo: formData.refNo,
         remarks: formData.remarks,
-        pineLabsTxnId: pineLabsTxnId,
+        pineLabsTxnId: activePineLabsTxnId,
 
       };
 
@@ -1702,12 +1706,8 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         onSuccess={(txId) => {
           setPineLabsTxnId(txId);
           setIsPineLabsModalOpen(false);
-          // Small delay to allow state update before auto-submitting
-          setTimeout(() => {
-            const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
-            const form = document.getElementById('sales-payment-form');
-            if (form) form.dispatchEvent(submitEvent);
-          }, 100);
+          // Auto-submit after successful POS transaction using the new transaction ID
+          handleSubmit(null, txId);
         }}
       />
     </div>
