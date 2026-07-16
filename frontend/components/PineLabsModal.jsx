@@ -58,7 +58,7 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
         setStatus('Payment Successful!');
         setTimeout(() => {
           onSuccess(txId);
-        }, 1500);
+        }, 3500);
       } else if (res.status === 'Failed' || res.status === 'Cancelled') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
         setStatus(`Payment ${res.status}`);
@@ -123,13 +123,13 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
               </div>
             )}
             {isSuccess && (
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-inner">
-                <svg className="w-10 h-10 text-[#00a651]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+              <div className="w-20 h-20 bg-gradient-to-br from-green-50 to-green-100 rounded-full flex items-center justify-center shadow-md animate-[bounce_1s_ease-in-out]">
+                <svg className="w-10 h-10 text-[#00a651]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path></svg>
               </div>
             )}
             {isError && (
-              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center shadow-inner border border-red-100">
-                <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <div className="w-20 h-20 bg-gradient-to-br from-red-50 to-red-100 rounded-full flex items-center justify-center shadow-md border border-red-200 animate-[pulse_1s_ease-in-out]">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
               </div>
             )}
           </div>
