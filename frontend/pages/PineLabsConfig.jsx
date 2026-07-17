@@ -3,7 +3,9 @@ import toast from 'react-hot-toast';
 import config from '../config';
 
 const PineLabsConfig = () => {
+  const [activeTab, setActiveTab] = useState('sale');
   const [formData, setFormData] = useState({
+    type: 'sale',
     merchantId: '',
     securityToken: '',
     clientId: '',
@@ -16,19 +18,32 @@ const PineLabsConfig = () => {
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    fetchConfig(activeTab);
+  }, [activeTab]);
 
-  const fetchConfig = async () => {
+  const fetchConfig = async (type) => {
     try {
-      const response = await fetch(`${config.API_BASE_URL}/pine-labs-config`, {
+      const response = await fetch(`${config.API_BASE_URL}/pine-labs-config?type=${type}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
       if (response.ok) {
         const data = await response.json();
-        setFormData(data);
+        if (data) {
+          setFormData({ ...data, type });
+        } else {
+          setFormData({
+            type,
+            merchantId: '',
+            securityToken: '',
+            clientId: '',
+            storeId: '',
+            hardwareSn: '',
+            environment: 'UAT',
+            status: 'Active',
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch config', error);
@@ -55,7 +70,7 @@ const PineLabsConfig = () => {
       if (!response.ok) throw new Error('Failed to save configuration');
       
       toast.success('Configuration saved successfully');
-      fetchConfig();
+      fetchConfig(activeTab);
     } catch (error) {
       toast.error('Failed to save configuration');
       console.error('Failed to save config', error);
@@ -90,12 +105,12 @@ const PineLabsConfig = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, type: activeTab })
       });
       if (!response.ok) throw new Error('Failed to update status');
       
       toast.success(`Pine Labs integration is now ${newStatus}`);
-      fetchConfig();
+      fetchConfig(activeTab);
     } catch (error) {
       toast.error('Failed to update status');
     }
@@ -113,6 +128,31 @@ const PineLabsConfig = () => {
         >
           {formData.status === 'Active' ? 'Deactivate Integration' : 'Activate Integration'}
         </button>
+      </div>
+
+      <div className="mb-6 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('sale')}
+            className={`${
+              activeTab === 'sale'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Sale Configuration
+          </button>
+          <button
+            onClick={() => setActiveTab('service')}
+            className={`${
+              activeTab === 'service'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Service Configuration
+          </button>
+        </nav>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">

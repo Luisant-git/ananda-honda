@@ -5,13 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PineLabsConfigService {
   constructor(private prisma: PrismaService) {}
 
-  async getConfig() {
-    const config = await this.prisma.pineLabsConfig.findFirst();
+  async getConfig(type: string = 'sale') {
+    const config = await this.prisma.pineLabsConfig.findFirst({
+      where: { type },
+    });
     return config || null;
   }
 
   async saveConfig(data: any) {
-    const existing = await this.prisma.pineLabsConfig.findFirst();
+    const type = data.type || 'sale';
+    const existing = await this.prisma.pineLabsConfig.findFirst({
+      where: { type },
+    });
     if (existing) {
       return this.prisma.pineLabsConfig.update({
         where: { id: existing.id },
@@ -28,6 +33,7 @@ export class PineLabsConfigService {
     } else {
       return this.prisma.pineLabsConfig.create({
         data: {
+          type,
           merchantId: data.merchantId,
           securityToken: data.securityToken,
           clientId: data.clientId,
@@ -40,8 +46,10 @@ export class PineLabsConfigService {
     }
   }
 
-  async toggleStatus(status: string) {
-    const existing = await this.prisma.pineLabsConfig.findFirst();
+  async toggleStatus(status: string, type: string = 'sale') {
+    const existing = await this.prisma.pineLabsConfig.findFirst({
+      where: { type },
+    });
     if (!existing) throw new NotFoundException('Config not found');
     
     return this.prisma.pineLabsConfig.update({

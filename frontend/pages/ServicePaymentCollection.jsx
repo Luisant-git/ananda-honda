@@ -4076,6 +4076,7 @@ useEffect(() => {
         mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
         referenceId={formData.jobCardNumber || formData.refNo || ''}
         createdBy={user?.id}
+        machineType="service"
         onSuccess={(txId) => {
           setPineLabsTxnId(txId);
           setIsPineLabsModalOpen(false);

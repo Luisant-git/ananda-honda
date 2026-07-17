@@ -1703,6 +1703,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         mobileNumber={loadedCustomer ? loadedCustomer.contactNo : newCustomerData.contactNo}
         referenceId={formData.refNo || salesInvoiceInfo?.invoiceNo || ''}
         createdBy={user?.id}
+        machineType="sale"
         onSuccess={(txId) => {
           setPineLabsTxnId(txId);
           setIsPineLabsModalOpen(false);

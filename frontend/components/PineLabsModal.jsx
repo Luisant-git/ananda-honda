@@ -5,7 +5,7 @@ import PineLabsTransactions from '../pages/PineLabsTransactions';
 import toast from 'react-hot-toast';
 import PineLabsLogoImg from '../assets/Pine Labs-logo.png';
 
-const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, referenceId, createdBy, onSuccess }) => {
+const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, referenceId, createdBy, onSuccess, machineType }) => {
   const [status, setStatus] = useState('');
   const [transactionId, setTransactionId] = useState(null);
   const pollingInterval = useRef(null);
@@ -38,6 +38,7 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
         customerName,
         mobileNumber,
         createdBy,
+        type: machineType || 'sale',
       });
 
       setTransactionId(response.transactionId);

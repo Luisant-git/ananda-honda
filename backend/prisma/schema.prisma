@@ -407,6 +407,7 @@ model ServiceReminderLog {
 
 model PineLabsConfig {
   id            Int      @id @default(autoincrement())
+  type          String   @default("sale") // "sale" or "service"
   merchantId    String
   securityToken String
   clientId      String
@@ -429,6 +430,7 @@ model PaymentTransaction {
   paymentMode   String?
   status        String   @default("Pending") // Pending, Success, Failed, Cancelled
   responseData  Json?
+  machineType   String   @default("sale") // "sale" or "service"
   createdBy     Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

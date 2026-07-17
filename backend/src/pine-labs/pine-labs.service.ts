@@ -13,10 +13,11 @@ export class PineLabsService {
     private configService: PineLabsConfigService,
   ) {}
 
-  async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number }) {
-    const config = await this.configService.getConfig();
+  async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number; type?: string }) {
+    const machineType = data.type || 'sale';
+    const config = await this.configService.getConfig(machineType);
     if (!config || config.status !== 'Active') {
-      throw new BadRequestException('Pine Labs integration is not configured or active');
+      throw new BadRequestException(`Pine Labs integration (${machineType}) is not configured or active`);
     }
 
     // Generate unique transaction ID
@@ -32,6 +33,7 @@ export class PineLabsService {
         mobileNumber: data.mobileNumber,
         status: 'Pending',
         createdBy: data.createdBy,
+        machineType,
       },
     });
 
@@ -97,8 +99,8 @@ export class PineLabsService {
 
     if (!transaction) throw new NotFoundException('Transaction not found');
 
-    const config = await this.configService.getConfig();
-    if (!config) throw new BadRequestException('Pine Labs config not found');
+    const config = await this.configService.getConfig(transaction.machineType || 'sale');
+    if (!config) throw new BadRequestException(`Pine Labs config (${transaction.machineType || 'sale'}) not found`);
 
     const responseData: any = transaction.responseData;
     const plutusRef = responseData?.PlutusTransactionReferenceID;
