@@ -29,7 +29,8 @@ const PineLabsConfig = () => {
         },
       });
       if (response.ok) {
-        const data = await response.json();
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : null;
         if (data) {
           setFormData({ ...data, type });
         } else {
@@ -130,25 +131,27 @@ const PineLabsConfig = () => {
         </button>
       </div>
 
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+      <div className="mb-6">
+        <nav className="flex space-x-4" aria-label="Tabs">
           <button
+            type="button"
             onClick={() => setActiveTab('sale')}
             className={`${
               activeTab === 'sale'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+            } px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200`}
           >
             Sale Configuration
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('service')}
             className={`${
               activeTab === 'service'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+            } px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200`}
           >
             Service Configuration
           </button>
