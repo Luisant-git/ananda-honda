@@ -120,7 +120,7 @@ const ServicePaymentCollection = ({ user, subType }) => {
   const normalizedPaymentType = (formData.paymentType || "").toString().toLowerCase().trim();
   
   // Determine if Job Card is mandatory based on payment type
-  const requiresJobCard = isFullPaymentMode || isXyzPaymentMode || (isAdvancePaymentMode && normalizedPaymentType === 'full payment');
+  const requiresJobCard = (normalizedPaymentType === 'full payment' || normalizedPaymentType === 'part payment') || isXyzPaymentMode;
   const isOptionalJobCard = isAdvancePaymentMode && normalizedPaymentType !== 'full payment';
   
   // Filter Type of Collection to show only JOBCARD and CERAMIC COATING for Full/Advance payments
@@ -275,7 +275,7 @@ const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) 
 
     if (!foundJobCard) return null;
 
-    if (normalizedMobile && foundJobCard.mobileNumber?.toString().trim() !== normalizedMobile) {
+    if (normalizedMobile && foundJobCard.mobileNumber?.toString().trim() !== normalizedMobile && foundJobCard.mobileNumber?.toString().trim() !== 'N/A' && foundJobCard.mobileNumber?.toString().trim() !== '') {
       console.warn(`Job card found for number ${jobCardNumber} does not match expected mobile ${expectedMobileNumber}. Ignoring.`);
       return null;
     }
@@ -437,7 +437,7 @@ const handleCustomerSelect = async (customer) => {
       if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
         const foundJobCard = await fetchJobCardByNumber(lastPaymentInfo.jobCardNumber, customer.contactNo);
         if (customerSelectionId.current !== currentSelectionId) return;
-        if (foundJobCard && foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim()) {
+        if (foundJobCard && (foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || foundJobCard.mobileNumber?.toString().trim() === 'N/A' || !foundJobCard.mobileNumber)) {
           setServiceJobCardInfo(foundJobCard);
         }
       }
@@ -468,7 +468,7 @@ const handleCustomerSelect = async (customer) => {
       
       // Filter job cards that belong to this customer by mobile number
       const customerJobCards = allJobCardsForCustomer.filter(jc => 
-        jc.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim()
+        jc.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || jc.mobileNumber?.toString().trim() === 'N/A' || !jc.mobileNumber
       );
       
       if (customerJobCards.length > 0) {
@@ -668,8 +668,9 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     }
     
     // DOUBLE VALIDATION: Verify the job card belongs to this customer
+    const jobCardMobileStr = foundJobCard?.mobileNumber?.toString().trim();
     const jobCardBelongsToCustomer = foundJobCard && 
-      foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim();
+      (jobCardMobileStr === customer.contactNo?.toString().trim() || jobCardMobileStr === 'N/A' || !jobCardMobileStr);
     
     if (jobCardBelongsToCustomer) {
       console.log('Job card belongs to customer:', customer.name, foundJobCard.jobCardNumber);
@@ -784,7 +785,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
   }
   
   // Set the job card info for display - ONLY if it belongs to this customer
-  if (jobCardInfoFromPayment && jobCardInfoFromPayment.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim()) {
+  if (jobCardInfoFromPayment && (jobCardInfoFromPayment.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || jobCardInfoFromPayment.mobileNumber?.toString().trim() === 'N/A' || !jobCardInfoFromPayment.mobileNumber)) {
     console.log('Setting job card info for:', customer.name, jobCardInfoFromPayment.jobCardNumber);
     setServiceJobCardInfo(jobCardInfoFromPayment);
   } else {
@@ -816,7 +817,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
         const allJobCards = await serviceJobCardApi.getAll();
         const foundJobCard = allJobCards.find(jc => jc.jobCardNumber === lastPaymentInfo.jobCardNumber);
         
-        if (foundJobCard && foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() && !isJobCardClosed(foundJobCard.status)) {
+        if (foundJobCard && (foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || foundJobCard.mobileNumber?.toString().trim() === 'N/A' || !foundJobCard.mobileNumber) && !isJobCardClosed(foundJobCard.status)) {
           updatedFormData.jobCardNumber = lastPaymentInfo.jobCardNumber;
         } else {
           updatedFormData.jobCardNumber = "";
@@ -924,7 +925,7 @@ useEffect(() => {
           const customerMobile = loadedCustomer.contactNo?.toString().trim();
           const jobCardMobile = jobCard.mobileNumber?.toString().trim();
           
-          if (customerMobile !== jobCardMobile) {
+          if (customerMobile !== jobCardMobile && jobCardMobile !== 'N/A' && jobCardMobile !== '') {
             console.warn('Auto-fetched job card does NOT belong to current customer. Ignoring.');
             setServiceJobCardInfo(null);
             setFoundJobCard(null);
@@ -2038,6 +2039,16 @@ const handleSubmit = async (e, forcedPineLabsTxnId = null) => {
     return;
   }
 
+  if (!formData.recAmt || isNaN(parseFloat(formData.recAmt)) || parseFloat(formData.recAmt) <= 0) {
+    toast.error("Please enter a valid Receipt Amount");
+    return;
+  }
+
+  if (!formData.paymentModeId) {
+    toast.error("Please select a Payment Mode");
+    return;
+  }
+
   // Validate vehicle number for part payment
   if (normalizedPaymentType === "part payment" && !formData.vehicleNumber) {
     toast.error("Vehicle number is mandatory for part payment");
@@ -2064,13 +2075,7 @@ if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formDa
   }
 }
 
-// Validate Advance Payment has either Job Card or Parts
-if (isAdvancePaymentMode && normalizedPaymentType === "advance payment") {
-  if (!formData.jobCardNumber && selectedParts.length === 0) {
-    toast.error("For Advance Payment: Please provide either a Job Card Number or select parts");
-    return;
-  }
-}
+// Removed strict Job Card / Parts requirement for Advance Payment as per user request
 
   const selectedMode = paymentModes.find(m => m.id === parseInt(formData.paymentModeId));
   const selectedTypeOfMode = typeOfPayments.find(t => t.id === parseInt(formData.typeOfPaymentId));

@@ -19,6 +19,10 @@ export const servicePaymentCollectionApi = {
       credentials: 'include',
       body: JSON.stringify(data)
     });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to create payment');
+    }
     return response.json();
   },
 
@@ -34,6 +38,10 @@ export const servicePaymentCollectionApi = {
       credentials: 'include',
       body: JSON.stringify(data)
     });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to update payment');
+    }
     return response.json();
   },
 
@@ -44,6 +52,10 @@ export const servicePaymentCollectionApi = {
       credentials: 'include',
       body: JSON.stringify({ deletedBy })
     });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to delete payment');
+    }
     return response.json();
   },
 
