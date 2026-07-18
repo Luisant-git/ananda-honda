@@ -91,7 +91,10 @@ const Reports = ({ user }) => {
   const downloadExcel = () => {
     try {
       const headers = columns.map(col => col.header).join('\t');
-      const rows = filteredData.map(row => columns.map(col => row[col.accessor] || '').join('\t')).join('\n');
+      const rows = filteredData.map(row => columns.map(col => {
+        const val = row[col.accessor] || '';
+        return (col.accessor === 'refNo' || col.accessor === 'contactNo' || col.accessor === 'jobCardNumber' || col.accessor === 'receiptNo') ? `="${val}"` : val;
+      }).join('\t')).join('\n');
       const content = headers + '\n' + rows;
       const blob = new Blob([content], { type: 'application/vnd.ms-excel' });
       const url = window.URL.createObjectURL(blob);
@@ -109,7 +112,10 @@ const Reports = ({ user }) => {
   const downloadCSV = () => {
     try {
       const headers = columns.map(col => col.header).join(',');
-      const rows = filteredData.map(row => columns.map(col => `"${row[col.accessor] || ''}"`).join(',')).join('\n');
+      const rows = filteredData.map(row => columns.map(col => {
+        const val = row[col.accessor] || '';
+        return (col.accessor === 'refNo' || col.accessor === 'contactNo' || col.accessor === 'jobCardNumber' || col.accessor === 'receiptNo') ? `="""${val}"""` : `"${val}"`;
+      }).join(',')).join('\n');
       const content = headers + '\n' + rows;
       const blob = new Blob([content], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);

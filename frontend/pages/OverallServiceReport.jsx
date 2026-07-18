@@ -245,6 +245,10 @@ const OverallServiceReport = ({ user }) => {
              }
           }
           
+          if (col.accessor === 'jobCardNo' || col.accessor === 'phoneNumber' || col.accessor === 'invoiceNumber' || (col.accessor && col.accessor.toString().startsWith('receiptNo'))) {
+            style += ' mso-number-format:"\\@";';
+          }
+          
           if (col.accessor === 'jobCardDate' || col.accessor === 'invoicedDate') {
             if (value) {
               const date = new Date(value);

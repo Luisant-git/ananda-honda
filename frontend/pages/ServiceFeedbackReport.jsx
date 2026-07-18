@@ -125,6 +125,10 @@ const ServiceFeedbackReport = () => {
              }
           }
           
+          if (col.accessor === 'jobCardNumber' || col.accessor === 'mobileNumber') {
+            style += ' mso-number-format:"\\@";';
+          }
+          
           html += `<td style="${style}">${value}</td>`;
         });
         html += '</tr>';
