@@ -526,6 +526,7 @@ export class ServiceJobCardService {
       where,
       include: includeServiceType ? { serviceType: true } : undefined,
       orderBy: { id: 'desc' },
+      take: 1000,
     });
   }
 
@@ -592,6 +593,7 @@ export class ServiceJobCardService {
       where,
       include: includeServiceType ? { serviceType: true } : undefined,
       orderBy: { id: 'desc' },
+      take: 1000,
     });
   }
 

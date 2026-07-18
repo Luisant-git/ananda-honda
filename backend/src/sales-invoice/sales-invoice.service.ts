@@ -137,7 +137,7 @@ export class SalesInvoiceService {
       ],
     } : {};
     
-    const invoices = await this.prisma.salesInvoice.findMany({ where, orderBy: { id: 'desc' } });
+    const invoices = await this.prisma.salesInvoice.findMany({ where, orderBy: { id: 'desc' }, take: 5000 });
     
     // Get all contact numbers from invoices
     const contacts = Array.from(new Set(invoices.map(inv => inv.contactInfo)));

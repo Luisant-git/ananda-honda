@@ -20,7 +20,8 @@ export class EnquiryService {
 
   async findAll() {
     return this.prisma.enquiry.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 5000
     });
   }
 

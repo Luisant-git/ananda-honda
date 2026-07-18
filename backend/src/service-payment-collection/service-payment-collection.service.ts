@@ -486,7 +486,8 @@ async completePartPayment(id: number, data: {
     paymentType?: string, // 'full payment' | 'part payment' | 'all' (legacy)
     paymentStatus?: string // 'completed' | 'pending' | 'all'
   ) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 5000);
+    const skip = (page - 1) * safeLimit;
     const where: any = { deletedAt: null };
     
     if (customerId) {
@@ -529,7 +530,7 @@ async completePartPayment(id: number, data: {
         },
         orderBy: { id: 'desc' },
         skip,
-        take: limit
+        take: safeLimit
       }),
       this.prisma.servicePaymentCollection.count({ where })
     ]);
@@ -588,7 +589,7 @@ async completePartPayment(id: number, data: {
       selectedParts: item.selectedParts || []
     }));
     
-    return { data: dataWithSelectedParts, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return { data: dataWithSelectedParts, total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
   }
 
   async findOne(id: number) {
