@@ -265,7 +265,7 @@ const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) 
       allJobCards = Array.isArray(searchResults) ? searchResults : (searchResults.data || []);
     } catch (searchError) {
       // fallback to full list if search endpoint isn't available or fails
-      allJobCards = await serviceJobCardApi.getAll();
+      allJobCards = await serviceJobCardApi.getAll(jobCardNumber);
     }
 
     const foundJobCard = allJobCards.find(jc => {
@@ -814,7 +814,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     // Only auto-fill job card number if it belongs to this customer and not closed
     if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
       try {
-        const allJobCards = await serviceJobCardApi.getAll();
+        const allJobCards = await serviceJobCardApi.getAll(lastPaymentInfo.jobCardNumber);
         const foundJobCard = allJobCards.find(jc => jc.jobCardNumber === lastPaymentInfo.jobCardNumber);
         
         if (foundJobCard && (foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || foundJobCard.mobileNumber?.toString().trim() === 'N/A' || !foundJobCard.mobileNumber) && !isJobCardClosed(foundJobCard.status)) {
@@ -1073,7 +1073,7 @@ useEffect(() => {
   const autoFetchVehicleModel = async () => {
     if (formData.vehicleNumber && vehicleModels.length > 0 && !formData.vehicleModelId) {
       try {
-        const allJobCards = await serviceJobCardApi.getAll();
+        const allJobCards = await serviceJobCardApi.getAll(formData.vehicleNumber);
         const jobCardWithVehicle = allJobCards.find(jc => 
           jc.registrationNumber === formData.vehicleNumber
         );
@@ -1199,7 +1199,7 @@ const handleView = async (payment) => {
   // If there's a job card number, fetch additional invoice details
   if (payment.jobCardNumber && payment.jobCardNumber !== 'N/A') {
     try {
-      const allJobCards = await serviceJobCardApi.getAll();
+      const allJobCards = await serviceJobCardApi.getAll(payment.jobCardNumber);
       const foundJobCard = allJobCards.find(jc => jc.jobCardNumber === payment.jobCardNumber);
       
       if (foundJobCard) {
@@ -1937,7 +1937,7 @@ const checkAndUpdateJobCardStatus = async (jobCardNumber, customerId, paymentTyp
 
   try {
     // Get all job cards
-    const allJobCards = await serviceJobCardApi.getAll();
+    const allJobCards = await serviceJobCardApi.getAll(jobCardNumber);
     const jobCard = allJobCards.find(jc => jc.jobCardNumber === jobCardNumber);
 
     if (!jobCard) return;
@@ -1985,7 +1985,7 @@ const checkAndUpdateJobCardStatus = async (jobCardNumber, customerId, paymentTyp
       toast.success(`Job Card ${jobCardNumber} has been closed automatically. Full payment received.`);
       
       // Refresh the displayed job card info
-      const refreshed = await serviceJobCardApi.getAll();
+      const refreshed = await serviceJobCardApi.getAll(jobCardNumber);
       const updated = refreshed.find(jc => jc.jobCardNumber === jobCardNumber);
       if (updated) {
         setServiceJobCardInfo(updated);
@@ -2003,7 +2003,7 @@ const refreshJobCardStatus = async (jobCardNumber) => {
   
   try {
     console.log('Refreshing job card status for:', jobCardNumber);
-    const allJobCards = await serviceJobCardApi.getAll();
+    const allJobCards = await serviceJobCardApi.getAll(jobCardNumber);
     const updatedJobCard = allJobCards.find(jc => jc.jobCardNumber === jobCardNumber);
     
     if (updatedJobCard) {
@@ -2107,7 +2107,7 @@ if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formDa
       
       if (formData.jobCardNumber) {
         try {
-          const allJobCards = await serviceJobCardApi.getAll();
+          const allJobCards = await serviceJobCardApi.getAll(formData.jobCardNumber);
           const existingJobCard = allJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
           if (existingJobCard && existingJobCard.mobileNumber && existingJobCard.mobileNumber !== 'N/A') {
             mobileToUse = existingJobCard.mobileNumber;
@@ -2139,7 +2139,7 @@ let createdJobCardId = null;
 
 if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "advance payment") && formData.jobCardNumber) {
   try {
-    const allJobCards = await serviceJobCardApi.getAll();
+    const allJobCards = await serviceJobCardApi.getAll(formData.jobCardNumber);
     const existingJobCard = allJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
     
     if (existingJobCard) {
@@ -2436,7 +2436,7 @@ useEffect(() => {
   const refreshJobCardOnModalOpen = async () => {
     if (isPaymentModalOpen && formData.jobCardNumber) {
       try {
-        const allJobCards = await serviceJobCardApi.getAll();
+        const allJobCards = await serviceJobCardApi.getAll(formData.jobCardNumber);
         const latestJobCard = allJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
         if (latestJobCard && latestJobCard.status !== serviceJobCardInfo?.status) {
           console.log('Job card status changed, updating UI:', latestJobCard.status);
