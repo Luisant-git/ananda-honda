@@ -2192,7 +2192,7 @@ if ((normalizedPaymentType === "full payment" || normalizedPaymentType === "adva
       recAmt: parseFloat(formData.recAmt),
       paymentType: master ? master.name : formData.paymentType,
       paymentTypeId: master ? master.id : (formData.paymentTypeId ? parseInt(formData.paymentTypeId) : undefined),
-      paymentStatus: formData.paymentStatus,
+      paymentStatus: (normalizedPaymentType === 'full payment' || normalizedPaymentType === 'advance payment' || normalizedPaymentType === 'service plan payment') ? 'completed' : formData.paymentStatus,
       vehicleNumber: formData.vehicleNumber || undefined,
       paymentModeId: parseInt(formData.paymentModeId),
       typeOfPaymentId: formData.typeOfPaymentId ? parseInt(formData.typeOfPaymentId) : undefined,
