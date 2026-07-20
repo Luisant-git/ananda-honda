@@ -2094,10 +2094,43 @@ if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formDa
     let customerId = loadedCustomer?.id;
 
     // Create new customer if needed
-    if (isNewCustomer) {
+    if (isNewCustomer && !customerId) {
       const newCustomer = await customerApi.create(newCustomerData);
       customerId = newCustomer.id;
       await fetchCustomers();
+    }
+
+    // Fallback if still no customer ID (e.g. user clicked "Add" without selecting a customer)
+    if (!customerId) {
+      let mobileToUse = "0000000000";
+      let nameToUse = formData.vehicleNumber || "Walk In Customer";
+      
+      if (formData.jobCardNumber) {
+        try {
+          const allJobCards = await serviceJobCardApi.getAll();
+          const existingJobCard = allJobCards.find(jc => jc.jobCardNumber === formData.jobCardNumber);
+          if (existingJobCard && existingJobCard.mobileNumber && existingJobCard.mobileNumber !== 'N/A') {
+            mobileToUse = existingJobCard.mobileNumber;
+            nameToUse = existingJobCard.customerName || nameToUse;
+          }
+        } catch (e) {
+          console.error("Error fetching job card for fallback customer", e);
+        }
+      }
+      
+      const existingCust = customers.find(c => c.contactNo === mobileToUse);
+      if (existingCust) {
+        customerId = existingCust.id;
+      } else {
+        const newCustomer = await customerApi.create({
+          name: nameToUse,
+          contactNo: mobileToUse,
+          address: "NA",
+          status: "Service Dealer Customer",
+        });
+        customerId = newCustomer.id;
+        await fetchCustomers();
+      }
     }
 
     // Handle job card creation - for BOTH full payment AND advance payment
