@@ -2862,21 +2862,29 @@ useEffect(() => {
              invoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue);
           }
           
-          balance = Math.max(0, invoiceAmount - totalReceivedForJobCard);
+          const rawBalance = invoiceAmount - totalReceivedForJobCard;
+          
+          if (rawBalance < -0.01) {
+            return <span className="text-orange-600 font-semibold">+{Math.abs(rawBalance).toFixed(2)} (Extra)</span>;
+          } else if (rawBalance > 2) {
+            return <span className="text-red-600 font-semibold">{rawBalance.toFixed(2)}</span>;
+          } else {
+            return <span className="text-green-600 font-semibold">0.00</span>;
+          }
         } else if (row.totalAmt && row.totalAmt !== 'N/A') {
           // For non-job-card payments, show difference between total and received
-          balance = Math.max(0, parseFloat(row.totalAmt) - parseFloat(row.recAmt));
-        }
-        // Apply 2 rupees tolerance
-        if (balance <= 2) {
-          balance = 0;
+          const rawBalance = parseFloat(row.totalAmt) - parseFloat(row.recAmt);
+          
+          if (rawBalance < -0.01) {
+            return <span className="text-orange-600 font-semibold">+{Math.abs(rawBalance).toFixed(2)} (Extra)</span>;
+          } else if (rawBalance > 2) {
+            return <span className="text-red-600 font-semibold">{rawBalance.toFixed(2)}</span>;
+          } else {
+            return <span className="text-green-600 font-semibold">0.00</span>;
+          }
         }
         
-        return (
-          <span className={balance > 0 ? "text-red-600 font-semibold" : ""}>
-            {balance.toFixed(2)}
-          </span>
-        );
+        return <span>0.00</span>;
       }
     },
     { header: "PaymentMode", accessor: "paymentMode" },
