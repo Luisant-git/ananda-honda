@@ -142,7 +142,7 @@ const FullPaymentReport = ({ user }) => {
         if (isInvoicePending) {
           computedStatus = 'Invoice Pending';
         } else {
-          const totalReceived = parseFloat(item.totalAmt) || 0;
+          const totalReceived = parseFloat(item.amount) || 0;
           const invoiceAmt = parseFloat(item.totalInvoiceAmount);
           const isShortPaid = (totalReceived - invoiceAmt) < -2;
           if (isShortPaid && computedStatus.toLowerCase() === 'completed') {
@@ -296,7 +296,7 @@ const FullPaymentReport = ({ user }) => {
         let displayStatus = isInvoicePending ? 'Invoice Pending' : value;
 
         if (!isInvoicePending) {
-          const totalReceived = parseFloat(row.totalAmt) || 0;
+          const totalReceived = parseFloat(row.amount) || 0;
           const invoiceAmt = parseFloat(row.totalInvoiceAmount);
           const isShortPaid = (totalReceived - invoiceAmt) < -2; // CLOSING_TOLERANCE_RUPEES
           if (isShortPaid && displayStatus?.toLowerCase() === 'completed') {
@@ -510,7 +510,7 @@ const FullPaymentReport = ({ user }) => {
                       if (isInvoicePending) {
                         displayStatus = 'Invoice Pending';
                       } else {
-                        const totalReceived = parseFloat(selectedPayment.totalAmt) || parseFloat(selectedPayment.recAmt) || 0;
+                        const totalReceived = parseFloat(selectedPayment.amount) || parseFloat(selectedPayment.recAmt) || 0;
                         const invoiceAmt = parseFloat(selectedPayment.totalInvoiceAmount);
                         const isShortPaid = (totalReceived - invoiceAmt) < -2; // CLOSING_TOLERANCE_RUPEES
                         
