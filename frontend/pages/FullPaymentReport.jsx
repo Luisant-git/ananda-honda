@@ -72,6 +72,7 @@ const FullPaymentReport = ({ user }) => {
           additionalPlanAmount: payment.additionalPlanAmount || '',
           additionalPlanDetails: payment.additionalPlanDetails || {},
           additionalPlanCollectionId: payment.additionalPlanCollectionId || null,
+          totalInvoiceAmount: payment.totalInvoiceAmount !== undefined ? payment.totalInvoiceAmount : undefined,
         };
       });
       setReportData(formattedData);
@@ -134,7 +135,23 @@ const FullPaymentReport = ({ user }) => {
     }
 
     if (paymentStatusFilter) {
-      filtered = filtered.filter(item => (item.paymentStatus || '').toString().toLowerCase() === paymentStatusFilter.toLowerCase());
+      filtered = filtered.filter(item => {
+        let computedStatus = item.paymentStatus || '';
+        const isInvoicePending = (!item.totalInvoiceAmount || parseFloat(item.totalInvoiceAmount) <= 0);
+        
+        if (isInvoicePending) {
+          computedStatus = 'Invoice Pending';
+        } else {
+          const totalReceived = parseFloat(item.totalAmt) || 0;
+          const invoiceAmt = parseFloat(item.totalInvoiceAmount);
+          const isShortPaid = (totalReceived - invoiceAmt) < -2;
+          if (isShortPaid && computedStatus.toLowerCase() === 'completed') {
+            computedStatus = 'pending';
+          }
+        }
+        
+        return computedStatus.toLowerCase() === paymentStatusFilter.toLowerCase();
+      });
     }
     
     setFilteredData(filtered);
@@ -271,7 +288,32 @@ const FullPaymentReport = ({ user }) => {
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
     { header: "Payment Type", accessor: "paymentType" },
-    { header: "Status", accessor: "paymentStatus" },
+    { 
+      header: "Status", 
+      accessor: "paymentStatus",
+      render: (value, row) => {
+        const isInvoicePending = (!row.totalInvoiceAmount || parseFloat(row.totalInvoiceAmount) <= 0);
+        let displayStatus = isInvoicePending ? 'Invoice Pending' : value;
+
+        if (!isInvoicePending) {
+          const totalReceived = parseFloat(row.totalAmt) || 0;
+          const invoiceAmt = parseFloat(row.totalInvoiceAmount);
+          const isShortPaid = (totalReceived - invoiceAmt) < -2; // CLOSING_TOLERANCE_RUPEES
+          if (isShortPaid && displayStatus?.toLowerCase() === 'completed') {
+            displayStatus = 'pending';
+          }
+        }
+
+        const badgeColor = isInvoicePending ? 'bg-orange-100 text-orange-800' : 
+                          displayStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${badgeColor}`}>
+            {displayStatus}
+          </span>
+        );
+      }
+    },
     { header: "Vehicle No", accessor: "vehicleNumber" },
     { header: "Amount", accessor: "amount" },
     { header: "PaymentMode", accessor: "paymentMode" },
@@ -357,6 +399,7 @@ const FullPaymentReport = ({ user }) => {
                 <option value="">All</option>
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
+                <option value="invoice pending">Invoice Pending</option>
               </select>
             </div>
             <div className="flex gap-2 items-end">
@@ -460,9 +503,31 @@ const FullPaymentReport = ({ user }) => {
                 <div>
                   <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
                   <div className="text-brand-text-primary font-medium">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${selectedPayment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {selectedPayment.paymentStatus}
-                    </span>
+                    {(() => {
+                      let displayStatus = selectedPayment.paymentStatus;
+                      let isInvoicePending = (!selectedPayment.totalInvoiceAmount || parseFloat(selectedPayment.totalInvoiceAmount) <= 0);
+                      
+                      if (isInvoicePending) {
+                        displayStatus = 'Invoice Pending';
+                      } else {
+                        const totalReceived = parseFloat(selectedPayment.totalAmt) || parseFloat(selectedPayment.recAmt) || 0;
+                        const invoiceAmt = parseFloat(selectedPayment.totalInvoiceAmount);
+                        const isShortPaid = (totalReceived - invoiceAmt) < -2; // CLOSING_TOLERANCE_RUPEES
+                        
+                        if (isShortPaid && displayStatus?.toLowerCase() === 'completed') {
+                          displayStatus = 'pending';
+                        }
+                      }
+
+                      const badgeColor = isInvoicePending ? 'bg-orange-100 text-orange-800' : 
+                                        displayStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+                      return (
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badgeColor}`}>
+                          {displayStatus}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div>
@@ -553,10 +618,10 @@ const FullPaymentReport = ({ user }) => {
               </div>
             </div>
 
-            {/* Additional Service Plans */}
+            {/* Value Added Services */}
             {selectedPayment.hasAdditionalPlan && selectedPayment.additionalPlanCollections && selectedPayment.additionalPlanCollections.length > 0 && (
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-md font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Additional Service Plans</h3>
+                <h3 className="text-md font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Value Added Services</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-200">

@@ -74,7 +74,7 @@ const ServicePaymentCollection = ({ user, subType }) => {
     } else if (isAdvancePaymentMode) {
       setPageTitle('Service Payments - Advance Payment');
     } else if (isXyzPaymentMode) {
-      setPageTitle('Additional Service Plan');
+      setPageTitle('Value Added Service');
     } else {
       setPageTitle('Service Payments');
     }
@@ -2062,7 +2062,7 @@ if (requiresJobCard && !formData.jobCardNumber) {
 }
 
 if (formData.hasAdditionalPlan && (!formData.additionalPlanCollectionIds || formData.additionalPlanCollectionIds.length === 0)) {
-  toast.error("Please select at least one Additional Service Plan (e.g. AMC, EW, RSA)");
+  toast.error("Please select at least one Value Added Service (e.g. AMC, EW, RSA)");
   return;
 }
 
@@ -2070,7 +2070,7 @@ if (formData.hasAdditionalPlan && (!formData.additionalPlanCollectionIds || form
 if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formData.additionalPlanCollectionIds.length > 0) {
   const missingAmounts = formData.additionalPlanCollectionIds.some(id => !formData.additionalPlanAmounts || !formData.additionalPlanAmounts[id]);
   if (missingAmounts) {
-    toast.error("Please enter the amount for all selected Additional Service Plans");
+    toast.error("Please enter the amount for all selected Value Added Services");
     return;
   }
 }
@@ -2683,7 +2683,7 @@ useEffect(() => {
               ${payment.hasAdditionalPlan ? `
               ${payment.additionalPlanCollections && payment.additionalPlanCollections.length > 0 ? 
                 `<tr>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; vertical-align: top;">Additional Service Plans:</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold; vertical-align: top;">Value Added Services:</td>
                   <td style="border: 1px solid #000; padding: 8px;">
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                       ${payment.additionalPlanCollections.map(c => `
@@ -2694,7 +2694,7 @@ useEffect(() => {
                 </tr>`
               : payment.additionalPlanCollectionId ? `
                 <tr>
-                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Additional Service Plan:</td>
+                  <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Value Added Service:</td>
                   <td style="border: 1px solid #000; padding: 8px;">
                     ${(() => {
                       const coll = serviceTypeOfCollections.find(c => String(c.id) === String(payment.additionalPlanCollectionId));
@@ -2796,13 +2796,46 @@ useEffect(() => {
     { 
       header: "Status", 
       accessor: "paymentStatus",
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-          value?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {value}
-        </span>
-      )
+      render: (value, row) => {
+        let invoiceAmt = 0;
+        let isInvoicePending = false;
+        if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
+          const customer = customers.find(c => c.id === row.customerId);
+          if (customer) {
+            const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
+                       customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
+                       customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
+            if (jc && jc.totalRevenue) invoiceAmt = parseFloat(jc.totalRevenue) || 0;
+          }
+          if (invoiceAmt === 0 && serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber) {
+            invoiceAmt = parseFloat(serviceJobCardInfo.totalRevenue) || 0;
+          }
+          isInvoicePending = invoiceAmt <= 0;
+        } else {
+          isInvoicePending = true;
+        }
+
+        let isShortPaid = false;
+        if (!isInvoicePending && invoiceAmt > 0) {
+          const totalReceived = parseFloat(row.totalAmt) || 0;
+          const difference = totalReceived - invoiceAmt;
+          isShortPaid = difference < -CLOSING_TOLERANCE_RUPEES;
+        }
+
+        let displayStatus = isInvoicePending ? 'Invoice Pending' : value;
+        if (!isInvoicePending && isShortPaid && value?.toLowerCase() === 'completed') {
+          displayStatus = 'pending';
+        }
+
+        const badgeColor = isInvoicePending ? 'bg-orange-100 text-orange-800' : 
+                          displayStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${badgeColor}`}>
+            {displayStatus}
+          </span>
+        );
+      }
     },
     { header: "Vehicle No", accessor: "vehicleNumber" },
     { 
@@ -3218,6 +3251,7 @@ useEffect(() => {
 
   return (
     <div className={`mt-4 p-4 rounded-lg border ${
+      (!serviceJobCardInfo.totalRevenue || parseFloat(serviceJobCardInfo.totalRevenue) <= 0) ? 'bg-orange-50 border-orange-200' :
       (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-50 border-yellow-200' :
       (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'bg-blue-50 border-blue-200' :
       ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-gray-50 border-gray-300' :
@@ -3225,6 +3259,7 @@ useEffect(() => {
       'bg-green-50 border-green-200'
     }`}>
       <h4 className={`text-sm font-bold mb-3 flex items-center gap-2 ${
+        (!serviceJobCardInfo.totalRevenue || parseFloat(serviceJobCardInfo.totalRevenue) <= 0) ? 'text-orange-800' :
         (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'text-yellow-800' :
         (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'text-blue-800' :
         ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'text-gray-600' :
@@ -3233,13 +3268,14 @@ useEffect(() => {
       }`}>
         📋 Previous Service Dealership Information
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+          (!serviceJobCardInfo.totalRevenue || parseFloat(serviceJobCardInfo.totalRevenue) <= 0) ? 'bg-orange-100 text-orange-700' :
           (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
           (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'open' ? 'bg-blue-100 text-blue-700' :
           ['closed', 'completed'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-gray-200 text-gray-700' :
           ['cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'bg-red-100 text-red-700' :
           'bg-gray-100 text-gray-700'
         }`}>
-          Status: {serviceJobCardInfo.status}
+          Status: {(!serviceJobCardInfo.totalRevenue || parseFloat(serviceJobCardInfo.totalRevenue) <= 0) ? 'Invoice Pending' : serviceJobCardInfo.status}
         </span>
         {(['closed', 'completed', 'cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim())) && (
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 ml-2">
@@ -3472,7 +3508,7 @@ useEffect(() => {
                     }}
                     className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                   />
-                  Additional Service Plan
+                  Value Added Service
                 </label>
                 
                 {formData.hasAdditionalPlan && (
@@ -3861,11 +3897,33 @@ useEffect(() => {
     <div>
       <label className="text-xs text-brand-text-secondary uppercase">Payment Status</label>
       <div className="text-brand-text-primary font-medium">
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-          selectedPayment.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {selectedPayment.paymentStatus}
-        </span>
+        {(() => {
+          let displayStatus = selectedPayment.paymentStatus;
+          let isInvoicePending = (!selectedPayment.totalInvoiceAmount || selectedPayment.totalInvoiceAmount <= 0);
+          
+          if (isInvoicePending) {
+            displayStatus = 'Invoice Pending';
+          } else {
+            const totalReceived = selectedPayment.totalAmt !== undefined && selectedPayment.totalAmt !== null && selectedPayment.totalAmt !== 'N/A' 
+              ? parseFloat(selectedPayment.totalAmt)
+              : getPaymentTotalAmount(selectedPayment);
+            const invoiceAmt = parseFloat(selectedPayment.totalInvoiceAmount);
+            const isShortPaid = (totalReceived - invoiceAmt) < -CLOSING_TOLERANCE_RUPEES;
+            
+            if (isShortPaid && displayStatus?.toLowerCase() === 'completed') {
+              displayStatus = 'pending';
+            }
+          }
+
+          const badgeColor = isInvoicePending ? 'bg-orange-100 text-orange-800' : 
+                            displayStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+
+          return (
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${badgeColor}`}>
+              {displayStatus}
+            </span>
+          );
+        })()}
       </div>
     </div>
     <div>
@@ -4004,10 +4062,10 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Additional Service Plans */}
+      {/* Value Added Services */}
       {selectedPayment.hasAdditionalPlan && selectedPayment.additionalPlanCollections && selectedPayment.additionalPlanCollections.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Additional Service Plans</h3>
+          <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Value Added Services</h3>
           <div className="bg-gray-50 border border-brand-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-100">
