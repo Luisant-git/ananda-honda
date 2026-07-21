@@ -583,11 +583,30 @@ async completePartPayment(id: number, data: {
       }
     }
 
-    const dataWithSelectedParts = data.map(item => ({
-      ...item,
-      totalAmt: cumulativeTotalsById[item.id] ?? item.totalAmt,
-      selectedParts: item.selectedParts || []
-    }));
+    const jobCardsMap: Record<string, any> = {};
+    if (jobCardNumbers.length > 0) {
+      const jobCards = await this.prisma.serviceJobCard.findMany({
+        where: { jobCardNumber: { in: jobCardNumbers } },
+        select: { jobCardNumber: true, totalRevenue: true, invoiceNumber: true }
+      });
+      jobCards.forEach(jc => {
+        jobCardsMap[jc.jobCardNumber] = {
+          totalInvoiceAmount: jc.totalRevenue,
+          invoiceNumber: jc.invoiceNumber
+        };
+      });
+    }
+
+    const dataWithSelectedParts = data.map(item => {
+      const jcInfo = item.jobCardNumber ? jobCardsMap[item.jobCardNumber] : null;
+      return {
+        ...item,
+        totalAmt: cumulativeTotalsById[item.id] ?? item.totalAmt,
+        selectedParts: item.selectedParts || [],
+        totalInvoiceAmount: jcInfo?.totalInvoiceAmount ?? undefined,
+        invoiceNumber: jcInfo?.invoiceNumber ?? undefined
+      };
+    });
     
     return { data: dataWithSelectedParts, total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
   }
