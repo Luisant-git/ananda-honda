@@ -31,8 +31,8 @@ export class ServicePaymentCollectionController {
   }
 
   @Get('stats/dashboard')
-  getDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
-    return this.servicePaymentCollectionService.getDashboardStats(fromDate, toDate);
+  getDashboardStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string, @Query('paymentType') paymentType?: string) {
+    return this.servicePaymentCollectionService.getDashboardStats(fromDate, toDate, paymentType);
   }
 
   @Get('stats/business-dashboard')

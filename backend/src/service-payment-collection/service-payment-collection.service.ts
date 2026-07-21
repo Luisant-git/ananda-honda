@@ -775,7 +775,7 @@ async completePartPayment(id: number, data: {
     });
   }
 
-  async getDashboardStats(fromDate: string, toDate: string) {
+  async getDashboardStats(fromDate: string, toDate: string, paymentType?: string) {
     const dateFilter: any = {};
     if (fromDate && toDate) {
       const startDate = new Date(fromDate);
@@ -789,6 +789,9 @@ async completePartPayment(id: number, data: {
     const baseWhere: any = { deletedAt: null };
     if (Object.keys(dateFilter).length > 0) {
       baseWhere.date = dateFilter;
+    }
+    if (paymentType) {
+      baseWhere.paymentType = { equals: paymentType, mode: 'insensitive' };
     }
 
     const paymentModes = await this.prisma.servicePaymentMode.findMany({
@@ -839,7 +842,26 @@ async completePartPayment(id: number, data: {
       where: baseWhere
     });
 
-    return { modes, totalCount };
+    const fullPaymentStats = await this.prisma.servicePaymentCollection.aggregate({
+      where: { ...baseWhere, paymentType: { equals: 'full payment', mode: 'insensitive' } },
+      _count: true,
+      _sum: { recAmt: true }
+    });
+
+    const advancePaymentStats = await this.prisma.servicePaymentCollection.aggregate({
+      where: { ...baseWhere, paymentType: { equals: 'part payment', mode: 'insensitive' } },
+      _count: true,
+      _sum: { recAmt: true }
+    });
+
+    return { 
+      modes, 
+      totalCount, 
+      fullPaymentCount: fullPaymentStats._count, 
+      fullPaymentAmount: fullPaymentStats._sum.recAmt || 0,
+      advancePaymentCount: advancePaymentStats._count,
+      advancePaymentAmount: advancePaymentStats._sum.recAmt || 0
+    };
   }
 
   async getBusinessDashboardStats(fromDate: string, toDate: string) {
