@@ -41,10 +41,34 @@ import DeveloperLogs from '../pages/DeveloperLogs';
 
 const DashboardLayout = ({ user, onLogout }) => {
   const isEnquiry = user?.role === 'ENQUIRY';
-  const [currentView, setCurrentView] = useState(() => {
+  const [currentView, _setCurrentView] = useState(() => {
     const savedView = localStorage.getItem('currentView');
     return savedView || (isEnquiry ? 'customer_details' : 'quick_start');
   });
+  const [viewHistory, setViewHistory] = useState([]);
+  
+  const setCurrentView = (newView) => {
+    if (newView !== currentView) {
+      if (newView === 'quick_start' || newView === 'dashboard') {
+        setViewHistory([]);
+      } else {
+        setViewHistory(prev => [...prev, currentView]);
+      }
+      _setCurrentView(newView);
+    }
+  };
+
+  const handleBack = () => {
+    if (viewHistory.length > 0) {
+      const newHistory = [...viewHistory];
+      const prev = newHistory.pop();
+      setViewHistory(newHistory);
+      _setCurrentView(prev);
+    } else {
+      _setCurrentView('quick_start');
+    }
+  };
+
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -143,7 +167,7 @@ const DashboardLayout = ({ user, onLogout }) => {
         return <DeveloperLogs />;
       case 'dashboard':
       default:
-        return <Dashboard />;
+        return <Dashboard setCurrentView={setCurrentView} />;
     }
   };
 
@@ -164,7 +188,7 @@ const DashboardLayout = ({ user, onLogout }) => {
           {currentView !== 'quick_start' && currentView !== 'dashboard' && (
             <div className="mb-4 shrink-0">
               <button 
-                onClick={() => setCurrentView('quick_start')}
+                onClick={handleBack}
                 className="flex items-center gap-2 text-brand-text-secondary hover:text-brand-accent transition-colors font-bold px-3 py-1.5 rounded-lg hover:bg-brand-hover inline-flex border border-transparent hover:border-brand-border"
               >
                 <ArrowLeft className="w-5 h-5" />
