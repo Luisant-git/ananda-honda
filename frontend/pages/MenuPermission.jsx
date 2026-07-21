@@ -36,7 +36,7 @@ const MenuPermission = () => {
     const existing = permissions.find(p => p.role === role);
     setSelectedRole(role);
     setEditData(existing?.permissions || {
-      dashboard: { sales: false, service: false, service_business: false },
+      dashboard: { walkin: false, sales: false, service: false, service_business: false },
       master: false,
       payment_collection: {
         sales: { add: false, edit: false, delete: false, cancel: false, restore: false, view_deleted: false, add_customer: false },
@@ -118,6 +118,7 @@ const MenuPermission = () => {
 
   const showDashboardColumn = permissions.some(
     (p) =>
+      p?.permissions?.dashboard?.walkin === true ||
       p?.permissions?.dashboard?.sales === true ||
       p?.permissions?.dashboard?.service === true ||
       p?.permissions?.dashboard?.service_business === true
@@ -246,6 +247,19 @@ const MenuPermission = () => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      checked={editData.dashboard?.walkin || false}
+                      onChange={() =>
+                        setEditData(prev => ({
+                          ...prev,
+                          dashboard: { ...prev.dashboard, walkin: !prev.dashboard?.walkin }
+                        }))
+                      }
+                    />
+                    <span>Walk-in Dashboard</span>
+                  </label>
+                  <label className="flex items-center gap-2 mt-2">
+                    <input
+                      type="checkbox"
                       checked={editData.dashboard?.sales || false}
                       onChange={() =>
                         setEditData(prev => ({
@@ -296,23 +310,46 @@ const MenuPermission = () => {
                     {['branch_master', 'customer_details', 'walk_in_customer', 'sales_invoice_master', 'jobcard_master','payment_mode', 'type_of_payment', 'type_of_collection', 'vehicle_model', 'service_payment_mode', 'service_type_of_payment', 'payment_type', 'service_type_of_collection', 'service_type', 'service_type_of_part', 'location_master'].map(module => (
                       <div key={module}>
                         <label className="flex items-center space-x-2 mb-1">
-                          <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : { add: false, edit: false, delete: false } } }))} className="rounded" />
+                          <input type="checkbox" checked={!!editData.master[module]} onChange={() => setEditData(prev => ({ ...prev, master: { ...prev.master, [module]: prev.master[module] ? false : (module === 'jobcard_master' ? { order_report: false, revenue_report: false, workshop_report: false, invoice_report: false } : { add: false, edit: false, delete: false }) } }))} className="rounded" />
                           <span className="font-medium text-sm sm:text-base">{getModuleLabel(module)}</span>
                         </label>
                         {editData.master[module] && typeof editData.master[module] === 'object' && (
                           <div className="ml-4 sm:ml-6 space-y-1">
-                            <label className="flex items-center space-x-2">
-                              <input type="checkbox" checked={editData.master[module].add} onChange={() => toggleMasterAction(module, 'add')} className="rounded" />
-                              <span className="text-sm">Add</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input type="checkbox" checked={editData.master[module].edit} onChange={() => toggleMasterAction(module, 'edit')} className="rounded" />
-                              <span className="text-sm">Edit</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input type="checkbox" checked={editData.master[module].delete} onChange={() => toggleMasterAction(module, 'delete')} className="rounded" />
-                              <span className="text-sm">Delete</span>
-                            </label>
+                            {module === 'jobcard_master' ? (
+                              <>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].order_report} onChange={() => toggleMasterAction(module, 'order_report')} className="rounded" />
+                                  <span className="text-sm">Order Report</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].revenue_report} onChange={() => toggleMasterAction(module, 'revenue_report')} className="rounded" />
+                                  <span className="text-sm">Revenue Report</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].workshop_report} onChange={() => toggleMasterAction(module, 'workshop_report')} className="rounded" />
+                                  <span className="text-sm">Workshop Report</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].invoice_report} onChange={() => toggleMasterAction(module, 'invoice_report')} className="rounded" />
+                                  <span className="text-sm">Invoice Report</span>
+                                </label>
+                              </>
+                            ) : (
+                              <>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].add} onChange={() => toggleMasterAction(module, 'add')} className="rounded" />
+                                  <span className="text-sm">Add</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].edit} onChange={() => toggleMasterAction(module, 'edit')} className="rounded" />
+                                  <span className="text-sm">Edit</span>
+                                </label>
+                                <label className="flex items-center space-x-2">
+                                  <input type="checkbox" checked={editData.master[module].delete} onChange={() => toggleMasterAction(module, 'delete')} className="rounded" />
+                                  <span className="text-sm">Delete</span>
+                                </label>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

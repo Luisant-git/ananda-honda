@@ -30,7 +30,8 @@ useEffect(() => {
     const perms = res.permissions || res;
     setPermissions(perms);
 
-if (perms?.dashboard?.sales === true) setActiveTab('walkin'); // Walkin is related to Sales, making it first if sales access is there
+if (perms?.dashboard?.walkin === true) setActiveTab('walkin');
+else if (perms?.dashboard?.sales === true) setActiveTab('sales');
 else if (perms?.dashboard?.service === true) setActiveTab('services');
 else if (perms?.dashboard?.service_business === true) setActiveTab('service_business');
 else setActiveTab(null);
@@ -424,7 +425,7 @@ else setActiveTab(null);
     );
   };
 const hasDashboardAccess =
-  !!(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business);
+  !!(permissions?.dashboard?.walkin || permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business);
 
 if (!permissions) return null; // or: return <div>Loading...</div>
 
@@ -437,10 +438,10 @@ if (!hasDashboardAccess) return null; // hides whole dashboard page
       </div>
       
       {/* Tabs */}
-{(permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business) && (
+{(permissions?.dashboard?.walkin || permissions?.dashboard?.sales || permissions?.dashboard?.service || permissions?.dashboard?.service_business) && (
   <div className="bg-brand-surface rounded-xl shadow-soft p-2 mb-6">
     <div className="flex flex-wrap gap-2">
-      {permissions?.dashboard?.sales && (
+      {permissions?.dashboard?.walkin && (
         <button onClick={() => handleTabChange('walkin')} className={`flex-1 min-w-[150px] px-4 py-2.5 rounded-lg font-semibold transition-all ${activeTab === 'walkin' ? 'bg-brand-accent text-white shadow-md' : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text-primary'}`}>
           Walk-in Dashboard
         </button>

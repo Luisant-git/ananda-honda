@@ -531,6 +531,7 @@ const ServiceImport = ({ user }) => {
       {/* Upload Section (unchanged) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Order Report */}
+        {user?.permissions?.master?.jobcard_master?.order_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-pink-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-xl group-hover:scale-110 transition-transform">
@@ -581,8 +582,10 @@ const ServiceImport = ({ user }) => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Revenue Report */}
+        {user?.permissions?.master?.jobcard_master?.revenue_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl group-hover:scale-110 transition-transform">
@@ -633,8 +636,10 @@ const ServiceImport = ({ user }) => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Workshop Report */}
+        {user?.permissions?.master?.jobcard_master?.workshop_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-orange-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl group-hover:scale-110 transition-transform">
@@ -685,8 +690,10 @@ const ServiceImport = ({ user }) => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Invoice Report */}
+        {user?.permissions?.master?.jobcard_master?.invoice_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-purple-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl group-hover:scale-110 transition-transform">
@@ -737,6 +744,7 @@ const ServiceImport = ({ user }) => {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Search Section (unchanged) */}
