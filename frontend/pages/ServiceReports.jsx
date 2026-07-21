@@ -290,7 +290,7 @@ const ServiceReports = ({ user }) => {
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Service plan Report</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Value Added Service Report</h1>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
           {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
@@ -335,7 +335,7 @@ const ServiceReports = ({ user }) => {
                 <option value="">All</option>
                 <option value="full payment">Full Payment</option>
                 <option value="part payment">Part Payment</option>
-                <option value="service plan payment">Additional Service Plan</option>
+                <option value="service plan payment">Value Added Service</option>
               </select>
             </div>
             <div>

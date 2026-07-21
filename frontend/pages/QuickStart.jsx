@@ -77,7 +77,7 @@ const QuickStart = ({ setCurrentView, user }) => {
         { view: 'payment_collection', label: 'Sales Payment Collection', desc: 'Manage payments for vehicle sales.', icon: <CreditCard className="w-8 h-8 text-indigo-600" />, perm: 'payment_collection.sales', bgColor: 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200' },
         { view: 'service_payment_collection_full', label: 'Full Payment (Service)', desc: 'Process and view completed service payments.', icon: <CreditCard className="w-8 h-8 text-teal-600" />, perm: 'payment_collection.service.full_payment_menu', bgColor: 'bg-teal-50 hover:bg-teal-100 border-teal-200' },
         { view: 'service_payment_collection_advance', label: 'Advance Payment (Service)', desc: 'Record advance payments for services.', icon: <CreditCard className="w-8 h-8 text-cyan-600" />, perm: 'payment_collection.service.advance_payment_menu', bgColor: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200' },
-        { view: 'service_payment_collection_xyz', label: 'Additional Service Plan (Service)', desc: 'Record additional service plan payments for RSA, AMC, EW.', icon: <CreditCard className="w-8 h-8 text-sky-600" />, perm: 'payment_collection.service.service_plan_payment_menu', bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200' },
+        { view: 'service_payment_collection_xyz', label: 'Value Added Service', desc: 'Record value added service payments for RSA, AMC, EW.', icon: <CreditCard className="w-8 h-8 text-sky-600" />, perm: 'payment_collection.service.service_plan_payment_menu', bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200' },
       ]
     },
     {
@@ -88,7 +88,7 @@ const QuickStart = ({ setCurrentView, user }) => {
         { view: 'reports', label: 'Sales Report', desc: 'View sales collection reports.', icon: <FileBarChart className="w-8 h-8 text-rose-600" />, perm: 'reports.payment_collection_report', bgColor: 'bg-rose-50 hover:bg-rose-100 border-rose-200' },
         { view: 'full_payment_report', label: 'Service Full Payment Report', desc: 'View completed service payments.', icon: <FileBarChart className="w-8 h-8 text-amber-600" />, perm: 'reports.full_payment_report', bgColor: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
         { view: 'part_payment_report', label: 'Service Advance Payment Report', desc: 'View advance payment collection reports.', icon: <FileBarChart className="w-8 h-8 text-yellow-600" />, perm: 'reports.part_payment_report', bgColor: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' },
-        { view: 'service_reports', label: 'Service plan Report', desc: 'View additional service plan payment reports filtered by RSA, AMC, and EW.', icon: <FileBarChart className="w-8 h-8 text-sky-600" />, perm: 'reports.service_reports', bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200' },
+        { view: 'service_reports', label: 'Value Added Service Report', desc: 'View value added service payment reports filtered by RSA, AMC, and EW.', icon: <FileBarChart className="w-8 h-8 text-sky-600" />, perm: 'reports.service_reports', bgColor: 'bg-sky-50 hover:bg-sky-100 border-sky-200' },
         { view: 'service_reminder_report', label: 'Service Reminder Report', desc: 'View upcoming service reminders.', icon: <FileBarChart className="w-8 h-8 text-emerald-600" />, perm: 'reports.service_reminder_report', bgColor: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200' },
       ]
     },
