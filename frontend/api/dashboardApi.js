@@ -10,9 +10,12 @@ export const dashboardApi = {
   },
 
    
-    getServicesDashboardStats: async (fromDate, toDate) => {
-    const response = await fetch(
-      `${API_BASE_URL}/service-payment-collections/stats/dashboard?fromDate=${fromDate}&toDate=${toDate}`, { credentials: 'include'});
+    getServicesDashboardStats: async (fromDate, toDate, paymentType) => {
+    let url = `${API_BASE_URL}/service-payment-collections/stats/dashboard?fromDate=${fromDate}&toDate=${toDate}`;
+    if (paymentType) {
+      url += `&paymentType=${encodeURIComponent(paymentType)}`;
+    }
+    const response = await fetch(url, { credentials: 'include'});
     if (!response.ok) {
       throw new Error('Failed to fetch services dashboard stats');
     }
