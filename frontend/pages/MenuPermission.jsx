@@ -51,7 +51,7 @@ const MenuPermission = () => {
         overall_service_report: false,
         service_feedback_report: false
       },
-      settings: { change_password: false, user_management: false, menu_permission: false, feedback_notification: false }
+      settings: { change_password: false, user_management: false, menu_permission: false, feedback_notification: false, pine_labs_config: false }
     });
   };
 
@@ -358,7 +358,7 @@ const MenuPermission = () => {
                         </label>
                         <label className="flex items-center space-x-2">
                           <input type="checkbox" checked={editData.payment_collection.service.service_plan_payment_menu || false} onChange={() => setEditData(prev => ({ ...prev, payment_collection: { ...prev.payment_collection, service: { ...prev.payment_collection.service, service_plan_payment_menu: !prev.payment_collection.service.service_plan_payment_menu } } }))} className="rounded" />
-                          <span className="text-sm">- Additional Service Plan</span>
+                          <span className="text-sm">- Value Added Service</span>
                         </label>
                       </div>
                     )}
@@ -396,7 +396,7 @@ const MenuPermission = () => {
             </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.service_reports} onChange={() => togglePermission('reports.service_reports')} className="rounded" />
-              <span className="text-sm">- Service plan Report</span>
+              <span className="text-sm">- Value Added Service Report</span>
             </label>
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={editData.reports.service_reminder_report} onChange={() => togglePermission('reports.service_reminder_report')} className="rounded" />
@@ -440,6 +440,10 @@ const MenuPermission = () => {
                     <label className="flex items-center space-x-2">
                       <input type="checkbox" checked={editData.settings.feedback_notification} onChange={() => togglePermission('settings.feedback_notification')} className="rounded" />
                       <span className="text-sm">Feedback Notification</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="checkbox" checked={editData.settings.pine_labs_config} onChange={() => togglePermission('settings.pine_labs_config')} className="rounded" />
+                      <span className="text-sm">Pine Labs Configuration</span>
                     </label>
                   </div>
                 )}

@@ -237,7 +237,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 )}
                 {permissions?.payment_collection?.service?.service_plan_payment_menu && (
                   <li>
-                    <NavLink view="service_payment_collection_xyz" label="Additional Service Plan" isSubmenu />
+                    <NavLink view="service_payment_collection_xyz" label="Value Added Service" isSubmenu />
                   </li>
                 )}
                 <li><NavLink view="pine_labs_transactions" label="Pine Labs Txns" isSubmenu /></li>
@@ -277,7 +277,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                         <ul className="space-y-1 mt-1">
                           {permissions?.reports?.service_reports && (
                             <li>
-                              <NavLink view="service_reports" label="Service plan Report" isSubmenu />
+                              <NavLink view="service_reports" label="Value Added Service" isSubmenu />
                             </li>
                           )}
                           {permissions?.reports?.full_payment_report && (
@@ -320,7 +320,7 @@ const Sidebar = ({ currentView, setCurrentView, isSidebarOpen, setSidebarOpen, i
                 {permissions.settings.user_management && <li><NavLink view="user_management" label="User Management" isSubmenu /></li>}
                 {permissions.settings.menu_permission && <li><NavLink view="menu_permission" label="Menu Permission" isSubmenu /></li>}
                 {permissions.settings.feedback_notification && <li><NavLink view="feedback_notification" label="Feedback Notification" isSubmenu /></li>}
-                <li><NavLink view="pine_labs_config" label="Pine Labs Config" isSubmenu /></li>
+                {permissions.settings.pine_labs_config && <li><NavLink view="pine_labs_config" label="Pine Labs Config" isSubmenu /></li>}
                 {(user?.role === 'SUPER_ADMIN' || user?.role === 'DEVELOPER') && (
                   <li><NavLink view="developer_logs" label="Developer Logs" isSubmenu /></li>
                 )}
