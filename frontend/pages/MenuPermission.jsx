@@ -15,7 +15,8 @@ const MenuPermission = () => {
     'PART_EXECUTIVE',
     'BILLING_EXECUTIVE',
     'CASHIER_SALES',
-    'CASHIER_SERVICE'
+    'CASHIER_SERVICE',
+    'RECEPTIONIST'
   ];
 
   useEffect(() => {

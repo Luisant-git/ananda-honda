@@ -51,6 +51,7 @@ const Register = ({ onRegister, onBackToLogin }) => {
                 <option value="BILLING_EXECUTIVE">Billing Executive</option>
                 <option value="CASHIER_SALES">Cashier Sales</option>
                 <option value="CASHIER_SERVICE">Cashier Service</option>
+                <option value="RECEPTIONIST">Receptionist</option>
               </select>
             </div>
             <div>
