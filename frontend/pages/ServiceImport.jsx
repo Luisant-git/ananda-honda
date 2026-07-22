@@ -5,6 +5,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { serviceJobCardApi } from '../api/serviceJobcard';
+import { menuPermissionApi } from '../api/menuPermissionApi';
 import { Coins, Wrench, Receipt, CheckCircle, XCircle, AlertCircle, Download, FileSpreadsheet, ChevronRight } from 'lucide-react';
 const XLSX = window.XLSX;
 
@@ -15,6 +16,7 @@ const ServiceImport = ({ user }) => {
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
+  const [permissions, setPermissions] = useState(null);
   const [selectedJobCard, setSelectedJobCard] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -27,6 +29,9 @@ const ServiceImport = ({ user }) => {
 
   useEffect(() => {
     fetchRecords();
+    menuPermissionApi.get()
+      .then(res => setPermissions(res?.permissions || res))
+      .catch(() => {});
   }, []);
 
   const fetchRecords = async (searchTerm = search) => {
@@ -531,7 +536,7 @@ const ServiceImport = ({ user }) => {
       {/* Upload Section (unchanged) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Order Report */}
-        {user?.permissions?.master?.jobcard_master?.order_report && (
+        {permissions?.master?.jobcard_master?.order_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-pink-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 text-xl group-hover:scale-110 transition-transform">
@@ -585,7 +590,7 @@ const ServiceImport = ({ user }) => {
         )}
 
         {/* Revenue Report */}
-        {user?.permissions?.master?.jobcard_master?.revenue_report && (
+        {permissions?.master?.jobcard_master?.revenue_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-brand-accent transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xl group-hover:scale-110 transition-transform">
@@ -639,7 +644,7 @@ const ServiceImport = ({ user }) => {
         )}
 
         {/* Workshop Report */}
-        {user?.permissions?.master?.jobcard_master?.workshop_report && (
+        {permissions?.master?.jobcard_master?.workshop_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-orange-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xl group-hover:scale-110 transition-transform">
@@ -693,7 +698,7 @@ const ServiceImport = ({ user }) => {
         )}
 
         {/* Invoice Report */}
-        {user?.permissions?.master?.jobcard_master?.invoice_report && (
+        {permissions?.master?.jobcard_master?.invoice_report && (
         <div className="bg-brand-surface p-5 rounded-xl shadow-sm border border-brand-border hover:border-purple-400 transition-all group">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl group-hover:scale-110 transition-transform">
