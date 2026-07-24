@@ -34,7 +34,7 @@ export class LocationService {
     
     for (const row of rows) {
       const getVal = (key: string) => {
-         const k = Object.keys(row).find(x => x.toLowerCase().trim() === key.toLowerCase().trim());
+         const k = Object.keys(row).find(x => x.replace(/\s+/g, '').toLowerCase() === key.replace(/\s+/g, '').toLowerCase());
          return k ? row[k] : undefined;
       };
 
