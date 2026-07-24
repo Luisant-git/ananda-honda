@@ -129,6 +129,30 @@ const LocationMaster = ({ user }) => {
     }
   };
 
+  const handleExport = () => {
+    try {
+      const exportData = locations.map((loc, index) => ({
+        'S.No': index + 1,
+        'Region Name': loc.regionname,
+        'Division Name': loc.divisionname,
+        'Office Name': loc.officename,
+        'Pincode': loc.pincode,
+        'District': loc.district,
+        'State Name': loc.statename,
+      }));
+      
+      const XLSX = window.XLSX;
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Locations');
+      XLSX.writeFile(workbook, `locations_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Exported successfully!');
+    } catch (error) {
+      toast.error('Error exporting to Excel');
+      console.error('Export error:', error);
+    }
+  };
+
   const columns = [
     { header: 'SNo', accessor: 'sNo' },
     { header: 'Region Name', accessor: 'regionname' },
@@ -160,6 +184,14 @@ const LocationMaster = ({ user }) => {
                 {isUploading ? 'Uploading...' : 'Upload Excel'}
               </button>
             </div>
+          )}
+          {permissions?.master?.location_master?.add && (
+            <button
+              onClick={handleExport}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+            >
+              Export Excel
+            </button>
           )}
           {permissions?.master?.location_master?.add && (
             <button
