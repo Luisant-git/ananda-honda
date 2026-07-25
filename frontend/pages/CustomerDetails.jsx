@@ -856,6 +856,67 @@ const fetchPermissions = async () => {
     }
   };
 
+  const downloadXML = () => {
+    try {
+      const data = filteredCustomers;
+      
+      let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<ENVELOPE>
+<HEADER>
+<TALLYREQUEST>Import Data</TALLYREQUEST>
+</HEADER>
+<BODY>
+<IMPORTDATA>
+<REQUESTDESC>
+<REPORTNAME>All Masters</REPORTNAME>
+<STATICVARIABLES>
+<SVCURRENTCOMPANY>DEMO COMPANY</SVCURRENTCOMPANY>
+</STATICVARIABLES>
+</REQUESTDESC>
+<REQUESTDATA>
+`;
+
+      data.forEach(customer => {
+        const custId = customer.custId || "";
+        const name = customer.name || "";
+        const fullName = `${custId} ${name}`.trim();
+        // Fallback to location, then address, then empty string
+        const address = customer.location || customer.address || "";
+        
+        xmlContent += `<TALLYMESSAGE xmlns:UDF="TallyUDF">
+<LEDGER NAME="${fullName}" RESERVEDNAME="">
+<NAME.LIST>
+<NAME>${fullName}</NAME>
+</NAME.LIST>
+<ADDRESS.LIST>
+<ADDRESS>${address}</ADDRESS>
+</ADDRESS.LIST>
+<ADDITIONALNAME>${fullName}</ADDITIONALNAME>
+<PARENT>Sundry Debtors</PARENT>
+</LEDGER>
+</TALLYMESSAGE>
+`;
+      });
+
+      xmlContent += `</REQUESTDATA>
+</IMPORTDATA>
+</BODY>
+</ENVELOPE>`;
+
+      const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${getExportFileName()}.xml`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("XML file downloaded successfully!");
+    } catch (error) {
+      toast.error("Error downloading XML file");
+      console.error(error);
+    }
+  };
+
   const columns = [
     { header: "SNo", accessor: "sNo" },
     { header: "CustId", accessor: "custId" },
@@ -949,6 +1010,12 @@ const fetchPermissions = async () => {
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center"
           >
             Export CSV
+          </button>
+          <button
+            onClick={downloadXML}
+            className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg text-sm h-[38px] flex items-center"
+          >
+            Export XML
           </button>
         </div>
       </div>
