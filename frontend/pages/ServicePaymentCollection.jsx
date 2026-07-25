@@ -3340,7 +3340,7 @@ useEffect(() => {
         ['cancelled', 'canceled'].includes((serviceJobCardInfo.status || '').toString().toLowerCase().trim()) ? 'text-red-800' :
         'text-green-800'
       }`}>
-        📋 Previous Service Dealership Information
+        📋 Job Card Information
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
           (!serviceJobCardInfo.totalRevenue || parseFloat(serviceJobCardInfo.totalRevenue) <= 0) ? 'bg-orange-100 text-orange-700' :
           (serviceJobCardInfo.status || '').toString().toLowerCase().trim() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
