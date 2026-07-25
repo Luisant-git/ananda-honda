@@ -625,8 +625,7 @@ setFilteredPayments(
   }))
 );
 
-setFormData(prev => ({
-  ...prev,
+let defaultJobCardData = {
   vehicleNumber: "",
   refNo: "",
   jobCardNumber: "",
@@ -635,7 +634,67 @@ setFormData(prev => ({
   serviceTypeOfCollectionId: "",
   vehicleModelId: "",
   recAmt: "",
-})); // Reset form data when a new customer is selected
+};
+
+const jobCardToUse = customer.activeJobCard || customer.closedJobCard || customer.jobCardData;
+
+if (jobCardToUse) {
+  setServiceJobCardInfo(jobCardToUse);
+  setIsManualJobCard(!customer.activeJobCard);
+  
+  let serviceTypeId = "";
+  let serviceTypeName = "";
+  if (jobCardToUse.serviceType) {
+    if (typeof jobCardToUse.serviceType === 'object') {
+      serviceTypeId = jobCardToUse.serviceType.id?.toString() || "";
+      serviceTypeName = jobCardToUse.serviceType.name || "";
+    } else if (typeof jobCardToUse.serviceType === 'string') {
+      serviceTypeName = jobCardToUse.serviceType;
+    }
+  }
+  if (!serviceTypeName && jobCardToUse.service_type) {
+    serviceTypeName = jobCardToUse.service_type;
+  }
+  
+  let matchedServiceTypeId = serviceTypeId;
+  if (serviceTypeName && serviceTypes.length > 0) {
+    const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedServiceType = serviceTypes.find(
+      st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
+    );
+    if (matchedServiceType) {
+      matchedServiceTypeId = matchedServiceType.id.toString();
+    }
+  }
+  
+  let matchedModelId = "";
+  if (jobCardToUse.vehicleDetails && vehicleModels.length > 0) {
+    const modelName = jobCardToUse.vehicleDetails.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const matchedModel = vehicleModels.find((m) => {
+      const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return modelName && (mm === modelName || modelName.includes(mm) || mm.includes(modelName));
+    });
+    if (matchedModel) {
+      matchedModelId = matchedModel.id.toString();
+    }
+  }
+
+  defaultJobCardData = {
+    ...defaultJobCardData,
+    jobCardNumber: customer.activeJobCard ? (jobCardToUse.jobCardNumber || "") : "", // Only prefill JC number if active
+    vehicleNumber: jobCardToUse.registrationNumber || "",
+    serviceTypeId: customer.activeJobCard ? matchedServiceTypeId : "",
+    serviceType: customer.activeJobCard ? serviceTypeName : "",
+    vehicleModelId: matchedModelId,
+  };
+} else {
+  setServiceJobCardInfo(null);
+}
+
+setFormData(prev => ({
+  ...prev,
+  ...defaultJobCardData
+}));
 
 const fetchData = async () => {
   // Store the current selection ID at the start
@@ -794,104 +853,85 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     return;
   }
   
-  // Set the job card info for display - ONLY if it belongs to this customer
+  // Set the job card info for display - ONLY if it belongs to this customer and we found a new one from payment
   if (jobCardInfoFromPayment && compareMobiles(jobCardInfoFromPayment.mobileNumber, customer.contactNo)) {
     console.log('Setting job card info for:', customer.name, jobCardInfoFromPayment.jobCardNumber);
     setServiceJobCardInfo(jobCardInfoFromPayment);
-  } else {
-    setServiceJobCardInfo(null);
   }
 
-  const updatedFormData = { ...formData };
-  
-  if (lastPaymentInfo) {
-    if (lastPaymentInfo.vehicleNumber && lastPaymentInfo.vehicleNumber !== 'N/A') {
-      updatedFormData.vehicleNumber = lastPaymentInfo.vehicleNumber;
-    }
+  setFormData(prevFormData => {
+    const updatedFormData = { ...prevFormData };
     
-    if (lastPaymentInfo.vehicleModelId) {
-      updatedFormData.vehicleModelId = lastPaymentInfo.vehicleModelId.toString();
-    } else if (lastPaymentInfo.vehicleModel && vehicleModels.length > 0) {
-      const pModel = lastPaymentInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const matchedModel = vehicleModels.find(m => 
-        m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
-      );
-      if (matchedModel) {
-        updatedFormData.vehicleModelId = matchedModel.id.toString();
+    if (lastPaymentInfo) {
+      if (lastPaymentInfo.vehicleNumber && lastPaymentInfo.vehicleNumber !== 'N/A') {
+        updatedFormData.vehicleNumber = lastPaymentInfo.vehicleNumber;
       }
-    }
-    
-    let isClosed = false;
-    // Only auto-fill job card number if it belongs to this customer and not closed
-    if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
-      try {
-        const allJobCards = await serviceJobCardApi.getAll(lastPaymentInfo.jobCardNumber);
-        const foundJobCard = allJobCards.find(jc => jc.jobCardNumber === lastPaymentInfo.jobCardNumber);
-        
-        if (foundJobCard && compareMobiles(foundJobCard.mobileNumber, customer.contactNo) && !isJobCardClosed(foundJobCard.status)) {
-          updatedFormData.jobCardNumber = lastPaymentInfo.jobCardNumber;
-        } else {
-          updatedFormData.jobCardNumber = "";
-          isClosed = true;
-        }
-      } catch (err) {
-        updatedFormData.jobCardNumber = "";
-        isClosed = true;
-      }
-    } else {
-      updatedFormData.jobCardNumber = "";
-    }
-    
-    if (!isClosed) {
-      if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
-        updatedFormData.serviceType = lastPaymentInfo.serviceType;
-        const parsedServiceType = lastPaymentInfo.serviceType.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const matchedServiceType = serviceTypes.find(
-          st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
+      
+      if (lastPaymentInfo.vehicleModelId) {
+        updatedFormData.vehicleModelId = lastPaymentInfo.vehicleModelId.toString();
+      } else if (lastPaymentInfo.vehicleModel && vehicleModels.length > 0) {
+        const pModel = lastPaymentInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchedModel = vehicleModels.find(m => 
+          m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
         );
-        if (matchedServiceType) {
-          updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+        if (matchedModel) {
+          updatedFormData.vehicleModelId = matchedModel.id.toString();
         }
       }
       
-      if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
-        const parsedCollection = lastPaymentInfo.typeOfCollection.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const matchedCollection = serviceTypeOfCollections.find(
-          type => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedCollection
-        );
-        if (matchedCollection) {
-          updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+      let isClosed = false;
+      // Only auto-fill job card number if it belongs to this customer and not closed
+      if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
+        // Since we can't await inside setFormData, we rely on the prefill we already did
+        // If it's already prefilled from jobCardToUse, we don't wipe it out.
+        // We just leave it as is.
+      }
+      
+      if (!isClosed) {
+        if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
+          updatedFormData.serviceType = lastPaymentInfo.serviceType;
+          const parsedServiceType = lastPaymentInfo.serviceType.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const matchedServiceType = serviceTypes.find(
+            st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
+          );
+          if (matchedServiceType) {
+            updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+          }
+        }
+        
+        if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
+          const parsedCollection = lastPaymentInfo.typeOfCollection.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const matchedCollection = serviceTypeOfCollections.find(
+            type => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedCollection
+          );
+          if (matchedCollection) {
+            updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+          }
+        }
+      }
+      
+      // Only show toast if this is still the current selection
+      if (customerSelectionId.current === thisFetchId) {
+        toast.success(`Loaded last payment details for ${customer.name}`, { duration: 3000 });
+      }
+    } else if (invoiceInfo && !updatedFormData.vehicleNumber) {
+      if (invoiceInfo.vehicleRegNo && !updatedFormData.vehicleNumber) {
+        updatedFormData.vehicleNumber = invoiceInfo.vehicleRegNo;
+      }
+      if (invoiceInfo.vehicleModel && !updatedFormData.vehicleModelId) {
+        const invModel = invoiceInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchedModel = vehicleModels.find((m) => {
+          const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return invModel && (mm === invModel || invModel.includes(mm) || mm.includes(invModel));
+        });
+        if (matchedModel) {
+          updatedFormData.vehicleModelId = matchedModel.id.toString();
         }
       }
     }
     
-    // Only show toast if this is still the current selection
-    if (customerSelectionId.current === thisFetchId) {
-      toast.success(`Loaded last payment details for ${customer.name}`, { duration: 3000 });
-    }
-  } else if (invoiceInfo && !updatedFormData.vehicleNumber) {
-    if (invoiceInfo.vehicleRegNo && !updatedFormData.vehicleNumber) {
-      updatedFormData.vehicleNumber = invoiceInfo.vehicleRegNo;
-    }
-    if (invoiceInfo.vehicleModel && !updatedFormData.vehicleModelId) {
-      const invModel = invoiceInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const matchedModel = vehicleModels.find((m) => {
-        const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
-        return invModel && (mm === invModel || invModel.includes(mm) || mm.includes(invModel));
-      });
-      if (matchedModel) {
-        updatedFormData.vehicleModelId = matchedModel.id.toString();
-      }
-    }
-  }
-  
-  // Final check before setting form data
-  if (customerSelectionId.current === thisFetchId) {
-    console.log('Setting form data for:', customer.name);
-    setFormData(updatedFormData);
-  } else {
-    console.log('NOT setting form data - selection changed to:', customerSelectionId.current);
-  }
+    return updatedFormData;
+  });
 };
 
   await fetchData(); // Call fetchData to load details for the selected customer
