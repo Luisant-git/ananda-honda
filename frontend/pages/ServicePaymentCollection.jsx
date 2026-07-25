@@ -148,6 +148,7 @@ const ServicePaymentCollection = ({ user, subType }) => {
     : (formData.paymentTypeId ? String(formData.paymentTypeId) : '');
   const [isPineLabsModalOpen, setIsPineLabsModalOpen] = useState(false);
   const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
+  const [isPreparingPayment, setIsPreparingPayment] = useState(false);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",
@@ -250,6 +251,13 @@ const [foundJobCard, setFoundJobCard] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
+// Helper to normalize mobile
+const normalizeMobile = (m) => m ? m.toString().replace(/\D/g, '') : '';
+const compareMobiles = (m1, m2) => {
+  if (!m1 || m1 === 'N/A' || !m2 || m2 === 'N/A') return true;
+  return normalizeMobile(m1) === normalizeMobile(m2);
+};
+
 // Function to fetch job card by number, optionally ensuring it belongs to the expected mobile number
 const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) => {
   if (!jobCardNumber) return null;
@@ -275,7 +283,7 @@ const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) 
 
     if (!foundJobCard) return null;
 
-    if (normalizedMobile && foundJobCard.mobileNumber?.toString().trim() !== normalizedMobile && foundJobCard.mobileNumber?.toString().trim() !== 'N/A' && foundJobCard.mobileNumber?.toString().trim() !== '') {
+    if (normalizedMobile && !compareMobiles(foundJobCard.mobileNumber, normalizedMobile)) {
       console.warn(`Job card found for number ${jobCardNumber} does not match expected mobile ${expectedMobileNumber}. Ignoring.`);
       return null;
     }
@@ -437,7 +445,7 @@ const handleCustomerSelect = async (customer) => {
       if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
         const foundJobCard = await fetchJobCardByNumber(lastPaymentInfo.jobCardNumber, customer.contactNo);
         if (customerSelectionId.current !== currentSelectionId) return;
-        if (foundJobCard && (foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || foundJobCard.mobileNumber?.toString().trim() === 'N/A' || !foundJobCard.mobileNumber)) {
+        if (foundJobCard && compareMobiles(foundJobCard.mobileNumber, customer.contactNo)) {
           setServiceJobCardInfo(foundJobCard);
         }
       }
@@ -468,7 +476,7 @@ const handleCustomerSelect = async (customer) => {
       
       // Filter job cards that belong to this customer by mobile number
       const customerJobCards = allJobCardsForCustomer.filter(jc => 
-        jc.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || jc.mobileNumber?.toString().trim() === 'N/A' || !jc.mobileNumber
+        compareMobiles(jc.mobileNumber, customer.contactNo)
       );
       
       if (customerJobCards.length > 0) {
@@ -497,11 +505,15 @@ const handleCustomerSelect = async (customer) => {
               serviceTypeName = activeJobCard.serviceType;
             }
           }
+          if (!serviceTypeName && activeJobCard.service_type) {
+            serviceTypeName = activeJobCard.service_type;
+          }
           
           let matchedServiceTypeId = serviceTypeId;
           if (serviceTypeName && serviceTypes.length > 0) {
+            const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
             const matchedServiceType = serviceTypes.find(
-              st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+              st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
             );
             if (matchedServiceType) {
               matchedServiceTypeId = matchedServiceType.id.toString();
@@ -510,9 +522,9 @@ const handleCustomerSelect = async (customer) => {
           
           let matchedModelId = "";
           if (activeJobCard.vehicleDetails && vehicleModels.length > 0) {
-            const modelName = activeJobCard.vehicleDetails.toLowerCase().trim();
+            const modelName = activeJobCard.vehicleDetails.toLowerCase().replace(/[^a-z0-9]/g, '');
             const matchedModel = vehicleModels.find((m) => {
-              const mm = m.model.toLowerCase().trim();
+              const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
               return modelName && (mm === modelName || modelName.includes(mm) || mm.includes(modelName));
             });
             if (matchedModel) {
@@ -535,9 +547,9 @@ const handleCustomerSelect = async (customer) => {
           
           let matchedModelId = "";
           if (closedJobCard.vehicleDetails && vehicleModels.length > 0) {
-            const modelName = closedJobCard.vehicleDetails.toLowerCase().trim();
+            const modelName = closedJobCard.vehicleDetails.toLowerCase().replace(/[^a-z0-9]/g, '');
             const matchedModel = vehicleModels.find((m) => {
-              const mm = m.model.toLowerCase().trim();
+              const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
               return modelName && (mm === modelName || modelName.includes(mm) || mm.includes(modelName));
             });
             if (matchedModel) {
@@ -668,9 +680,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     }
     
     // DOUBLE VALIDATION: Verify the job card belongs to this customer
-    const jobCardMobileStr = foundJobCard?.mobileNumber?.toString().trim();
-    const jobCardBelongsToCustomer = foundJobCard && 
-      (jobCardMobileStr === customer.contactNo?.toString().trim() || jobCardMobileStr === 'N/A' || !jobCardMobileStr);
+    const jobCardBelongsToCustomer = foundJobCard && compareMobiles(foundJobCard.mobileNumber, customer.contactNo);
     
     if (jobCardBelongsToCustomer) {
       console.log('Job card belongs to customer:', customer.name, foundJobCard.jobCardNumber);
@@ -785,7 +795,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
   }
   
   // Set the job card info for display - ONLY if it belongs to this customer
-  if (jobCardInfoFromPayment && (jobCardInfoFromPayment.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || jobCardInfoFromPayment.mobileNumber?.toString().trim() === 'N/A' || !jobCardInfoFromPayment.mobileNumber)) {
+  if (jobCardInfoFromPayment && compareMobiles(jobCardInfoFromPayment.mobileNumber, customer.contactNo)) {
     console.log('Setting job card info for:', customer.name, jobCardInfoFromPayment.jobCardNumber);
     setServiceJobCardInfo(jobCardInfoFromPayment);
   } else {
@@ -802,8 +812,9 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     if (lastPaymentInfo.vehicleModelId) {
       updatedFormData.vehicleModelId = lastPaymentInfo.vehicleModelId.toString();
     } else if (lastPaymentInfo.vehicleModel && vehicleModels.length > 0) {
+      const pModel = lastPaymentInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
       const matchedModel = vehicleModels.find(m => 
-        m.model.toLowerCase() === lastPaymentInfo.vehicleModel.toLowerCase()
+        m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
       );
       if (matchedModel) {
         updatedFormData.vehicleModelId = matchedModel.id.toString();
@@ -817,7 +828,7 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
         const allJobCards = await serviceJobCardApi.getAll(lastPaymentInfo.jobCardNumber);
         const foundJobCard = allJobCards.find(jc => jc.jobCardNumber === lastPaymentInfo.jobCardNumber);
         
-        if (foundJobCard && (foundJobCard.mobileNumber?.toString().trim() === customer.contactNo?.toString().trim() || foundJobCard.mobileNumber?.toString().trim() === 'N/A' || !foundJobCard.mobileNumber) && !isJobCardClosed(foundJobCard.status)) {
+        if (foundJobCard && compareMobiles(foundJobCard.mobileNumber, customer.contactNo) && !isJobCardClosed(foundJobCard.status)) {
           updatedFormData.jobCardNumber = lastPaymentInfo.jobCardNumber;
         } else {
           updatedFormData.jobCardNumber = "";
@@ -834,8 +845,9 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     if (!isClosed) {
       if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
         updatedFormData.serviceType = lastPaymentInfo.serviceType;
+        const parsedServiceType = lastPaymentInfo.serviceType.toLowerCase().replace(/[^a-z0-9]/g, '');
         const matchedServiceType = serviceTypes.find(
-          st => st.name.toLowerCase() === lastPaymentInfo.serviceType.toLowerCase()
+          st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
         );
         if (matchedServiceType) {
           updatedFormData.serviceTypeId = matchedServiceType.id.toString();
@@ -843,8 +855,9 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
       }
       
       if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
+        const parsedCollection = lastPaymentInfo.typeOfCollection.toLowerCase().replace(/[^a-z0-9]/g, '');
         const matchedCollection = serviceTypeOfCollections.find(
-          type => type.typeOfCollect?.toLowerCase() === lastPaymentInfo.typeOfCollection.toLowerCase()
+          type => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedCollection
         );
         if (matchedCollection) {
           updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
@@ -861,9 +874,9 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
       updatedFormData.vehicleNumber = invoiceInfo.vehicleRegNo;
     }
     if (invoiceInfo.vehicleModel && !updatedFormData.vehicleModelId) {
-      const invModel = invoiceInfo.vehicleModel.toLowerCase().trim();
+      const invModel = invoiceInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
       const matchedModel = vehicleModels.find((m) => {
-        const mm = m.model.toLowerCase().trim();
+        const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
         return invModel && (mm === invModel || invModel.includes(mm) || mm.includes(invModel));
       });
       if (matchedModel) {
@@ -922,10 +935,7 @@ useEffect(() => {
         
         if (jobCard) {
           // Double check that this job card belongs to the loaded customer
-          const customerMobile = loadedCustomer.contactNo?.toString().trim();
-          const jobCardMobile = jobCard.mobileNumber?.toString().trim();
-          
-          if (customerMobile !== jobCardMobile && jobCardMobile !== 'N/A' && jobCardMobile !== '') {
+          if (!compareMobiles(jobCard.mobileNumber, loadedCustomer.contactNo)) {
             console.warn('Auto-fetched job card does NOT belong to current customer. Ignoring.');
             setServiceJobCardInfo(null);
             setFoundJobCard(null);
@@ -951,12 +961,16 @@ useEffect(() => {
               serviceTypeName = jobCard.serviceType;
             }
           }
+          if (!serviceTypeName && jobCard.service_type) {
+            serviceTypeName = jobCard.service_type;
+          }
           
           // Find matching service type from serviceTypes list
           let matchedServiceTypeId = serviceTypeId;
           if (serviceTypeName && serviceTypes.length > 0) {
+            const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
             const matchedServiceType = serviceTypes.find(
-              st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+              st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
             );
             if (matchedServiceType) {
               matchedServiceTypeId = matchedServiceType.id.toString();
@@ -967,8 +981,8 @@ useEffect(() => {
           let matchedModelId = "";
           if (jobCard.vehicleDetails && vehicleModels.length > 0) {
             const matchedModel = vehicleModels.find((m) => {
-              const mm = m.model.toLowerCase().trim();
-              const vehicleDetail = jobCard.vehicleDetails.toLowerCase().trim();
+              const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const vehicleDetail = jobCard.vehicleDetails.toLowerCase().replace(/[^a-z0-9]/g, '');
               return mm === vehicleDetail || vehicleDetail.includes(mm) || mm.includes(vehicleDetail);
             });
             if (matchedModel) {
@@ -989,8 +1003,9 @@ useEffect(() => {
           
           // Find matching collection type
           if (!isClosed && serviceTypeName && serviceTypeOfCollections.length > 0) {
+            const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
             const matchedTypeOfCollection = serviceTypeOfCollections.find(
-              (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
+              (type) => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
             );
             if (matchedTypeOfCollection) {
               setFormData(prev => ({
@@ -1052,7 +1067,7 @@ useEffect(() => {
         } else if (vehicleModels.length > 0) {
           // Try to match by pattern
           const matchedModel = vehicleModels.find(model => 
-            formData.vehicleNumber.toLowerCase().includes(model.model.toLowerCase())
+            formData.vehicleNumber.toLowerCase().replace(/[^a-z0-9]/g, '').includes(model.model.toLowerCase().replace(/[^a-z0-9]/g, ''))
           );
           if (matchedModel) {
             setFormData(prev => ({ ...prev, vehicleModelId: matchedModel.id.toString() }));
@@ -1079,8 +1094,9 @@ useEffect(() => {
         );
         
         if (jobCardWithVehicle && jobCardWithVehicle.vehicleDetails) {
+          const pModel = jobCardWithVehicle.vehicleDetails.toLowerCase().replace(/[^a-z0-9]/g, '');
           const matchedModel = vehicleModels.find(m => 
-            m.model.toLowerCase() === jobCardWithVehicle.vehicleDetails.toLowerCase()
+            m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
           );
           if (matchedModel) {
             setFormData(prev => ({ ...prev, vehicleModelId: matchedModel.id.toString() }));
@@ -1089,10 +1105,11 @@ useEffect(() => {
           }
         }
         
-        const matchedModel = vehicleModels.find(model => 
-          formData.vehicleNumber.toLowerCase().includes(model.model.toLowerCase()) ||
-          model.model.toLowerCase().includes(formData.vehicleNumber.toLowerCase())
-        );
+        const vNum = formData.vehicleNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchedModel = vehicleModels.find(model => {
+          const mNum = model.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return vNum.includes(mNum) || mNum.includes(vNum);
+        });
         
         if (matchedModel) {
           setFormData(prev => ({ ...prev, vehicleModelId: matchedModel.id.toString() }));
@@ -1338,8 +1355,9 @@ const fetchLastPaymentDetails = async (customerId) => {
 
     // Find matching service type from serviceTypes list
     if (serviceTypeName && serviceTypes.length > 0) {
+      const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const matchedServiceType = serviceTypes.find(
-        st => st.name.toLowerCase() === serviceTypeName.toLowerCase()
+        st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
       );
       if (matchedServiceType) {
         serviceTypeId = matchedServiceType.id.toString();
@@ -1404,9 +1422,10 @@ const fetchLastPaymentDetails = async (customerId) => {
     let matchedModelId = "";
     
     if (modelName && vehicleModels.length > 0) {
+      const parsedModel = modelName.replace(/[^a-z0-9]/g, '');
       const matchedModel = vehicleModels.find((m) => {
-        const mm = m.model.toLowerCase();
-        return modelName && (mm === modelName || mm.includes(modelName) || modelName.includes(mm));
+        const mm = m.model.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return parsedModel && (mm === parsedModel || mm.includes(parsedModel) || parsedModel.includes(mm));
       });
       if (matchedModel) {
         matchedModelId = matchedModel.id.toString();
@@ -1416,8 +1435,9 @@ const fetchLastPaymentDetails = async (customerId) => {
 
     let matchedCollectionId = "";
     if (serviceTypeName && serviceTypeOfCollections.length > 0) {
+      const parsedServiceType = serviceTypeName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const matchedTypeOfCollection = serviceTypeOfCollections.find(
-        (type) => type.typeOfCollect?.toLowerCase() === serviceTypeName.toLowerCase()
+        (type) => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
       );
       matchedCollectionId = matchedTypeOfCollection ? matchedTypeOfCollection.id.toString() : "";
     }
@@ -1465,8 +1485,9 @@ useEffect(() => {
       }
 
       if (jobCardServiceType) {
+        const parsedServiceType = jobCardServiceType.toLowerCase().replace(/[^a-z0-9]/g, '');
         const matchedTypeOfCollection = serviceTypeOfCollections.find(
-          (type) => type.typeOfCollect?.toLowerCase() === jobCardServiceType.toLowerCase()
+          (type) => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
         );
 
         if (matchedTypeOfCollection) {
@@ -2451,8 +2472,21 @@ useEffect(() => {
   
   refreshJobCardOnModalOpen();
 }, [isPaymentModalOpen, formData.jobCardNumber]);
-  const handleOpenNewPayment = () => {
+  const handleOpenNewPayment = async () => {
+    setIsPreparingPayment(true);
     setIsEditMode(false);
+    
+    // Pre-fetch any necessary data for the modal to prevent it from loading blank
+    try {
+      if (formData.jobCardNumber) {
+        await serviceJobCardApi.getAll(formData.jobCardNumber);
+      }
+      if (loadedCustomer) {
+        await servicePaymentCollectionApi.getAll(1, 1000, loadedCustomer.id);
+      }
+    } catch (error) {
+      console.error("Error pre-fetching data for payment:", error);
+    }
     
     let defaultType = 'full payment';
     let defaultTypeId = '';
@@ -2482,6 +2516,8 @@ useEffect(() => {
     }));
     
     setIsPaymentModalOpen(true);
+    setIsPreparingPayment(false);
+    toast.success("Data loaded successfully");
   };
 
   const handleEdit = (payment) => {
@@ -3169,8 +3205,16 @@ useEffect(() => {
                     <div><label className="text-sm text-brand-text-secondary">Status</label><select value={newCustomerData.status} onChange={(e) => { const newStatus = e.target.value; setNewCustomerData({ ...newCustomerData, status: newStatus, address: newStatus === "Service Dealer Customer" ? "NA" : newCustomerData.address }); }} className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2"><option>Walk in Customer</option><option>Online Enquiry</option><option>Service Dealer Customer</option></select></div>
                     <div className="pt-2 flex justify-start gap-3">
                       {permissions?.payment_collection?.service?.add && (
-                        <button onClick={handleOpenNewPayment} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" disabled={!newCustomerData.name || !newCustomerData.contactNo || !newCustomerData.address}>
-                          Pay
+                        <button onClick={handleOpenNewPayment} disabled={isPreparingPayment || (!newCustomerData.name || !newCustomerData.contactNo || !newCustomerData.address)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-70 flex items-center justify-center min-w-[100px]">
+                          {isPreparingPayment ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Loading...
+                            </>
+                          ) : "Pay"}
                         </button>
                       )}
                       <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setServiceJobCardInfo(null); setSalesInvoiceInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
@@ -3192,8 +3236,16 @@ useEffect(() => {
                       <div><label className="text-sm text-brand-text-secondary">Status</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.status}</div></div>
                       <div className="pt-2 flex justify-start gap-3">
                         {permissions?.payment_collection?.service?.add && (
-                          <button onClick={handleOpenNewPayment} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">
-                            Pay
+                          <button onClick={handleOpenNewPayment} disabled={isPreparingPayment} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-70 flex items-center justify-center min-w-[100px]">
+                            {isPreparingPayment ? (
+                              <>
+                                <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Loading...
+                              </>
+                            ) : "Pay"}
                           </button>
                         )}
                         <button onClick={() => { setLoadedCustomer(null); setIsNewCustomer(false); setSearchTerm(''); setSelectedCustomerId(''); setServiceJobCardInfo(null); setSalesInvoiceInfo(null); }} className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
