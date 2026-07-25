@@ -863,49 +863,50 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
     const updatedFormData = { ...prevFormData };
     
     if (lastPaymentInfo) {
-      if (lastPaymentInfo.vehicleNumber && lastPaymentInfo.vehicleNumber !== 'N/A') {
-        updatedFormData.vehicleNumber = lastPaymentInfo.vehicleNumber;
-      }
-      
-      if (lastPaymentInfo.vehicleModelId) {
-        updatedFormData.vehicleModelId = lastPaymentInfo.vehicleModelId.toString();
-      } else if (lastPaymentInfo.vehicleModel && vehicleModels.length > 0) {
-        const pModel = lastPaymentInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const matchedModel = vehicleModels.find(m => 
-          m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
-        );
-        if (matchedModel) {
-          updatedFormData.vehicleModelId = matchedModel.id.toString();
+      // Only prefill from last payment if we don't already have an active job card loaded
+      // Or if the last payment actually belongs to the active job card
+      const hasActiveJobCard = !!updatedFormData.jobCardNumber;
+      const lastPaymentBelongsToActiveJc = hasActiveJobCard && lastPaymentInfo.jobCardNumber === updatedFormData.jobCardNumber;
+
+      if (!hasActiveJobCard || lastPaymentBelongsToActiveJc) {
+        if (!hasActiveJobCard && lastPaymentInfo.vehicleNumber && lastPaymentInfo.vehicleNumber !== 'N/A') {
+          updatedFormData.vehicleNumber = lastPaymentInfo.vehicleNumber;
         }
-      }
-      
-      let isClosed = false;
-      // Only auto-fill job card number if it belongs to this customer and not closed
-      if (lastPaymentInfo.jobCardNumber && lastPaymentInfo.jobCardNumber !== 'N/A') {
-        // Since we can't await inside setFormData, we rely on the prefill we already did
-        // If it's already prefilled from jobCardToUse, we don't wipe it out.
-        // We just leave it as is.
-      }
-      
-      if (!isClosed) {
-        if (lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
-          updatedFormData.serviceType = lastPaymentInfo.serviceType;
-          const parsedServiceType = lastPaymentInfo.serviceType.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const matchedServiceType = serviceTypes.find(
-            st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
+        
+        if (!hasActiveJobCard && lastPaymentInfo.vehicleModelId) {
+          updatedFormData.vehicleModelId = lastPaymentInfo.vehicleModelId.toString();
+        } else if (!hasActiveJobCard && lastPaymentInfo.vehicleModel && vehicleModels.length > 0) {
+          const pModel = lastPaymentInfo.vehicleModel.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const matchedModel = vehicleModels.find(m => 
+            m.model.toLowerCase().replace(/[^a-z0-9]/g, '') === pModel
           );
-          if (matchedServiceType) {
-            updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+          if (matchedModel) {
+            updatedFormData.vehicleModelId = matchedModel.id.toString();
           }
         }
         
-        if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
-          const parsedCollection = lastPaymentInfo.typeOfCollection.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const matchedCollection = serviceTypeOfCollections.find(
-            type => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedCollection
-          );
-          if (matchedCollection) {
-            updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+        let isClosed = false;
+        
+        if (!isClosed) {
+          if (!hasActiveJobCard && lastPaymentInfo.serviceType && lastPaymentInfo.serviceType !== 'N/A') {
+            updatedFormData.serviceType = lastPaymentInfo.serviceType;
+            const parsedServiceType = lastPaymentInfo.serviceType.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const matchedServiceType = serviceTypes.find(
+              st => st.name.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedServiceType
+            );
+            if (matchedServiceType) {
+              updatedFormData.serviceTypeId = matchedServiceType.id.toString();
+            }
+          }
+          
+          if (lastPaymentInfo.typeOfCollection && lastPaymentInfo.typeOfCollection !== 'N/A') {
+            const parsedCollection = lastPaymentInfo.typeOfCollection.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const matchedCollection = serviceTypeOfCollections.find(
+              type => type.typeOfCollect?.toLowerCase().replace(/[^a-z0-9]/g, '') === parsedCollection
+            );
+            if (matchedCollection) {
+              updatedFormData.serviceTypeOfCollectionId = matchedCollection.id.toString();
+            }
           }
         }
       }
