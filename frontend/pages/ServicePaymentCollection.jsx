@@ -1495,25 +1495,6 @@ const fetchLastPaymentDetails = async (customerId) => {
   }
 }, [serviceJobCardInfo, vehicleModels, serviceTypeOfCollections, isEditMode]);
 
-useEffect(() => {
-  // Clear all job card related state when customer changes
-  console.log('Customer changed, clearing all job card data');
-  setServiceJobCardInfo(null);
-  setFoundJobCard(null);
-  setPendingPayments([]);
-  setIsManualJobCard(false);
-  // Also clear the job card number from form
-  setFormData(prev => ({ 
-    ...prev, 
-    jobCardNumber: "",
-    serviceTypeId: "",
-    serviceType: "",
-    serviceTypeOfCollectionId: "",
-    vehicleModelId: "",
-    vehicleNumber: ""
-  }));
-}, [selectedCustomerId, loadedCustomer?.id, loadedCustomer?.contactNo]);
-
   useEffect(() => {
     if (serviceTypeOfCollections.length > 0 && serviceJobCardInfo) {
       let jobCardServiceType = "";
