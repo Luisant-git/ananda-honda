@@ -123,11 +123,11 @@ const ServicePaymentCollection = ({ user, subType }) => {
   const requiresJobCard = (normalizedPaymentType === 'full payment' || normalizedPaymentType === 'part payment') || isXyzPaymentMode;
   const isOptionalJobCard = isAdvancePaymentMode && normalizedPaymentType !== 'full payment';
   
-  // Show all Type of Collections from master without filtering based on payment mode
-  const filteredTypeOfCollections = serviceTypeOfCollections;
+  // Show items where isValueAddedService is false in the dropdown
+  const filteredTypeOfCollections = serviceTypeOfCollections.filter(c => !c.isValueAddedService);
 
-  // Show all Type of Collections for Value Added Services so any newly added master data appears as a checkbox
-  const additionalPlanCollections = serviceTypeOfCollections;
+  // Show items where isValueAddedService is true as checkboxes
+  const additionalPlanCollections = serviceTypeOfCollections.filter(c => c.isValueAddedService);
 
   const isPartPaymentType = (name) => mapMasterNameToKey(name) === 'part payment';
 

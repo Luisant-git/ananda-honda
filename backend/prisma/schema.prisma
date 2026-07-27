@@ -77,6 +77,7 @@ model ServiceTypeOfCollection {
   typeOfCollect             String
   status                    String
   disableVehicleModel       Boolean                    @default(false)
+  isValueAddedService       Boolean                    @default(false)
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
   servicePaymentCollections ServicePaymentCollection[]

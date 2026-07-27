@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -9,6 +9,7 @@ export class ServiceTypeOfCollectionService {
     typeOfCollect: string;
     status: string;
     disableVehicleModel?: boolean;
+    isValueAddedService?: boolean;
   }) {
     return this.prisma.serviceTypeOfCollection.create({
       data,
@@ -35,6 +36,7 @@ export class ServiceTypeOfCollectionService {
       typeOfCollect?: string;
       status?: string;
       disableVehicleModel?: boolean;
+      isValueAddedService?: boolean;
     },
   ) {
     return this.prisma.serviceTypeOfCollection.update({
@@ -45,13 +47,12 @@ export class ServiceTypeOfCollectionService {
 
 
   async remove(id: number) {
-    const count =
-    await this.prisma.servicePaymentCollection.count({
-  where: { id },
-});
+    const count = await this.prisma.servicePaymentCollection.count({
+      where: { serviceTypeOfCollectionId: id },
+    });
 
     if (count > 0) {
-      throw new Error(
+      throw new BadRequestException(
         'Cannot delete service type of collection with existing service payment records',
       );
     }

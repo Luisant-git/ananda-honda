@@ -16,7 +16,8 @@ const ServiceTypeOfCollection = ({ user }) => {
   const [formData, setFormData] = useState({
     typeOfCollect: '',
     status: 'Enable',
-    disableVehicleModel: false
+    disableVehicleModel: false,
+    isValueAddedService: false
   });
 
   const [permissions, setPermissions] = useState(null);
@@ -45,7 +46,8 @@ const ServiceTypeOfCollection = ({ user }) => {
         id: item.id,
         typeOfCollect: item.typeOfCollect,
         status: item.status,
-        disableVehicleModel: item.disableVehicleModel
+        disableVehicleModel: item.disableVehicleModel,
+        isValueAddedService: item.isValueAddedService
       }));
       setServiceTypeOfCollections(formatted);
     } catch (error) {
@@ -81,7 +83,8 @@ const ServiceTypeOfCollection = ({ user }) => {
     setFormData({
       typeOfCollect: '',
       status: 'Enable',
-      disableVehicleModel: false
+      disableVehicleModel: false,
+      isValueAddedService: false
     });
   };
 
@@ -92,7 +95,8 @@ const ServiceTypeOfCollection = ({ user }) => {
     setFormData({
       typeOfCollect: item.typeOfCollect,
       status: item.status,
-      disableVehicleModel: item.disableVehicleModel || false
+      disableVehicleModel: item.disableVehicleModel || false,
+      isValueAddedService: item.isValueAddedService || false
     });
     setIsModalOpen(true);
   };
@@ -121,7 +125,8 @@ const ServiceTypeOfCollection = ({ user }) => {
     setFormData({
       typeOfCollect: '',
       status: 'Enable',
-      disableVehicleModel: false
+      disableVehicleModel: false,
+      isValueAddedService: false
     });
     setIsModalOpen(true);
   };
@@ -134,6 +139,11 @@ const ServiceTypeOfCollection = ({ user }) => {
     {
       header: 'Disable Vehicle Model',
       accessor: 'disableVehicleModel',
+      render: (val) => (val ? 'Yes' : 'No')
+    },
+    {
+      header: 'Value Added Service',
+      accessor: 'isValueAddedService',
       render: (val) => (val ? 'Yes' : 'No')
     }
   ];
@@ -226,6 +236,20 @@ const ServiceTypeOfCollection = ({ user }) => {
               }
             />
             Disable Vehicle Model
+          </label>
+
+          <label className="flex gap-2">
+            <input
+              type="checkbox"
+              checked={formData.isValueAddedService}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  isValueAddedService: e.target.checked
+                })
+              }
+            />
+            Value Added Service
           </label>
 
           <div className="flex justify-end gap-3">
