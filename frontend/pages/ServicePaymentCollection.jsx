@@ -126,12 +126,12 @@ const ServicePaymentCollection = ({ user, subType }) => {
   // Filter Type of Collection to show only JOBCARD and CERAMIC COATING for Full/Advance payments
   const filteredTypeOfCollections = isXyzPaymentMode
     ? serviceTypeOfCollections.filter(item => {
-        const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
+        const typeStr = (item.typeOfCollect || '').toString().toLowerCase().replace(/\s+/g, '');
         return ['rsa', 'amc', 'ew'].includes(typeStr);
       })
     : (isFullPaymentMode || isAdvancePaymentMode)
       ? serviceTypeOfCollections.filter(item => {
-          const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
+          const typeStr = (item.typeOfCollect || '').toString().toLowerCase().replace(/\s+/g, '');
           return typeStr.includes('jobcard') || typeStr.includes('ceramic');
         })
       : serviceTypeOfCollections;
@@ -1741,7 +1741,7 @@ const handleCreateJobCard = async () => {
       console.log("Types array:", typesArray);
 
       const enabledTypes = typesArray.filter((type) => {
-        const status = type.status?.toLowerCase();
+        const status = type.status?.toLowerCase().trim();
         return status === 'active' || status === 'enable';
       });
 
