@@ -123,18 +123,8 @@ const ServicePaymentCollection = ({ user, subType }) => {
   const requiresJobCard = (normalizedPaymentType === 'full payment' || normalizedPaymentType === 'part payment') || isXyzPaymentMode;
   const isOptionalJobCard = isAdvancePaymentMode && normalizedPaymentType !== 'full payment';
   
-  // Filter Type of Collection to show only JOBCARD and CERAMIC COATING for Full/Advance payments
-  const filteredTypeOfCollections = isXyzPaymentMode
-    ? serviceTypeOfCollections.filter(item => {
-        const typeStr = (item.typeOfCollect || '').toString().toLowerCase().replace(/\s+/g, '');
-        return ['rsa', 'amc', 'ew'].includes(typeStr);
-      })
-    : (isFullPaymentMode || isAdvancePaymentMode)
-      ? serviceTypeOfCollections.filter(item => {
-          const typeStr = (item.typeOfCollect || '').toString().toLowerCase().replace(/\s+/g, '');
-          return typeStr.includes('jobcard') || typeStr.includes('ceramic');
-        })
-      : serviceTypeOfCollections;
+  // Show all Type of Collections from master without filtering based on payment mode
+  const filteredTypeOfCollections = serviceTypeOfCollections;
 
   const additionalPlanCollections = serviceTypeOfCollections.filter(item => {
     const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
@@ -3056,12 +3046,8 @@ useEffect(() => {
   };
 
   const getFilteredServiceTypes = () => {
-    if (!loadedCustomer) return serviceTypes;
-
-    return serviceTypes.filter(type => {
-      if (isEditMode && type.id.toString() === formData.serviceTypeId) return true;
-      return isServiceTypeAllowed(type.name, customerHistory);
-    });
+    // Show all Type of Services from master
+    return serviceTypes;
   };
 
  const renderActions = (payment) => {
