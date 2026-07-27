@@ -126,10 +126,8 @@ const ServicePaymentCollection = ({ user, subType }) => {
   // Show all Type of Collections from master without filtering based on payment mode
   const filteredTypeOfCollections = serviceTypeOfCollections;
 
-  const additionalPlanCollections = serviceTypeOfCollections.filter(item => {
-    const typeStr = (item.typeOfCollect || '').toString().toLowerCase();
-    return ['rsa', 'amc', 'ew'].includes(typeStr);
-  });
+  // Show all Type of Collections for Value Added Services so any newly added master data appears as a checkbox
+  const additionalPlanCollections = serviceTypeOfCollections;
 
   const isPartPaymentType = (name) => mapMasterNameToKey(name) === 'part payment';
 
