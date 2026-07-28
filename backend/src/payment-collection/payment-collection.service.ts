@@ -15,7 +15,7 @@ export class PaymentCollectionService {
 
   async create(data: { date: string; customerId: number; recAmt: number; paymentType?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
-      orderBy: { receiptNo: 'desc' }
+      orderBy: { id: 'desc' }
     });
 
     let nextNumber = 1;

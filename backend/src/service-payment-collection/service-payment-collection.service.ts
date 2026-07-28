@@ -39,7 +39,7 @@ async create(data: {
   selectedParts?: any[];
 }) {
   const lastPayment = await this.prisma.servicePaymentCollection.findFirst({
-    orderBy: { receiptNo: 'desc' }
+    orderBy: { id: 'desc' }
   });
   
   let nextNumber = 1;

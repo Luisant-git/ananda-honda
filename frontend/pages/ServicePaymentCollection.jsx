@@ -18,8 +18,10 @@ import { serviceJobCardApi } from "../api/serviceJobcard";
 import { serviceTypeApi } from "../api/serviceTypeApi.js";
 import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
 import PineLabsModal from "../components/PineLabsModal";
+import Loader from "../components/Loader";
 
 const ServicePaymentCollection = ({ user, subType }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
@@ -1154,17 +1156,29 @@ useEffect(() => {
 }, [formData.vehicleNumber, vehicleModels]);
 
   useEffect(() => {
-    fetchCustomers();
-    fetchPaymentModes();
-    fetchPaymentTypes();
-    fetchTypeOfPayments();
-    fetchServiceTypeOfCollections();
-    fetchVehicleModels();
-    fetchPayments();
-    fetchPermissions();
-    fetchDeletedPayments();
-    fetchServiceTypes();
-    fetchAvailableParts();
+    const loadAllData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchCustomers(),
+          fetchPaymentModes(),
+          fetchPaymentTypes(),
+          fetchTypeOfPayments(),
+          fetchServiceTypeOfCollections(),
+          fetchVehicleModels(),
+          fetchPayments(),
+          fetchPermissions(),
+          fetchDeletedPayments(),
+          fetchServiceTypes(),
+          fetchAvailableParts()
+        ]);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAllData();
   }, []);
 
   // Handle subType: set default payment type based on subType
@@ -3083,6 +3097,10 @@ useEffect(() => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      {isLoading ? (
+        <Loader message="Loading Service Payment Data..." />
+      ) : (
+        <>
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary whitespace-nowrap">{pageTitle}</h1>
         
@@ -4246,6 +4264,8 @@ useEffect(() => {
           handleSubmit(null, txId);
         }}
       />
+      </>
+      )}
     </div>
   );
 };

@@ -4,8 +4,10 @@ import DataTable from '../components/DataTable';
 import ConfirmModal from '../components/ConfirmModal';
 import DateFilterButtons from '../components/DateFilterButtons';
 import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
+import Loader from '../components/Loader';
 
 const ServiceReports = ({ user }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [reportData, setReportData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
@@ -23,6 +25,7 @@ const ServiceReports = ({ user }) => {
   }, [fromDate, toDate, paymentTypeFilter, collectionTypeFilter, reportData]);
 
   const fetchReportData = async () => {
+    setIsLoading(true);
     try {
       const response = await servicePaymentCollectionApi.getAll(1, 999999);
       const formattedData = response.data
@@ -95,6 +98,8 @@ const ServiceReports = ({ user }) => {
       setFilteredData(formattedData);
     } catch (error) {
       console.error('Error fetching report data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -289,8 +294,12 @@ const ServiceReports = ({ user }) => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
+      {isLoading ? (
+        <Loader message="Loading Service Reports Data..." />
+      ) : (
+        <>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Value Added Service Report</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">Value Added Service Reports</h1>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <DateFilterButtons setFromDate={setFromDate} setToDate={setToDate} />
           {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
@@ -399,6 +408,8 @@ const ServiceReports = ({ user }) => {
         message="Are you sure you want to delete ALL service payment collection records? This action cannot be undone and will permanently erase the data."
         confirmText="Yes, Clear All"
       />
+      </>
+      )}
     </div>
   );
 };

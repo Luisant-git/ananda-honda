@@ -16,8 +16,10 @@ import { menuPermissionApi } from "../api/menuPermissionApi";
 import { serviceJobCardApi } from "../api/serviceJobcard.js";
 import { locationApi } from "../api/locationApi.js";
 import PineLabsModal from "../components/PineLabsModal";
+import Loader from "../components/Loader";
 
 const PaymentCollection = ({ user }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
@@ -72,15 +74,27 @@ const PaymentCollection = ({ user }) => {
   const [pineLabsTxnId, setPineLabsTxnId] = useState(null);
 
   useEffect(() => {
-    fetchCustomers();
-    fetchPaymentModes();
-    fetchTypeOfPayments();
-    fetchTypeOfCollections();
-    fetchVehicleModels();
-    fetchPayments();
-    fetchPermissions();
-    fetchDeletedPayments();
-    fetchLocations();
+    const loadAllData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchCustomers(),
+          fetchPaymentModes(),
+          fetchTypeOfPayments(),
+          fetchTypeOfCollections(),
+          fetchVehicleModels(),
+          fetchPayments(),
+          fetchPermissions(),
+          fetchDeletedPayments(),
+          fetchLocations()
+        ]);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadAllData();
   }, []);
 
 
@@ -1083,104 +1097,109 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
-          Sales Payment Collection
-        </h1>
-        <div className="flex gap-2">
-          {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
-            <button
-              onClick={() => setIsClearModalOpen(true)}
-              className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
-            >
-              Clear All Data
-            </button>
-          )}
-          {permissions?.payment_collection?.sales?.view_deleted && (
-          <button
-            onClick={() => {
-              setShowDeleted(!showDeleted);
-              if (!showDeleted) fetchDeletedPayments();
-            }}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              showDeleted
-                ? "bg-gray-500 text-white hover:bg-gray-600"
-                : "bg-orange-600 text-white hover:bg-orange-700" 
-            }`}
-          >
-            {showDeleted ? "Show Active" : "Show Trash"}
-          </button>
-        )}
+      {isLoading ? (
+        <Loader message="Loading Payment Data..." />
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-brand-text-primary">
+              Sales Payment Collection
+            </h1>
+            <div className="flex gap-2">
+              {(user?.username === 'ROOT' && user?.role === 'SUPER_ADMIN') && (
+                <button
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="px-4 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
+                >
+                  Clear All Data
+                </button>
+              )}
+              {permissions?.payment_collection?.sales?.view_deleted && (
+              <button
+                onClick={() => {
+                  setShowDeleted(!showDeleted);
+                  if (!showDeleted) fetchDeletedPayments();
+                }}
+                className={`px-4 py-2 rounded-lg font-medium ${
+                  showDeleted
+                    ? "bg-gray-500 text-white hover:bg-gray-600"
+                    : "bg-orange-600 text-white hover:bg-orange-700" 
+                }`}
+              >
+                {showDeleted ? "Show Active" : "Show Trash"}
+              </button>
+            )}
+            </div>
+          </div>
+
+
+
+          {!showDeleted && (
+            <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
+              <div className="flex flex-col sm:flex-row items-end gap-4">
+                <div className="flex-grow w-full">
+                  <label className="text-sm font-medium text-brand-text-secondary mb-1 block">
+                    Select Customer
+                  </label>
+                  <div className="relative customer-dropdown">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setShowDropdown(true);
+                        setSelectedCustomerId("");
+                        setLoadedCustomer(null);
+                        setFilteredPayments(payments);
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"
+                      className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                    />
+                    {showDropdown && (
+                      <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
+                        {permissions?.payment_collection?.sales?.add_customer && (
+                          <div
+                            onClick={() => handleCustomerSelect("new")}
+                            className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
+                          >
+                            + Add New Customer
+                          </div>
+                        )}
+                        {filteredCustomers.map((customer) => (
+      <div
+        key={customer.id}
+        onClick={() => handleCustomerSelect(customer)}
+        className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
+      >
+        <div className="flex justify-between items-center">
+          <div className="font-medium">{customer.name}</div>
+          <div className="flex gap-1">
+            {(customer.isInvoice || customer.hasInvoice) && (
+              <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">
+                Invoice
+              </span>
+            )}
+            {(customer.isJobCard || customer.hasJobCard) && (
+              <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">
+                Service DealerShip
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="text-sm text-brand-text-secondary">
+          {customer.contactNo}
         </div>
       </div>
-
-
-
-      {!showDeleted && (
-        <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm space-y-4 border border-brand-border">
-          <div className="flex flex-col sm:flex-row items-end gap-4">
-            <div className="flex-grow w-full">
-              <label className="text-sm font-medium text-brand-text-secondary mb-1 block">
-                Select Customer
-              </label>
-              <div className="relative customer-dropdown">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setShowDropdown(true);
-                    setSelectedCustomerId("");
-                    setLoadedCustomer(null);
-                    setFilteredPayments(payments);
-                  }}
-                  onFocus={() => setShowDropdown(true)}
-                  placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"
-                  className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                />
-                {showDropdown && (
-                  <div className="absolute z-10 w-full bg-white border border-brand-border rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg">
-                    {permissions?.payment_collection?.sales?.add_customer && (
-                      <div
-                        onClick={() => handleCustomerSelect("new")}
-                        className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border font-medium text-green-600"
-                      >
-                        + Add New Customer
+    ))}
+                        {filteredCustomers.length === 0 &&
+                          searchTerm &&
+                          searchTerm !== "+ Add New Customer" && (
+                            <div className="p-2 text-brand-text-secondary text-center">
+                              No customers found
+                            </div>
+                          )}
                       </div>
-                    )}
-                    {filteredCustomers.map((customer) => (
-  <div
-    key={customer.id}
-    onClick={() => handleCustomerSelect(customer)}
-    className="p-2 hover:bg-brand-hover cursor-pointer border-b border-brand-border last:border-b-0"
-  >
-    <div className="flex justify-between items-center">
-      <div className="font-medium">{customer.name}</div>
-      <div className="flex gap-1">
-        {(customer.isInvoice || customer.hasInvoice) && (
-          <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">
-            Invoice
-          </span>
-        )}
-        {(customer.isJobCard || customer.hasJobCard) && (
-          <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">
-            Service DealerShip
-          </span>
-        )}
-      </div>
-    </div>
-    <div className="text-sm text-brand-text-secondary">
-      {customer.contactNo}
-    </div>
-  </div>
-))}
-                    {filteredCustomers.length === 0 &&
-                      searchTerm &&
-                      searchTerm !== "+ Add New Customer" && (
-                        <div className="p-2 text-brand-text-secondary text-center">
-                          No customers found
-                        </div>
-                      )}
                   </div>
                 )}
               </div>
