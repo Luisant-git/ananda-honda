@@ -13,7 +13,7 @@ export class PaymentCollectionService {
     private pdfService: PdfService,
   ) {}
 
-  async create(data: { date: string; customerId: number; recAmt: number; paymentType?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
+  async create(data: { date: string; customerId: number; recAmt: number; paymentType?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; pineLabsTxnId?: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
       orderBy: { id: 'desc' }
     });
@@ -25,12 +25,14 @@ export class PaymentCollectionService {
     }
     const receiptNo = `RV${nextNumber.toString().padStart(4, '0')}`;
 
+    const { pineLabsTxnId, ...cleanData } = data as any;
+
     const savedPayment = await this.prisma.paymentCollection.create({
       data: {
-        ...data,
-        date: new Date(data.date),
+        ...cleanData,
+        date: new Date(cleanData.date),
         receiptNo,
-        paymentType: data.paymentType || 'booking',
+        paymentType: cleanData.paymentType || 'booking',
         typeOfPaymentId: data.typeOfPaymentId || null,
         typeOfCollectionId: data.typeOfCollectionId || null,
         vehicleModelId: data.vehicleModelId || null,
