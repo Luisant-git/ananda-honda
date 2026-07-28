@@ -1192,14 +1192,13 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         </div>
       </div>
     ))}
-                        {filteredCustomers.length === 0 &&
-                          searchTerm &&
-                          searchTerm !== "+ Add New Customer" && (
-                            <div className="p-2 text-brand-text-secondary text-center">
-                              No customers found
-                            </div>
-                          )}
-                      </div>
+                    {filteredCustomers.length === 0 &&
+                      searchTerm &&
+                      searchTerm !== "+ Add New Customer" && (
+                        <div className="p-2 text-brand-text-secondary text-center">
+                          No customers found
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
@@ -1730,6 +1729,8 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
           handleSubmit(null, txId);
         }}
       />
+      </>
+      )}
     </div>
   );
 };
