@@ -1360,9 +1360,12 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Name
                         </label>
-                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                          {loadedCustomer.name}
-                        </div>
+                        <input
+                          type="text"
+                          value={loadedCustomer.name || ''}
+                          onChange={(e) => setLoadedCustomer({ ...loadedCustomer, name: e.target.value })}
+                          className="w-full mt-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                        />
                       </div>
                       <div>
                         <label className="text-sm text-brand-text-secondary">
