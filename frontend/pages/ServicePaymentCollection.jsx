@@ -20,6 +20,12 @@ import { serviceTypeOfPartApi } from "../api/serviceTypeOfPartApi.js";
 import PineLabsModal from "../components/PineLabsModal";
 import Loader from "../components/Loader";
 
+const getLocalDate = () => {
+  const date = new Date();
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().split("T")[0];
+};
+
 const ServicePaymentCollection = ({ user, subType }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState(null);
@@ -96,7 +102,7 @@ const ServicePaymentCollection = ({ user, subType }) => {
   });
 
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: getLocalDate(),
     totalAmt: "",
     recAmt: "", // This will be the current payment amount
     hasAdditionalPlan: false,
@@ -2343,7 +2349,7 @@ if (finalJobCardNumber) {
 
     // Reset form data
     setFormData({
-      date: new Date().toISOString().split("T")[0],
+      date: getLocalDate(),
       totalAmt: "",
       recAmt: "",
       paymentType: "full payment",

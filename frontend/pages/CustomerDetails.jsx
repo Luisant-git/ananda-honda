@@ -20,6 +20,12 @@ import {
   Bike, Wrench, Target, ClipboardList, Globe, Award, CalendarClock, Repeat, Flame, Thermometer, Snowflake
 } from "lucide-react";
 
+const getLocalDate = (dateInput) => {
+  const date = dateInput ? new Date(dateInput) : new Date();
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().split("T")[0];
+};
+
 const InputField = ({ label, value, onChange, icon: Icon, type = "text", required = false, placeholder = "", disabled = false, maxLength }) => {
   return (
     <div>
@@ -123,7 +129,7 @@ const CustomerDetails = ({ user, defaultStatus = "", title = "Customer Details" 
     purchaseType: "",
     exchangeEnabled: null,
     exchangeValue: "",
-    enquiryDate: new Date().toISOString().split("T")[0],
+    enquiryDate: getLocalDate(),
     remark: "",
     typeOfService: "",
     expectedServiceDate: "",
@@ -379,8 +385,8 @@ const fetchPermissions = async () => {
       const rawInterestLevel = enquiryData.interestLevel || enquiryData.interest || enquiryData.customer?.interestLevel || "";
       const rawPurchaseType = enquiryData.purchaseType || enquiryData.paymentType || enquiryData.customer?.purchaseType || "";
       const rawRemark = enquiryData.remark || enquiryData.notes || enquiryData.customer?.remark || enquiryData.customer?.notes || "";
-      const rawEnquiryDate = enquiryData.enquiryDate || enquiryData.date || enquiryData.customer?.enquiryDate || new Date().toISOString().split("T")[0];
-      const currentDate = new Date().toISOString().split("T")[0];
+      const rawEnquiryDate = enquiryData.enquiryDate || enquiryData.date || enquiryData.customer?.enquiryDate || getLocalDate();
+      const currentDate = getLocalDate();
       
       // Find lookup IDs
       const modelId = findLookupId(lookupData.models, rawModelName);
@@ -672,7 +678,7 @@ const fetchPermissions = async () => {
       purchaseType: "",
       exchangeEnabled: null,
       exchangeValue: "",
-      enquiryDate: new Date().toISOString().split("T")[0],
+      enquiryDate: getLocalDate(),
       remark: "",
       typeOfService: "",
       expectedServiceDate: "",
@@ -728,7 +734,7 @@ const fetchPermissions = async () => {
       purchaseType: customer.purchaseType || "",
       exchangeEnabled: customer.exchangeDetails === "No" ? false : Boolean(customer.exchangeDetails && customer.exchangeDetails.trim() !== ""),
       exchangeValue: customer.exchangeDetails === "No" ? "" : (customer.exchangeDetails || ""),
-      enquiryDate: customer.enquiryDate ? new Date(customer.enquiryDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      enquiryDate: customer.enquiryDate ? getLocalDate(customer.enquiryDate) : getLocalDate(),
       remark: customer.remarks || "",
       typeOfService: "",
       expectedServiceDate: "",

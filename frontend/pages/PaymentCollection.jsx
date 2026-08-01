@@ -18,6 +18,12 @@ import { locationApi } from "../api/locationApi.js";
 import PineLabsModal from "../components/PineLabsModal";
 import Loader from "../components/Loader";
 
+const getLocalDate = () => {
+  const date = new Date();
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().split("T")[0];
+};
+
 const PaymentCollection = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState(null);
@@ -50,7 +56,7 @@ const PaymentCollection = ({ user }) => {
   const [itemsPerPage] = useState(10);
   const [serviceJobCardInfo, setServiceJobCardInfo] = useState(null);
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: getLocalDate(),
     recAmt: "",
     paymentType: "booking",
     paymentModeId: "",
@@ -483,7 +489,7 @@ useEffect(() => {
       setEditingPayment(null);
       setIsNewCustomer(false);
       setFormData({
-        date: new Date().toISOString().split("T")[0],
+        date: getLocalDate(),
         recAmt: "",
         paymentType: "booking",
         paymentModeId: "",
