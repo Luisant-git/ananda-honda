@@ -1333,7 +1333,10 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                     <div className="pt-2 flex justify-start gap-3">
                       {permissions?.payment_collection?.sales?.add && (
                         <button
-                          onClick={() => setIsPaymentModalOpen(true)}
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, date: getLocalDate() }));
+                            setIsPaymentModalOpen(true);
+                          }}
                           className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
                           disabled={
                             !newCustomerData.name ||
@@ -1402,7 +1405,10 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                       <div className="pt-2 flex justify-start gap-3">
                         {permissions?.payment_collection?.sales?.add && (
                           <button
-                            onClick={() => setIsPaymentModalOpen(true)}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, date: getLocalDate() }));
+                              setIsPaymentModalOpen(true);
+                            }}
                             className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
                           >
                             Pay

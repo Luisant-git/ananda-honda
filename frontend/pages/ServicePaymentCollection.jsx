@@ -2537,6 +2537,7 @@ useEffect(() => {
 
     setFormData(prev => ({
       ...prev,
+      date: getLocalDate(),
       paymentType: defaultType,
       paymentTypeId: defaultTypeId,
       hasAdditionalPlan: false,
