@@ -43,6 +43,7 @@ const Reports = ({ user }) => {
         enteredBy: payment.user?.username || 'N/A',
         refNo: payment.refNo || 'N/A',
         remarks: payment.remarks || 'N/A',
+        cancelledAt: payment.cancelledAt,
         customerId: payment.customerId,
         paymentModeId: payment.paymentModeId,
         typeOfPaymentId: payment.typeOfPaymentId,
@@ -97,7 +98,9 @@ const Reports = ({ user }) => {
     try {
       const headers = columns.map(col => col.header).join('\t');
       const rows = filteredData.map(row => columns.map(col => {
-        const val = row[col.accessor] || '';
+        let val = row[col.accessor];
+        if (col.accessor === 'status') val = row.cancelledAt ? 'CANCELLED' : 'SUCCESS';
+        else val = val || '';
         return (col.accessor === 'refNo' || col.accessor === 'contactNo' || col.accessor === 'jobCardNumber' || col.accessor === 'receiptNo') ? `="${val}"` : val;
       }).join('\t')).join('\n');
       const content = headers + '\n' + rows;
@@ -118,7 +121,9 @@ const Reports = ({ user }) => {
     try {
       const headers = columns.map(col => col.header).join(',');
       const rows = filteredData.map(row => columns.map(col => {
-        const val = row[col.accessor] || '';
+        let val = row[col.accessor];
+        if (col.accessor === 'status') val = row.cancelledAt ? 'CANCELLED' : 'SUCCESS';
+        else val = val || '';
         return (col.accessor === 'refNo' || col.accessor === 'contactNo' || col.accessor === 'jobCardNumber' || col.accessor === 'receiptNo') ? `="""${val}"""` : `"${val}"`;
       }).join(',')).join('\n');
       const content = headers + '\n' + rows;
@@ -233,6 +238,15 @@ const Reports = ({ user }) => {
     { header: "Vehicle Model", accessor: "vehicleModel" },
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (_, row) => (
+        <span className={`font-bold ${row.cancelledAt ? 'text-red-700' : 'text-green-600'}`}>
+          {row.cancelledAt ? 'CANCELLED' : 'SUCCESS'}
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -314,6 +328,7 @@ const Reports = ({ user }) => {
         <DataTable 
           columns={columns} 
           data={filteredData} 
+          rowClassName={(row) => row.cancelledAt ? '!bg-red-100 text-red-900 font-medium' : ''}
         />
       </div>
 

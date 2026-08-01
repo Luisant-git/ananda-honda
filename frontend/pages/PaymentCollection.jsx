@@ -452,6 +452,25 @@ useEffect(() => {
         const newCustomer = await customerApi.create(newCustomerData);
         customerId = newCustomer.id;
         await fetchCustomers(); // Refresh customer list
+      } else if (loadedCustomer && loadedCustomer.id) {
+        const isFirstTimeEdit = payments.filter((p) => p.customerId === loadedCustomer.id).length === 0;
+        const hasDevAdminRole = user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+        if (isFirstTimeEdit && hasDevAdminRole) {
+          const originalCustomer = customers.find((c) => c.id === loadedCustomer.id);
+          if (
+            originalCustomer &&
+            (originalCustomer.name !== loadedCustomer.name ||
+              originalCustomer.contactNo !== loadedCustomer.contactNo ||
+              originalCustomer.address !== loadedCustomer.address)
+          ) {
+            await customerApi.update(loadedCustomer.id, {
+              name: loadedCustomer.name,
+              contactNo: loadedCustomer.contactNo,
+              address: loadedCustomer.address,
+            });
+            await fetchCustomers();
+          }
+        }
       }
 
       const submitData = {
@@ -1355,6 +1374,15 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                 </div>
               ) : (
                 <>
+                  {!(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm flex items-start gap-2">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <div>
+                        <span className="font-semibold">Note: </span>
+                        These details belong to an existing customer and cannot be edited from this page.
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <div className="space-y-4">
                       <div>
@@ -1369,20 +1397,40 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Name
                         </label>
-                        <input
-                          type="text"
-                          value={loadedCustomer.name || ''}
-                          onChange={(e) => setLoadedCustomer({ ...loadedCustomer, name: e.target.value })}
-                          className="w-full mt-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
-                        />
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                          <input
+                            type="text"
+                            value={loadedCustomer.name || ''}
+                            onChange={(e) => setLoadedCustomer({ ...loadedCustomer, name: e.target.value })}
+                            className="w-full mt-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                          />
+                        ) : (
+                          <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                            {loadedCustomer.name}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm text-brand-text-secondary">
                           Mobile Number
                         </label>
-                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                          {loadedCustomer.contactNo}
-                        </div>
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                          <input
+                            type="text"
+                            value={loadedCustomer.contactNo || ''}
+                            onChange={(e) => {
+                              const numericValue = e.target.value.replace(/\D/g, "");
+                              if (numericValue.length > 10) return;
+                              setLoadedCustomer({ ...loadedCustomer, contactNo: numericValue });
+                            }}
+                            className="w-full mt-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                            maxLength="10"
+                          />
+                        ) : (
+                          <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                            {loadedCustomer.contactNo}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -1390,9 +1438,18 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Address
                         </label>
-                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
-                          {loadedCustomer.address}
-                        </div>
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                          <textarea
+                            value={loadedCustomer.address || ''}
+                            onChange={(e) => setLoadedCustomer({ ...loadedCustomer, address: e.target.value })}
+                            className="w-full mt-1 bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent"
+                            rows={2}
+                          ></textarea>
+                        ) : (
+                          <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                            {loadedCustomer.address}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="text-sm text-brand-text-secondary">

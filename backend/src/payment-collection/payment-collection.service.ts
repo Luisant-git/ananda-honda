@@ -198,7 +198,6 @@ export class PaymentCollectionService {
     return this.prisma.paymentCollection.update({
       where: { id },
       data: {
-        recAmt: 0,
         cancelledAt: new Date(),
         cancelledBy: cancelledBy || null
       },
