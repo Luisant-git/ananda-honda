@@ -195,9 +195,10 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
               type="text"
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${existingCustomer ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
               placeholder="Enter customer name"
               required={!existingCustomer}
+              disabled={!!existingCustomer}
             />
           </div>
 
@@ -288,9 +289,10 @@ const VehicleEnquiryForm = ({ setCurrentView }) => {
               type="text"
               value={formData.customerName}
               onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 ${existingCustomer ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
               placeholder="Enter customer name"
               required={!existingCustomer}
+              disabled={!!existingCustomer}
             />
           </div>
 

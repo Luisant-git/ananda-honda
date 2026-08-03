@@ -407,8 +407,8 @@ const fetchPermissions = async () => {
       // Auto-fill form data
       setFormData(prev => ({
         ...prev,
-        firstName: rawFirstName,
-        lastName: rawLastName,
+        firstName: `${rawFirstName} ${rawLastName}`.trim(),
+        lastName: "",
         mobile: rawMobile,
         altMobile: rawAltMobile,
         email: rawEmail,
@@ -433,8 +433,8 @@ const fetchPermissions = async () => {
       
       const rawEnquiryNo = enquiryData.enquiryNo || enquiryData.enquiryNumber || enquiryData.referenceId || enquiryData.id || "";
       const mappedCustomer = {
-        firstName: rawFirstName,
-        lastName: rawLastName,
+        firstName: `${rawFirstName} ${rawLastName}`.trim(),
+        lastName: "",
         mobile: rawMobile,
         enquiryNo: rawEnquiryNo,
       };
@@ -577,9 +577,14 @@ const fetchPermissions = async () => {
     
 
     try {
+      const fullName = (formData.firstName || "").trim();
+      const firstSpaceIndex = fullName.indexOf(' ');
+      const fName = firstSpaceIndex > -1 ? fullName.substring(0, firstSpaceIndex).trim() : fullName;
+      const lName = firstSpaceIndex > -1 ? fullName.substring(firstSpaceIndex + 1).trim() : "";
+
       const customerData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        firstName: fName,
+        lastName: lName,
         mobile: formData.mobile,
         altMobile: formData.altMobile,
         email: formData.email,
@@ -708,8 +713,8 @@ const fetchPermissions = async () => {
     );
     
     setFormData({
-      firstName: customer.firstName || customer.name?.split(' ')[0] || "",
-      lastName: customer.lastName || customer.name?.split(' ').slice(1).join(' ') || "",
+      firstName: customer.name || [customer.firstName, customer.lastName].filter(Boolean).join(' ') || "",
+      lastName: "",
       mobile: customer.mobile || customer.contactNo || "",
       altMobile: customer.altMobile || "",
       email: customer.email || "",
@@ -1180,7 +1185,7 @@ const fetchPermissions = async () => {
                 onChange={(value) => setFormData(prev => ({ ...prev, firstName: value }))}
                 required
                 placeholder="Enter name"
-                disabled={!!foundCustomer?.firstName}
+                disabled={!!foundCustomer?.firstName || (isEditMode && user?.role === 'RECEPTIONIST')}
               />
               <div className="relative">
                 <InputField
@@ -1191,6 +1196,7 @@ const fetchPermissions = async () => {
                   required
                   placeholder="10-digit mobile number"
                   maxLength="10"
+                  disabled={isEditMode}
                 />
                 {isCheckingCustomer && (
                   <div className="absolute right-3 top-8">
