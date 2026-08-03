@@ -454,7 +454,7 @@ useEffect(() => {
         await fetchCustomers(); // Refresh customer list
       } else if (loadedCustomer && loadedCustomer.id) {
         const isFirstTimeEdit = payments.filter((p) => p.customerId === loadedCustomer.id).length === 0;
-        const hasDevAdminRole = user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+        const hasDevAdminRole = user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTS';
         if (isFirstTimeEdit && hasDevAdminRole) {
           const originalCustomer = customers.find((c) => c.id === loadedCustomer.id);
           if (
@@ -1374,7 +1374,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                 </div>
               ) : (
                 <>
-                  {!(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) && (
+                  {!(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTS')) && (
                     <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm flex items-start gap-2">
                       <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                       <div>
@@ -1397,7 +1397,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Name
                         </label>
-                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTS')) ? (
                           <input
                             type="text"
                             value={loadedCustomer.name || ''}
@@ -1414,7 +1414,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Mobile Number
                         </label>
-                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTS')) ? (
                           <input
                             type="text"
                             value={loadedCustomer.contactNo || ''}
@@ -1438,7 +1438,7 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         <label className="text-sm text-brand-text-secondary">
                           Address
                         </label>
-                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) ? (
+                        {(loadedCustomer && payments.filter(p => p.customerId === loadedCustomer.id).length === 0 && (user?.role === 'DEVELOPER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'ACCOUNTS')) ? (
                           <textarea
                             value={loadedCustomer.address || ''}
                             onChange={(e) => setLoadedCustomer({ ...loadedCustomer, address: e.target.value })}
