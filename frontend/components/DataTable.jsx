@@ -138,38 +138,52 @@ const DataTable = ({ columns, data, actionButtons, pagination, rowClassName, dis
             </tr>
           </thead>
           <tbody>
-            {currentData.map((item, rowIndex) => (
-              <tr key={rowIndex} className={`bg-white border-b border-brand-border hover:bg-brand-hover ${rowClassName ? rowClassName(item) : ''}`}>
-                {columns.map((col, colIndex) => (
-                  <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                    {getCellValue(item, col)}
-                  </td>
-                ))}
-                {actionButtons && (
-                  <td className="px-6 py-4">{actionButtons(item)}</td>
-                )}
+            {currentData.length > 0 ? (
+              currentData.map((item, rowIndex) => (
+                <tr key={rowIndex} className={`bg-white border-b border-brand-border hover:bg-brand-hover ${rowClassName ? rowClassName(item) : ''}`}>
+                  {columns.map((col, colIndex) => (
+                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
+                      {getCellValue(item, col)}
+                    </td>
+                  ))}
+                  {actionButtons && (
+                    <td className="px-6 py-4">{actionButtons(item)}</td>
+                  )}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length + (actionButtons ? 1 : 0)} className="px-6 py-8 text-center text-brand-text-secondary font-medium">
+                  No records found
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="sm:hidden space-y-3">
-        {currentData.map((item, rowIndex) => (
-          <div key={rowIndex} className="bg-white border border-brand-border/50 rounded-xl p-4 shadow-soft">
-            <div className="grid grid-cols-1 gap-3">
-              {columns.map((col, colIndex) => (
-                <div key={colIndex} className="flex flex-col gap-1 text-sm">
-                  <span className="text-brand-text-secondary font-medium">{col.header}</span>
-                  <span className="text-brand-text-primary">{getCellValue(item, col)}</span>
-                </div>
-              ))}
+        {currentData.length > 0 ? (
+          currentData.map((item, rowIndex) => (
+            <div key={rowIndex} className="bg-white border border-brand-border/50 rounded-xl p-4 shadow-soft">
+              <div className="grid grid-cols-1 gap-3">
+                {columns.map((col, colIndex) => (
+                  <div key={colIndex} className="flex flex-col gap-1 text-sm">
+                    <span className="text-brand-text-secondary font-medium">{col.header}</span>
+                    <span className="text-brand-text-primary">{getCellValue(item, col)}</span>
+                  </div>
+                ))}
+              </div>
+              {actionButtons && (
+                <div className="mt-4 flex flex-wrap gap-2">{actionButtons(item)}</div>
+              )}
             </div>
-            {actionButtons && (
-              <div className="mt-4 flex flex-wrap gap-2">{actionButtons(item)}</div>
-            )}
+          ))
+        ) : (
+          <div className="bg-white border border-brand-border/50 rounded-xl p-8 text-center shadow-soft text-brand-text-secondary font-medium">
+            No records found
           </div>
-        ))}
+        )}
       </div>
 
       {!disablePagination && (
