@@ -1864,6 +1864,8 @@ const handleCreateJobCard = async () => {
       paymentSessions: payment.paymentSessions || [],
       selectedParts: payment.selectedParts || [],
       customerId: payment.customerId,
+      totalInvoiceAmount: payment.totalInvoiceAmount,
+      invoiceNumber: payment.invoiceNumber,
       paymentModeId: payment.paymentModeId,
       typeOfPaymentId: payment.typeOfPaymentId,
       serviceTypeOfCollectionId: payment.serviceTypeOfCollectionId,
@@ -2910,19 +2912,23 @@ useEffect(() => {
       accessor: "totalAmt",
       render: (value, row) => {
         if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
+          if (row.totalInvoiceAmount !== undefined && row.totalInvoiceAmount !== null) {
+            return parseFloat(row.totalInvoiceAmount).toFixed(2);
+          }
           const customer = customers.find(c => c.id === row.customerId);
           if (customer) {
             const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
                        customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
                        customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
             if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null && parseFloat(jc.totalRevenue) > 0) {
-               return jc.totalRevenue;
+               return parseFloat(jc.totalRevenue).toFixed(2);
             }
           }
           if (serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber && parseFloat(serviceJobCardInfo.totalRevenue) > 0) {
-             return serviceJobCardInfo.totalRevenue;
+             return parseFloat(serviceJobCardInfo.totalRevenue).toFixed(2);
           }
         }
+        // Fallback for non-job cards
         return value;
       }
     },
@@ -2939,52 +2945,47 @@ useEffect(() => {
       header: "Pending Amt",
       accessor: "pendingAmount",
       render: (value, row) => {
-        let balance = 0;
+        let invoiceAmount = 0;
+        
         if (row.jobCardNumber && row.jobCardNumber !== 'N/A') {
-          // Calculate pending for job card: sum all payments for this job card - invoice amount
-          const jobCardPayments = payments.filter(p => p.jobCardNumber === row.jobCardNumber && String(p.customerId) === String(row.customerId) && !p.cancelledAt);
-          const totalReceivedForJobCard = jobCardPayments.reduce((sum, p) => sum + (parseFloat(p.recAmt) || 0), 0);
-          
-          let invoiceAmount = parseFloat(row.totalAmt) || 0;
-          
-          // Find the job card to get actual invoice amount
-          const customer = customers.find(c => c.id === row.customerId);
-          if (customer) {
-            const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
-                       customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
-                       customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
-            if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null && parseFloat(jc.totalRevenue) > 0) {
-               invoiceAmount = parseFloat(jc.totalRevenue);
+          // Priority 1: Backend provided totalInvoiceAmount
+          if (row.totalInvoiceAmount !== undefined && row.totalInvoiceAmount !== null) {
+            invoiceAmount = parseFloat(row.totalInvoiceAmount);
+          } else {
+            // Fallback 1: Local state job card data
+            invoiceAmount = parseFloat(row.totalAmt) || 0;
+            const customer = customers.find(c => c.id === row.customerId);
+            if (customer) {
+              const jc = customer.activeJobCard?.jobCardNumber === row.jobCardNumber ? customer.activeJobCard :
+                         customer.closedJobCard?.jobCardNumber === row.jobCardNumber ? customer.closedJobCard :
+                         customer.jobCardData?.jobCardNumber === row.jobCardNumber ? customer.jobCardData : null;
+              if (jc && jc.totalRevenue !== undefined && jc.totalRevenue !== null && parseFloat(jc.totalRevenue) > 0) {
+                 invoiceAmount = parseFloat(jc.totalRevenue);
+              }
+            }
+            if (serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber && parseFloat(serviceJobCardInfo.totalRevenue) > 0) {
+               invoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue);
             }
           }
-          
-          if (serviceJobCardInfo && serviceJobCardInfo.jobCardNumber === row.jobCardNumber && parseFloat(serviceJobCardInfo.totalRevenue) > 0) {
-             invoiceAmount = parseFloat(serviceJobCardInfo.totalRevenue);
-          }
-          
-          const rawBalance = invoiceAmount - totalReceivedForJobCard;
-          
-          if (rawBalance < -0.01) {
-            return <span className="text-orange-600 font-semibold">+{Math.abs(rawBalance).toFixed(2)} (Extra)</span>;
-          } else if (rawBalance > 2) {
-            return <span className="text-red-600 font-semibold">{rawBalance.toFixed(2)}</span>;
-          } else {
-            return <span className="text-green-600 font-semibold">0.00</span>;
-          }
         } else if (row.totalAmt && row.totalAmt !== 'N/A') {
-          // For non-job-card payments, show difference between total and received
-          const rawBalance = parseFloat(row.totalAmt) - parseFloat(row.recAmt);
-          
-          if (rawBalance < -0.01) {
-            return <span className="text-orange-600 font-semibold">+{Math.abs(rawBalance).toFixed(2)} (Extra)</span>;
-          } else if (rawBalance > 2) {
-            return <span className="text-red-600 font-semibold">{rawBalance.toFixed(2)}</span>;
-          } else {
-            return <span className="text-green-600 font-semibold">0.00</span>;
-          }
+          invoiceAmount = parseFloat(row.totalAmt);
         }
+
+        // The backend calculates cumulative total paid for this job card up to this row and sends it as row.totalAmt
+        // Wait, for non-job card, row.totalAmt is the invoice amount, and we just use row.recAmt
+        const totalReceived = (row.jobCardNumber && row.jobCardNumber !== 'N/A')
+          ? (parseFloat(row.totalAmt) || 0) // cumulative total from backend
+          : (parseFloat(row.recAmt) || 0);
+
+        const rawBalance = invoiceAmount - totalReceived;
         
-        return <span>0.00</span>;
+        if (rawBalance < -0.01) {
+          return <span className="text-orange-600 font-semibold">+{Math.abs(rawBalance).toFixed(2)} (Extra)</span>;
+        } else if (rawBalance > 2) {
+          return <span className="text-red-600 font-semibold">{rawBalance.toFixed(2)}</span>;
+        } else {
+          return <span className="text-green-600 font-semibold">0.00</span>;
+        }
       }
     },
     { header: "PaymentMode", accessor: "paymentMode" },
