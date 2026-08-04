@@ -3,9 +3,10 @@ import config from '../config.js';
 const API_URL = `${config.API_BASE_URL}/payment-collections`;
 
 export const paymentCollectionApi = {
-  getAll: async (page = 1, limit = 10, customerId = null) => {
+  getAll: async (page = 1, limit = 10, customerId = null, search = '') => {
     let url = `${API_URL}?page=${page}&limit=${limit}`;
     if (customerId) url += `&customerId=${customerId}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
     const response = await fetch(url, { credentials: 'include' });
     return response.json();
   },

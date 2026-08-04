@@ -313,12 +313,15 @@ useEffect(() => {
     }
   };
 
-  const fetchPayments = async (page = currentPage, customerIdOverride = undefined) => {
+  const fetchPayments = async (page = currentPage, customerIdOverride = undefined, searchOverride = undefined) => {
     try {
       const cid = customerIdOverride !== undefined 
           ? (customerIdOverride === "new" ? null : customerIdOverride) 
           : (selectedCustomerId && selectedCustomerId !== "new" ? selectedCustomerId : null);
-      const response = await paymentCollectionApi.getAll(page, itemsPerPage, cid);
+      
+      const search = searchOverride !== undefined ? searchOverride : (cid ? "" : searchTerm);
+
+      const response = await paymentCollectionApi.getAll(page, itemsPerPage, cid, search);
       if (!response || !Array.isArray(response.data)) {
         console.error('Invalid response format:', response);
         setPayments([]);
@@ -1160,12 +1163,11 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                         const val = e.target.value;
                         setSearchTerm(val);
                         setShowDropdown(true);
-                        const wasSelected = selectedCustomerId !== "";
                         setSelectedCustomerId("");
                         setLoadedCustomer(null);
-                        if (wasSelected) {
-                          fetchPayments(1, null);
-                        }
+                        
+                        // We fetch right away when they type, matching backend records
+                        fetchPayments(1, null, val);
                       }}
                       onFocus={() => setShowDropdown(true)}
                       placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"

@@ -88,13 +88,21 @@ export class PaymentCollectionService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10, customerId?: number) {
+  async findAll(page: number = 1, limit: number = 10, customerId?: number, search?: string) {
     const safeLimit = Math.min(limit, 5000);
     const skip = (page - 1) * safeLimit;
 
     const whereClause: any = { deletedAt: null };
     if (customerId) {
       whereClause.customerId = customerId;
+    } else if (search) {
+      whereClause.OR = [
+        { receiptNo: { contains: search } },
+        { customer: { name: { contains: search } } },
+        { customer: { contactNo: { contains: search } } },
+        { vehicleModel: { model: { contains: search } } },
+        { refNo: { contains: search } }
+      ];
     }
 
     const [data, total] = await Promise.all([
