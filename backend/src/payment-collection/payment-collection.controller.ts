@@ -21,8 +21,12 @@ export class PaymentCollectionController {
   }
 
   @Get()
-  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.paymentCollectionService.findAll(page ? +page : 1, limit ? +limit : 10);
+  findAll(
+    @Query('page') page?: string, 
+    @Query('limit') limit?: string,
+    @Query('customerId') customerId?: string
+  ) {
+    return this.paymentCollectionService.findAll(page ? +page : 1, limit ? +limit : 10, customerId ? +customerId : undefined);
   }
 
   @Get(':id')

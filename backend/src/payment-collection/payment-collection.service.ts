@@ -88,12 +88,18 @@ export class PaymentCollectionService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(page: number = 1, limit: number = 10, customerId?: number) {
     const safeLimit = Math.min(limit, 5000);
     const skip = (page - 1) * safeLimit;
+
+    const whereClause: any = { deletedAt: null };
+    if (customerId) {
+      whereClause.customerId = customerId;
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.paymentCollection.findMany({
-        where: { deletedAt: null },
+        where: whereClause,
         include: {
           customer: true,
           paymentMode: true,
@@ -107,7 +113,7 @@ export class PaymentCollectionService {
         skip,
         take: safeLimit
       }),
-      this.prisma.paymentCollection.count({ where: { deletedAt: null } })
+      this.prisma.paymentCollection.count({ where: whereClause })
     ]);
     return { data, total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
   }

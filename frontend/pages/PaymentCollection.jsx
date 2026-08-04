@@ -313,9 +313,12 @@ useEffect(() => {
     }
   };
 
-  const fetchPayments = async (page = currentPage) => {
+  const fetchPayments = async (page = currentPage, customerIdOverride = undefined) => {
     try {
-      const response = await paymentCollectionApi.getAll(page, itemsPerPage);
+      const cid = customerIdOverride !== undefined 
+          ? (customerIdOverride === "new" ? null : customerIdOverride) 
+          : (selectedCustomerId && selectedCustomerId !== "new" ? selectedCustomerId : null);
+      const response = await paymentCollectionApi.getAll(page, itemsPerPage, cid);
       if (!response || !Array.isArray(response.data)) {
         console.error('Invalid response format:', response);
         setPayments([]);
@@ -400,26 +403,18 @@ useEffect(() => {
     if (selectedCustomerId === "new") {
       setIsNewCustomer(true);
       setLoadedCustomer(null);
-      setFilteredPayments(payments);
+      fetchPayments(1, "new");
     } else if (selectedCustomerId) {
       const customer = customers.find(
         (c) => c.id === parseInt(selectedCustomerId)
       );
       setLoadedCustomer(customer || null);
       setIsNewCustomer(false);
-      const customerPayments = payments.filter(
-        (payment) => payment.customerId === parseInt(selectedCustomerId)
-      );
-      setFilteredPayments(
-        customerPayments.map((payment, index) => ({
-          ...payment,
-          sNo: index + 1,
-        }))
-      );
+      fetchPayments(1, selectedCustomerId);
     } else {
       setLoadedCustomer(null);
       setIsNewCustomer(false);
-      setFilteredPayments(payments);
+      fetchPayments(1, null);
     }
   };
 
@@ -638,7 +633,7 @@ const handleCustomerSelect = (customer) => {
     setSearchTerm("+ Add New Customer");
     setIsNewCustomer(true);
     setLoadedCustomer(null);
-    setFilteredPayments(payments);
+    fetchPayments(1, "new");
     setSalesInvoiceInfo(null);
     setServiceJobCardInfo(null);
   } else if (customer.isInvoice) {
@@ -665,7 +660,7 @@ const handleCustomerSelect = (customer) => {
          m.model.toLowerCase().includes(customer.invoiceData.vehicleModel.toLowerCase()))
       )?.id.toString() || prev.vehicleModelId
     }));
-    setFilteredPayments(payments);
+    fetchPayments(1, "new");
   } else if (customer.isJobCard) {
   setSelectedCustomerId("new");
   setSearchTerm(customer.name);
@@ -712,21 +707,13 @@ const handleCustomerSelect = (customer) => {
     vehicleModelId: matchedModelId || prev.vehicleModelId,
   }));
   
-  setFilteredPayments(payments);
+  fetchPayments(1, "new");
 }else {
     setSelectedCustomerId(customer.id.toString());
     setSearchTerm(customer.name);
     setLoadedCustomer(customer);
     setIsNewCustomer(false);
-    const customerPayments = payments.filter(
-      (payment) => payment.customerId === customer.id
-    );
-    setFilteredPayments(
-      customerPayments.map((payment, index) => ({
-        ...payment,
-        sNo: index + 1,
-      }))
-    );
+    fetchPayments(1, customer.id);
     
     // Fetch sales invoice info for this customer
     salesInvoiceApi.getAll(customer.contactNo).then((results) => {
@@ -1170,11 +1157,15 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => {
-                        setSearchTerm(e.target.value);
+                        const val = e.target.value;
+                        setSearchTerm(val);
                         setShowDropdown(true);
+                        const wasSelected = selectedCustomerId !== "";
                         setSelectedCustomerId("");
                         setLoadedCustomer(null);
-                        setFilteredPayments(payments);
+                        if (wasSelected) {
+                          fetchPayments(1, null);
+                        }
                       }}
                       onFocus={() => setShowDropdown(true)}
                       placeholder="Search by name,contact no , Job Card No and Vehicle Reg No"
