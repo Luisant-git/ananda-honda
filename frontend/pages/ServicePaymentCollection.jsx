@@ -1075,15 +1075,23 @@ useEffect(() => {
         } else if (formData.jobCardNumber.trim()) {
           // Job card not found for this customer
           setIsManualJobCard(true);
-          setServiceJobCardInfo(null);
-          setFoundJobCard(null);
+          
+          if (!serviceJobCardInfo || serviceJobCardInfo.jobCardNumber?.toString().toLowerCase().trim() !== formData.jobCardNumber.toLowerCase().trim()) {
+            setServiceJobCardInfo(null);
+            setFoundJobCard(null);
+          } else {
+            setIsManualJobCard(false);
+          }
+          
           setPendingPayments([]);
           // Don't clear the job card number here - user might want to create a new one
         }
       } catch (error) {
         console.error('Error fetching job card:', error);
-        setServiceJobCardInfo(null);
-        setFoundJobCard(null);
+        if (!serviceJobCardInfo || serviceJobCardInfo.jobCardNumber?.toString().toLowerCase().trim() !== formData.jobCardNumber.toLowerCase().trim()) {
+          setServiceJobCardInfo(null);
+          setFoundJobCard(null);
+        }
       } finally {
         setIsCheckingJobCard(false);
       }
