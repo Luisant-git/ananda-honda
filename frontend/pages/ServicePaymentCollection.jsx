@@ -938,8 +938,11 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
 // Auto-fetch job card details when job card number changes
 useEffect(() => {
   const autoFetchJobCardDetails = async () => {
-    // CRITICAL: Only auto-fetch if we have a loaded customer
-    if (!loadedCustomer?.contactNo) {
+    const activeContactNo = loadedCustomer?.contactNo || (isNewCustomer && newCustomerData?.contactNo);
+    const activeCustomerName = loadedCustomer?.name || (isNewCustomer && newCustomerData?.name);
+
+    // CRITICAL: Only auto-fetch if we have a loaded customer or new customer from import
+    if (!activeContactNo) {
       console.log('No customer loaded, skipping auto-fetch');
       // Clear any existing job card info if no customer is loaded
       if (serviceJobCardInfo) {
@@ -967,23 +970,23 @@ useEffect(() => {
       
       try {
         // IMPORTANT: Pass the customer's mobile number to validate ownership
-        const jobCard = await fetchJobCardByNumber(formData.jobCardNumber, loadedCustomer.contactNo);
+        const jobCard = await fetchJobCardByNumber(formData.jobCardNumber, activeContactNo);
         setFoundJobCard(jobCard);
         
         if (jobCard) {
           // Double check that this job card belongs to the loaded customer
-          if (!compareMobiles(jobCard.mobileNumber, loadedCustomer.contactNo)) {
+          if (!compareMobiles(jobCard.mobileNumber, activeContactNo)) {
             console.warn('Auto-fetched job card does NOT belong to current customer. Ignoring.');
             setServiceJobCardInfo(null);
             setFoundJobCard(null);
             setIsCheckingJobCard(false);
             // Clear the job card number from form since it doesn't belong to this customer
             setFormData(prev => ({ ...prev, jobCardNumber: "" }));
-            toast.error(`Job card ${formData.jobCardNumber} does not belong to ${loadedCustomer.name}`, { duration: 3000 });
+            toast.error(`Job card ${formData.jobCardNumber} does not belong to ${activeCustomerName}`, { duration: 3000 });
             return;
           }
           
-          console.log('Found existing job card for customer:', loadedCustomer.name, jobCard.jobCardNumber);
+          console.log('Found existing job card for customer:', activeCustomerName, jobCard.jobCardNumber);
           setServiceJobCardInfo(jobCard);
           
           // Auto-fill form data from job card
@@ -1081,7 +1084,7 @@ useEffect(() => {
   }, 500);
   
   return () => clearTimeout(timeoutId);
-}, [formData.jobCardNumber, formData.paymentType, serviceTypes, vehicleModels, serviceTypeOfCollections, isEditMode, loadedCustomer?.contactNo, loadedCustomer?.name]);
+}, [formData.jobCardNumber, formData.paymentType, serviceTypes, vehicleModels, serviceTypeOfCollections, isEditMode, loadedCustomer?.contactNo, loadedCustomer?.name, isNewCustomer, newCustomerData?.contactNo, newCustomerData?.name]);
 
 // Add this useEffect after the existing useEffect declarations
 useEffect(() => {
