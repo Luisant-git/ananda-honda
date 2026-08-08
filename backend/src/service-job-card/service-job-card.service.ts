@@ -126,11 +126,10 @@ export class ServiceJobCardService {
   }
 
   // ✅ Multi-format Upload
-  async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE', fileName: string = 'unknown.xlsx') {
+    async uploadFile(buffer: Buffer, type: 'REVENUE' | 'WORKSHOP' | 'INVOICE' | 'ORDER' = 'REVENUE', fileName: string = 'unknown.xlsx') {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    // Dynamically find header row (skip garbage rows like #ERROR!)
     const allRowsAoa: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
     let headerRowIdx = 0;
     for (let i = 0; i < Math.min(20, allRowsAoa.length); i++) {
@@ -153,6 +152,10 @@ export class ServiceJobCardService {
 
     let imported = 0;
     const seenPartCategories = new Set<string>();
+    
+    // 1. First Pass: Map Data and collect unique Service Types
+    const parsedRows: any[] = [];
+    const uniqueServiceNames = new Set<string>();
 
     for (const row of rows) {
       let jobCardNumber = '';
@@ -194,13 +197,13 @@ export class ServiceJobCardService {
         jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
         closedDate = this.parseExcelDate(row['Job Card Closed Date']);
         status = String(row['Job Card Status'] || '').trim();
-        labourRevenue = parseFloat(row['Labour Revenue'] || 0);
-        partsRevenue = parseFloat(row['Parts Revenue'] || 0);
-        lubesRevenue = parseFloat(row['Lubes Revenue'] || 0);
-        accessoriesRevenue = parseFloat(row['Accessories Revenue'] || 0);
-        totalRevenue = parseFloat(row['Total Job Card Revenue'] || 0);
+        labourRevenue = parseFloat(row['Labour Revenue'] || '0');
+        partsRevenue = parseFloat(row['Parts Revenue'] || '0');
+        lubesRevenue = parseFloat(row['Lubes Revenue'] || '0');
+        accessoriesRevenue = parseFloat(row['Accessories Revenue'] || '0');
+        totalRevenue = parseFloat(row['Total Job Card Revenue'] || '0');
         amc = String(row['AMC Service'] || '').toLowerCase().includes('yes') || String(row['AMC Service'] || '') === '1';
-        currentKM = parseFloat(row['Current KMs'] || 0);
+        currentKM = parseFloat(row['Current KMs'] || '0');
         frameNumber = String(row['Frame Number'] || '').trim();
         vehicleDetails = String(row['Model Name'] || '').trim();
       } else if (type === 'WORKSHOP') {
@@ -210,31 +213,22 @@ export class ServiceJobCardService {
         jobCardDate = this.parseExcelDate(row['Job Card Date'] || row['Date']);
         serviceName = String(row['Service Type'] || '').trim();
         vehicleDetails = String(row['Model Name'] || row['Model Variant'] || '').trim();
-        currentKM = parseFloat(row['Current KM'] || 0);
+        currentKM = parseFloat(row['Current KM'] || '0');
         frameNumber = String(row['Frame Number'] || '').trim();
 
-        // Extract boolean flags strictly from the Part Category column (except painting which can be in description)
         const partCategory = String(row['Part Category'] || '').toLowerCase().trim();
         const partDesc = String(row['Part Description'] || '').toLowerCase().trim();
         const combined = `${partCategory} ${partDesc}`.trim();
 
         if (partCategory) {
-          // Oil: Match 'oil' (but not 'coil'/'foil') or 'lub' (to match 'LUB', 'LUBRICANT', 'lubricant', etc.)
+          seenPartCategories.add(partCategory);
           if ((partCategory.includes('oil') && !partCategory.includes('coil') && !partCategory.includes('foil')) || partCategory.includes('lub')) {
             oil = true;
           }
-          if (partCategory.includes('amc')) {
-            amc = true;
-          }
-          if (partCategory.includes('battery') || partCategory.includes('batteries')) {
-            battery = true;
-          }
-          if (partCategory.includes('tyr') || partCategory.includes('tire')) {
-            tyre = true;
-          }
+          if (partCategory.includes('amc')) { amc = true; }
+          if (partCategory.includes('battery') || partCategory.includes('batteries')) { battery = true; }
+          if (partCategory.includes('tyr') || partCategory.includes('tire')) { tyre = true; }
         }
-
-        // Painting/Panels can be in Part Category or Part Description
         if (combined && (combined.includes('paint') || combined.includes('panel'))) {
           painting = true;
         }
@@ -257,10 +251,10 @@ export class ServiceJobCardService {
         
         let invAmt = getVal('Total Invoice Amount') || getVal('Invoice Amount') || 0;
         if (typeof invAmt === 'string') {
-          const match = invAmt.match(/[\d,]+\.?\d*/);
+          const match = invAmt.match(/[d,]+.?d*/);
           invAmt = match ? match[0].replace(/,/g, '') : '0';
         }
-        totalRevenue = parseFloat(invAmt || 0);
+        totalRevenue = parseFloat(String(invAmt) || '0');
       } else if (type === 'ORDER') {
         const getVal = (key: string) => {
            const k = Object.keys(row).find(x => x.toLowerCase().trim() === key.toLowerCase().trim());
@@ -287,226 +281,228 @@ export class ServiceJobCardService {
 
       if (!jobCardNumber) continue;
 
-      // If jobCardDate is 2023, and we are in 2026, user might want to shift it to 2026
-      // but we'll stick to the Excel date. If they want 2026, they should have it in Excel
-      // or we can shift it if it's 2023.
-      if (jobCardDate && jobCardDate.getFullYear() === 2023) {
-        jobCardDate.setFullYear(2026);
-      }
-      if (closedDate && closedDate.getFullYear() === 2023) {
-        closedDate.setFullYear(2026);
-      }
+      if (jobCardDate && jobCardDate.getFullYear() === 2023) jobCardDate.setFullYear(2026);
+      if (closedDate && closedDate.getFullYear() === 2023) closedDate.setFullYear(2026);
 
-      let serviceId: number | null = null;
-      if (serviceName) {
-        const service = await this.prisma.serviceType.upsert({
-          where: { name: serviceName },
-          update: {},
-          create: { name: serviceName, status: 'Active' },
-        });
-        serviceId = service.id;
-      }
+      if (serviceName) uniqueServiceNames.add(serviceName.trim());
 
-      const finalCreatedAt = jobCardDate || closedDate || new Date();
-
-      const existingJobCard = await this.prisma.serviceJobCard.findUnique({
-        where: { jobCardNumber },
+      parsedRows.push({
+        jobCardNumber, registrationNumber, customerName, mobileNumber, vehicleDetails,
+        serviceName, closedDate, status, labourRevenue, partsRevenue, lubesRevenue,
+        accessoriesRevenue, totalRevenue, amc, oil, battery, tyre, painting,
+        currentKM, frameNumber, invoiceNumber, otpNo, amcStartDate, amcEndDate,
+        estimatedDeliveryDate, serviceAdvisorPhone, branchCode, mainCode, jobCardDate,
+        finalCreatedAt: jobCardDate || closedDate || new Date()
       });
-
-      if (existingJobCard) {
-        const updateData: any = {
-          registrationNumber: registrationNumber || undefined,
-          customerName: customerName || undefined,
-          mobileNumber: mobileNumber || undefined,
-          vehicleDetails: vehicleDetails || undefined,
-          serviceId: serviceId || undefined,
-          labourRevenue: labourRevenue || undefined,
-          partsRevenue: partsRevenue || undefined,
-          lubesRevenue: lubesRevenue || undefined,
-          accessoriesRevenue: accessoriesRevenue || undefined,
-          currentKM: currentKM || undefined,
-          frameNumber: frameNumber || undefined,
-          invoiceNumber: invoiceNumber || undefined,
-          otpNo: otpNo || undefined,
-          amcStartDate: amcStartDate || undefined,
-          amcEndDate: amcEndDate || undefined,
-          estimatedDeliveryDate: estimatedDeliveryDate || undefined,
-          branchCode: branchCode || undefined,
-          mainCode: mainCode || undefined,
-          updatedAt: new Date(),
-        };
-
-        // 🚩 Prevent reverting 'Closed' status to 'Pending' from old reports
-        const isAlreadyClosed = existingJobCard.status.toLowerCase() === 'closed';
-        if (!isAlreadyClosed) {
-          updateData.status = status || undefined;
-          updateData.closedDate = closedDate || undefined;
-        }
-
-        // Revenue: INVOICE type is authoritative. For others, only update if existing is empty.
-        if (type === 'INVOICE') {
-          updateData.totalRevenue = totalRevenue;
-        } else if (!existingJobCard.totalRevenue || existingJobCard.totalRevenue === 0) {
-          updateData.totalRevenue = totalRevenue || undefined;
-        }
-
-        if (amc) updateData.amc = true;
-        if (oil) updateData.oil = true;
-        if (battery) updateData.battery = true;
-        if (tyre) updateData.tyre = true;
-        if (painting) updateData.painting = true;
-
-        await this.prisma.serviceJobCard.update({
-          where: { jobCardNumber },
-          data: updateData,
-        });
-      } else {
-        const createdRecord = await this.prisma.serviceJobCard.create({
-          data: {
-          jobCardNumber,
-          registrationNumber: registrationNumber || 'N/A',
-          customerName: customerName || 'N/A',
-          mobileNumber: mobileNumber || 'N/A',
-          vehicleDetails: vehicleDetails || 'N/A',
-          serviceId,
-          status: status || 'Pending',
-          closedDate,
-          labourRevenue,
-          partsRevenue,
-          lubesRevenue,
-          accessoriesRevenue,
-          totalRevenue,
-          amc,
-          oil,
-          battery,
-          tyre,
-          painting,
-          currentKM,
-          frameNumber,
-          invoiceNumber,
-          otpNo,
-          amcStartDate,
-          amcEndDate,
-          estimatedDeliveryDate,
-          branchCode,
-          mainCode,
-          createdAt: finalCreatedAt,
-        },
-      });
-
-        imported++;
-
-        // If this upload is an ORDER sheet and we created a new job card with a valid mobile, send welcome template
-        try {
-          if (type === 'ORDER' && createdRecord.mobileNumber && createdRecord.mobileNumber !== 'N/A') {
-            const custName = createdRecord.customerName || 'Customer';
-            await this.whatsappService.sendServiceWelcomeTemplate(
-              String(createdRecord.mobileNumber),
-              String(custName),
-              serviceAdvisorPhone || process.env.SERVICE_ADVISOR_PHONE || '9108812221',
-            );
-            this.logger.log(`Sent service welcome template to ${createdRecord.mobileNumber} for job ${createdRecord.jobCardNumber}`);
-          }
-        } catch (waErr) {
-          this.logger.error(`Failed sending welcome template for uploaded job ${jobCardNumber}`, waErr?.response || waErr?.message || waErr);
-        }
-      }
-
-      // 🚩 Invoice feedback logic
-      if (type === 'INVOICE' && totalRevenue > 0) {
-        try {
-          const jobCard = await this.prisma.serviceJobCard.findUnique({
-            where: { jobCardNumber },
-            include: { serviceType: true },
-          });
-
-          // Only proceed if it was NOT already closed before this upload
-          // Wait, we updated it above. But we know `isAlreadyClosed`.
-          // Let's rely on calculating the paid amount.
-          if (jobCard && jobCard.totalRevenue && jobCard.totalRevenue > 0) {
-            const currentTotalRevenue = jobCard.totalRevenue;
-            const allPayments = await this.prisma.servicePaymentCollection.findMany({
-              where: {
-                jobCardNumber: jobCard.jobCardNumber,
-                deletedAt: null,
-                cancelledAt: null
-              }
-            });
-            const paidAmount = allPayments.reduce((sum, p) => sum + p.recAmt, 0);
-            
-            const hasFullPayment = allPayments.some(p => 
-              (p.paymentType || '').toLowerCase().trim() === 'full payment' && p.recAmt > 0
-            );
-
-            if ((paidAmount >= currentTotalRevenue || currentTotalRevenue - paidAmount <= 2.0) && hasFullPayment) {
-              let closedNow = false;
-              if (jobCard.status !== 'Closed') {
-                await this.prisma.serviceJobCard.update({
-                  where: { jobCardNumber },
-                  data: { status: 'Closed', closedDate: new Date() }
-                });
-                
-                await this.prisma.servicePaymentCollection.updateMany({
-                   where: {
-                     jobCardNumber: jobCard.jobCardNumber,
-                     deletedAt: null,
-                     cancelledAt: null,
-                     paymentStatus: 'pending'
-                   },
-                   data: { paymentStatus: 'completed' }
-                });
-                closedNow = true;
-              }
-
-              // Send feedback if we just closed it via this invoice upload
-              // This prevents duplicate sends if it was already closed before.
-              if (closedNow) {
-                const mobile = jobCard.mobileNumber;
-                if (mobile && mobile !== 'N/A') {
-                  const vehicleModel = jobCard.vehicleDetails || 'Honda 2-Wheeler';
-                  const registrationNo = jobCard.registrationNumber || 'Your Vehicle';
-                  const serviceName = jobCard.serviceType?.name || 'Service';
-                  const custName = jobCard.customerName || 'Customer';
-
-                  await this.whatsappService.sendFeedbackRequestTemplate(
-                    mobile, custName, vehicleModel, registrationNo
-                  );
-                  this.logger.log(`Sent feedback request to ${mobile} for job ${jobCardNumber} after INVOICE upload`);
-                }
-              }
-            }
-          }
-        } catch (fbErr) {
-          this.logger.error(`Failed sending feedback request for uploaded job ${jobCardNumber}`, fbErr?.response || fbErr?.message || fbErr);
-        }
-      }
     }
+
+    // 2. Pre-fetch and create missing Service Types
+    const existingServices = await this.prisma.serviceType.findMany();
+    const serviceTypeMap = new Map<string, number>();
+    existingServices.forEach(s => serviceTypeMap.set(s.name.toLowerCase().trim(), s.id));
+
+    const newServicesData = Array.from(uniqueServiceNames)
+        .filter(name => !serviceTypeMap.has(name.toLowerCase()))
+        .map(name => ({ name, status: 'Active' }));
+
+    if (newServicesData.length > 0) {
+        await this.prisma.serviceType.createMany({ data: newServicesData, skipDuplicates: true });
+        const updatedServices = await this.prisma.serviceType.findMany();
+        updatedServices.forEach(s => serviceTypeMap.set(s.name.toLowerCase().trim(), s.id));
+    }
+
+    // 3. Process in Chunks
+    const chunkSize = 200;
+    const whatsappQueue: any[] = [];
+    
+    for (let i = 0; i < parsedRows.length; i += chunkSize) {
+        const chunk = parsedRows.slice(i, i + chunkSize);
+        const jobCardNumbers = chunk.map(r => r.jobCardNumber);
+        
+        // Fetch existing Job Cards
+        const existingJobCards = await this.prisma.serviceJobCard.findMany({
+            where: { jobCardNumber: { in: jobCardNumbers } },
+            include: { serviceType: true }
+        });
+        const existingJobCardMap = new Map();
+        existingJobCards.forEach(jc => existingJobCardMap.set(jc.jobCardNumber, jc));
+
+        // Fetch Payments for INVOICE type
+        const paymentsMap = new Map();
+        if (type === 'INVOICE') {
+            const allPayments = await this.prisma.servicePaymentCollection.findMany({
+                where: { jobCardNumber: { in: jobCardNumbers }, deletedAt: null, cancelledAt: null }
+            });
+            allPayments.forEach(p => {
+                if (!paymentsMap.has(p.jobCardNumber)) paymentsMap.set(p.jobCardNumber, []);
+                paymentsMap.get(p.jobCardNumber).push(p);
+            });
+        }
+
+        // Process chunk concurrently
+        const promises = chunk.map(async (rowData) => {
+            const serviceId = rowData.serviceName ? serviceTypeMap.get(rowData.serviceName.toLowerCase().trim()) : null;
+            const existingJobCard = existingJobCardMap.get(rowData.jobCardNumber);
+            
+            if (existingJobCard) {
+                const updateData: any = {
+                    registrationNumber: rowData.registrationNumber || undefined,
+                    customerName: rowData.customerName || undefined,
+                    mobileNumber: rowData.mobileNumber || undefined,
+                    vehicleDetails: rowData.vehicleDetails || undefined,
+                    serviceId: serviceId || undefined,
+                    labourRevenue: rowData.labourRevenue || undefined,
+                    partsRevenue: rowData.partsRevenue || undefined,
+                    lubesRevenue: rowData.lubesRevenue || undefined,
+                    accessoriesRevenue: rowData.accessoriesRevenue || undefined,
+                    currentKM: rowData.currentKM || undefined,
+                    frameNumber: rowData.frameNumber || undefined,
+                    invoiceNumber: rowData.invoiceNumber || undefined,
+                    otpNo: rowData.otpNo || undefined,
+                    amcStartDate: rowData.amcStartDate || undefined,
+                    amcEndDate: rowData.amcEndDate || undefined,
+                    estimatedDeliveryDate: rowData.estimatedDeliveryDate || undefined,
+                    branchCode: rowData.branchCode || undefined,
+                    mainCode: rowData.mainCode || undefined,
+                    updatedAt: new Date(),
+                };
+
+                const isAlreadyClosed = existingJobCard.status.toLowerCase() === 'closed';
+                if (!isAlreadyClosed) {
+                    updateData.status = rowData.status || undefined;
+                    updateData.closedDate = rowData.closedDate || undefined;
+                }
+
+                if (type === 'INVOICE') {
+                    updateData.totalRevenue = rowData.totalRevenue;
+                } else if (!existingJobCard.totalRevenue || existingJobCard.totalRevenue === 0) {
+                    updateData.totalRevenue = rowData.totalRevenue || undefined;
+                }
+
+                if (rowData.amc) updateData.amc = true;
+                if (rowData.oil) updateData.oil = true;
+                if (rowData.battery) updateData.battery = true;
+                if (rowData.tyre) updateData.tyre = true;
+                if (rowData.painting) updateData.painting = true;
+
+                const updatedJobCard = await this.prisma.serviceJobCard.update({
+                    where: { jobCardNumber: rowData.jobCardNumber },
+                    data: updateData,
+                });
+
+                if (type === 'INVOICE' && rowData.totalRevenue > 0) {
+                    const currentTotalRevenue = rowData.totalRevenue;
+                    const payments = paymentsMap.get(updatedJobCard.jobCardNumber) || [];
+                    const paidAmount = payments.reduce((sum: number, p: any) => sum + p.recAmt, 0);
+                    const hasFullPayment = payments.some((p: any) => (p.paymentType || '').toLowerCase().trim() === 'full payment' && p.recAmt > 0);
+
+                    if ((paidAmount >= currentTotalRevenue || currentTotalRevenue - paidAmount <= 2.0) && hasFullPayment) {
+                        let closedNow = false;
+                        if (existingJobCard.status !== 'Closed') {
+                            await this.prisma.serviceJobCard.update({
+                                where: { jobCardNumber: updatedJobCard.jobCardNumber },
+                                data: { status: 'Closed', closedDate: new Date() }
+                            });
+                            
+                            await this.prisma.servicePaymentCollection.updateMany({
+                                where: { jobCardNumber: updatedJobCard.jobCardNumber, deletedAt: null, cancelledAt: null, paymentStatus: 'pending' },
+                                data: { paymentStatus: 'completed' }
+                            });
+                            closedNow = true;
+                        }
+
+                        if (closedNow && updatedJobCard.mobileNumber && updatedJobCard.mobileNumber !== 'N/A') {
+                            whatsappQueue.push({
+                                type: 'FEEDBACK',
+                                mobile: updatedJobCard.mobileNumber,
+                                custName: updatedJobCard.customerName || 'Customer',
+                                vehicleModel: updatedJobCard.vehicleDetails || 'Honda 2-Wheeler',
+                                registrationNo: updatedJobCard.registrationNumber || 'Your Vehicle',
+                                jobCardNumber: updatedJobCard.jobCardNumber,
+                                serviceName: existingJobCard.serviceType?.name
+                            });
+                        }
+                    }
+                }
+            } else {
+                const createdRecord = await this.prisma.serviceJobCard.create({
+                    data: {
+                        jobCardNumber: rowData.jobCardNumber,
+                        registrationNumber: rowData.registrationNumber || 'N/A',
+                        customerName: rowData.customerName || 'N/A',
+                        mobileNumber: rowData.mobileNumber || 'N/A',
+                        vehicleDetails: rowData.vehicleDetails || 'N/A',
+                        serviceId,
+                        status: rowData.status || 'Pending',
+                        closedDate: rowData.closedDate,
+                        labourRevenue: rowData.labourRevenue,
+                        partsRevenue: rowData.partsRevenue,
+                        lubesRevenue: rowData.lubesRevenue,
+                        accessoriesRevenue: rowData.accessoriesRevenue,
+                        totalRevenue: rowData.totalRevenue,
+                        amc: rowData.amc,
+                        oil: rowData.oil,
+                        battery: rowData.battery,
+                        tyre: rowData.tyre,
+                        painting: rowData.painting,
+                        currentKM: rowData.currentKM,
+                        frameNumber: rowData.frameNumber,
+                        invoiceNumber: rowData.invoiceNumber,
+                        otpNo: rowData.otpNo,
+                        amcStartDate: rowData.amcStartDate,
+                        amcEndDate: rowData.amcEndDate,
+                        estimatedDeliveryDate: rowData.estimatedDeliveryDate,
+                        branchCode: rowData.branchCode,
+                        mainCode: rowData.mainCode,
+                        createdAt: rowData.finalCreatedAt,
+                    },
+                });
+
+                if (type === 'ORDER' && createdRecord.mobileNumber && createdRecord.mobileNumber !== 'N/A') {
+                    whatsappQueue.push({
+                        type: 'WELCOME',
+                        mobile: createdRecord.mobileNumber,
+                        custName: createdRecord.customerName || 'Customer',
+                        jobCardNumber: createdRecord.jobCardNumber,
+                        serviceAdvisorPhone: rowData.serviceAdvisorPhone || process.env.SERVICE_ADVISOR_PHONE || '9108812221'
+                    });
+                }
+            }
+            imported++;
+        });
+
+        await Promise.all(promises);
+    }
+
+    // 4. Process WhatsApp Messages Asynchronously
+    this.processWhatsAppQueue(whatsappQueue).catch(err => {
+        this.logger.error('Background WhatsApp Queue Error', err);
+    });
 
     console.log('DEBUG UNIQUE PART CATEGORIES SEEN IN UPLOAD:', Array.from(seenPartCategories));
 
-    // 🚩 Developer Log
-    try {
-      const logDir = path.join(process.cwd(), 'logs');
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-      }
-      const uploadsDir = path.join(logDir, 'uploads');
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
-      const uniqueFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      fs.writeFileSync(path.join(uploadsDir, uniqueFileName), buffer);
-
-      const logFile = path.join(logDir, 'developer_import.log');
-      const timestamp = new Date().toLocaleString('en-GB', { hour12: true }).toUpperCase();
-      const logEntry = `[${timestamp}] REPORT: SERVICE ${type} | FILE: ${fileName} | IMPORTED_RECORDS: ${imported} | SERVER_FILE: ${uniqueFileName}\n`;
-      fs.appendFileSync(logFile, logEntry);
-    } catch (logErr) {
-      this.logger.error('Failed to write developer import log', logErr);
-    }
-
-    return { imported };
+    return { message: `Successfully imported ${imported} records`, count: imported };
   }
+
+  // Asynchronous Queue Processor for WhatsApp messages
+  private async processWhatsAppQueue(queue: any[]) {
+      for (const msg of queue) {
+          try {
+              if (msg.type === 'WELCOME') {
+                  await this.whatsappService.sendServiceWelcomeTemplate(msg.mobile, msg.custName, msg.serviceAdvisorPhone);
+                  this.logger.log(`Sent service welcome template to ${msg.mobile} for job ${msg.jobCardNumber}`);
+              } else if (msg.type === 'FEEDBACK') {
+                  await this.whatsappService.sendFeedbackRequestTemplate(msg.mobile, msg.custName, msg.vehicleModel, msg.registrationNo);
+                  this.logger.log(`Sent feedback request to ${msg.mobile} for job ${msg.jobCardNumber} after INVOICE upload`);
+              }
+          } catch (err: any) {
+              this.logger.error(`Failed to send WhatsApp ${msg.type} message to ${msg.mobile}`, err?.response || err?.message || err);
+          }
+          // Add a small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 200));
+      }
+  }
+
 
   // ✅ Find All with optional include parameter and status filter
   async findAll(search?: string, includeServiceType?: boolean, status?: string) {
