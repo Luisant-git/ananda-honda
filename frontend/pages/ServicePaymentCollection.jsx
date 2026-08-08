@@ -267,6 +267,12 @@ const fetchJobCardByNumber = async (jobCardNumber, expectedMobileNumber = null) 
     try {
       const searchResults = await serviceJobCardApi.search(jobCardNumber);
       allJobCards = Array.isArray(searchResults) ? searchResults : (searchResults.data || []);
+      
+      // If search endpoint returned empty, it might be due to a bug in the backend search implementation,
+      // fallback to getAll which fetches all recent job cards where we might find it
+      if (allJobCards.length === 0) {
+        throw new Error("Empty search results, falling back to getAll");
+      }
     } catch (searchError) {
       // fallback to full list if search endpoint isn't available or fails
       allJobCards = await serviceJobCardApi.getAll(jobCardNumber);
@@ -958,6 +964,16 @@ useEffect(() => {
       setServiceJobCardInfo(null);
       setFoundJobCard(null);
       setIsManualJobCard(false);
+      return;
+    }
+
+    // Don't re-fetch if we already have the exact same job card loaded
+    if (serviceJobCardInfo?.jobCardNumber === formData.jobCardNumber) {
+      if (!requiresJobCard) {
+        setServiceJobCardInfo(null);
+        setFoundJobCard(null);
+        setIsManualJobCard(false);
+      }
       return;
     }
     
