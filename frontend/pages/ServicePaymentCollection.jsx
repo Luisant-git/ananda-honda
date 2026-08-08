@@ -1586,7 +1586,8 @@ const fetchCustomers = async () => {
           activeJobCard: null,
           closedJobCard: null,
           invoiceData: null,
-          jobCardData: null
+          jobCardData: null,
+          jobCardsList: []
         });
       }
     });
@@ -1623,7 +1624,8 @@ const fetchCustomers = async () => {
             activeJobCard: null,
             closedJobCard: null,
             invoiceData: inv,
-            jobCardData: null
+            jobCardData: null,
+            jobCardsList: []
           });
         }
       }
@@ -1641,6 +1643,8 @@ const fetchCustomers = async () => {
           // Update existing customer
           const existing = customerMap.get(normalizedContact);
           existing.hasJobCard = true;
+          if (!existing.jobCardsList) existing.jobCardsList = [];
+          existing.jobCardsList.push(jc);
           if (isActive) {
             existing.hasActiveJobCard = true;
             existing.activeJobCard = jc;
@@ -1674,7 +1678,8 @@ const fetchCustomers = async () => {
             activeJobCard: isActive ? jc : null,
             closedJobCard: isClosed ? jc : null,
             invoiceData: null,
-            jobCardData: jc
+            jobCardData: jc,
+            jobCardsList: [jc]
           });
         }
       }
@@ -1693,7 +1698,12 @@ const fetchCustomers = async () => {
       return {
         ...customer,
         displayName: displayName,
-        badges: badges
+        badges: badges,
+        searchJcNos: (customer.jobCardsList || []).map(jc => jc.jobCardNumber).filter(Boolean).map(n => n.toString().toLowerCase()),
+        searchVRegNos: [
+          ...(customer.jobCardsList || []).map(jc => jc.registrationNumber),
+          customer.invoiceData?.vehicleRegNo
+        ].filter(Boolean).map(n => n.toString().toLowerCase())
       };
     });
 
@@ -2655,7 +2665,7 @@ useEffect(() => {
 
   const normalizedSearch = searchTerm.toString().trim().toLowerCase();
   const filteredCustomers = customers.filter((customer) => {
-    const jobCardNumbers = [
+    const jobCardNumbers = customer.searchJcNos || [
       customer.jobCardData?.jobCardNumber,
       customer.activeJobCard?.jobCardNumber,
       customer.closedJobCard?.jobCardNumber
@@ -2663,7 +2673,7 @@ useEffect(() => {
       .filter(Boolean)
       .map((jc) => jc.toString().toLowerCase());
 
-    const vehicleRegNos = [
+    const vehicleRegNos = customer.searchVRegNos || [
       customer.jobCardData?.registrationNumber,
       customer.activeJobCard?.registrationNumber,
       customer.closedJobCard?.registrationNumber,
