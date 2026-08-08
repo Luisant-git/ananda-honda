@@ -856,7 +856,8 @@ if (lastPayment.jobCardNumber && lastPayment.jobCardNumber !== 'N/A') {
   }
   
   // Set the job card info for display - ONLY if it belongs to this customer and we found a new one from payment
-  if (jobCardInfoFromPayment && compareMobiles(jobCardInfoFromPayment.mobileNumber, customer.contactNo)) {
+  // DO NOT overwrite if we already have an active/closed job card loaded from the dropdown!
+  if (!jobCardToUse && jobCardInfoFromPayment && compareMobiles(jobCardInfoFromPayment.mobileNumber, customer.contactNo)) {
     console.log('Setting job card info for:', customer.name, jobCardInfoFromPayment.jobCardNumber);
     setServiceJobCardInfo(jobCardInfoFromPayment);
   }
