@@ -122,6 +122,18 @@ const ServiceImport = ({ user }) => {
         });
 
         if (rawRows.length > 0) {
+          if (rawRows.length > 1000) {
+            setPreviewResult({
+              type,
+              fileName: file.name,
+              limitError: true,
+              totalRows: rawRows.length
+            });
+            setIsPreviewOpen(true);
+            setIsUploading(false);
+            return;
+          }
+
           const firstRowKeys = Object.keys(rawRows[0]).map(k => k.toLowerCase());
           const hasKey = (names) => names.some(n => firstRowKeys.some(k => k.includes(n.toLowerCase())));
           
@@ -573,6 +585,7 @@ const ServiceImport = ({ user }) => {
                   <span className="text-brand-text-primary font-bold text-sm">Upload Order Report</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
                     <strong className="text-pink-600 font-semibold">Key Data:</strong> Job Card #, Created Date/Time, Vehicle Reg No., Contact Phone, AMC Dates, Dealer Code, Main Code
+                    <br/><span className="text-pink-600 font-medium">(Max 1000 records/upload)</span>
                   </span>
                 </>
               )}
@@ -627,6 +640,7 @@ const ServiceImport = ({ user }) => {
                   <span className="text-brand-text-primary font-bold text-sm">Upload Revenue Sheet</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
                     <strong className="text-blue-600 font-semibold">Key Data:</strong> Labour, Parts, Lubes Revenue
+                    <br/><span className="text-blue-600 font-medium">(Max 1000 records/upload)</span>
                   </span>
                 </>
               )}
@@ -681,6 +695,7 @@ const ServiceImport = ({ user }) => {
                   <span className="text-brand-text-primary font-bold text-sm">Upload Workshop Excel</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
                     <strong className="text-orange-600 font-semibold">Key Data:</strong> Parts (Oil, Battery, Tyre, etc.)
+                    <br/><span className="text-orange-600 font-medium">(Max 1000 records/upload)</span>
                   </span>
                 </>
               )}
@@ -735,6 +750,7 @@ const ServiceImport = ({ user }) => {
                   <span className="text-brand-text-primary font-bold text-sm">Upload Invoice Report</span>
                   <span className="text-xs text-brand-text-secondary text-center mt-1">
                     <strong className="text-purple-600 font-semibold">Key Data:</strong> Closed Date/ Time, Invoice Number, Total Invoice Amount
+                    <br/><span className="text-purple-600 font-medium">(Max 1000 records/upload)</span>
                   </span>
                 </>
               )}
@@ -1060,7 +1076,24 @@ const ServiceImport = ({ user }) => {
               <div className="flex-1 overflow-auto">
                 {/* Step 2: Preview */}
                 {wizardStep === 2 && previewResult && (
-                  previewResult.formatError ? (
+                  previewResult.limitError ? (
+                    <div className="space-y-6 py-8 text-center">
+                      <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                        <AlertCircle className="w-12 h-12 text-red-600" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-red-700">Upload Limit Exceeded</h3>
+                      <p className="text-brand-text-secondary max-w-md mx-auto text-lg">
+                        You are trying to upload <strong className="text-red-600">{previewResult.totalRows}</strong> records.
+                        <br/>A maximum of <strong className="text-brand-text-primary">1000</strong> records are allowed per upload.
+                      </p>
+                      <p className="text-sm text-brand-text-secondary">Please split your file into smaller parts and try again.</p>
+                      <div className="flex justify-center pt-8">
+                        <button onClick={() => { setIsPreviewOpen(false); setPreviewResult(null); }} className="px-8 py-3 rounded-lg bg-white border border-brand-border text-brand-text-secondary font-bold hover:bg-brand-hover transition-colors">
+                          Go Back & Try Again
+                        </button>
+                      </div>
+                    </div>
+                  ) : previewResult.formatError ? (
                     <div className="space-y-6 py-8 text-center">
                       <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
                         <XCircle className="w-12 h-12 text-red-600" />

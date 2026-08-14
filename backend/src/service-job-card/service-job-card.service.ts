@@ -150,6 +150,10 @@ export class ServiceJobCardService {
       throw new BadRequestException('Excel file is empty');
     }
 
+    if (rows.length > 1000) {
+      throw new BadRequestException(`Maximum 1000 records are allowed per upload. Your file has ${rows.length} records.`);
+    }
+
     let imported = 0;
     const seenPartCategories = new Set<string>();
     
@@ -251,7 +255,7 @@ export class ServiceJobCardService {
         
         let invAmt = getVal('Total Invoice Amount') || getVal('Invoice Amount') || 0;
         if (typeof invAmt === 'string') {
-          const match = invAmt.match(/[d,]+.?d*/);
+          const match = invAmt.match(/[\d,]+(?:\.\d+)?/);
           invAmt = match ? match[0].replace(/,/g, '') : '0';
         }
         totalRevenue = parseFloat(String(invAmt) || '0');
