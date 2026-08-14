@@ -368,6 +368,7 @@ export class ServiceJobCardService {
                     estimatedDeliveryDate: rowData.estimatedDeliveryDate || undefined,
                     branchCode: rowData.branchCode || undefined,
                     mainCode: rowData.mainCode || undefined,
+                    createdAt: rowData.jobCardDate || undefined,
                     updatedAt: new Date(),
                 };
 
