@@ -496,15 +496,16 @@ async completePartPayment(id: number, data: {
     
     // Apply payment type filter
     if (paymentType && paymentType !== 'all') {
+      const types = paymentType.split(',').map(t => t.trim());
       // legacy: allow either master-linked records or string-only legacy records
-      const pt = await this.prisma.paymentType.findFirst({
-        where: { name: { equals: paymentType, mode: 'insensitive' } }
+      const pts = await this.prisma.paymentType.findMany({
+        where: { name: { in: types, mode: 'insensitive' } }
       });
       where.OR = [
-        { paymentType: { equals: paymentType, mode: 'insensitive' } }
+        { paymentType: { in: types, mode: 'insensitive' } }
       ];
-      if (pt) {
-        where.OR.unshift({ paymentTypeId: pt.id });
+      if (pts && pts.length > 0) {
+        where.OR.unshift({ paymentTypeId: { in: pts.map(pt => pt.id) } });
       }
     }
     

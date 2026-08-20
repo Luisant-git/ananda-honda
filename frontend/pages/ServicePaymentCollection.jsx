@@ -1215,6 +1215,11 @@ useEffect(() => {
     loadAllData();
   }, []);
 
+  useEffect(() => {
+    fetchPayments(1);
+  }, [internalMode]);
+
+
   // Handle subType: set default payment type based on subType
   useEffect(() => {
     if (paymentTypes.length === 0) return;
@@ -1269,7 +1274,10 @@ useEffect(() => {
     if (key === 'full') {
       filtered = filtered.filter(p => (p.paymentType || '').toString().toLowerCase().includes('full'));
     } else if (key === 'advance') {
-      filtered = filtered.filter(p => (p.paymentType || '').toString().toLowerCase().includes('advance'));
+      filtered = filtered.filter(p => {
+        const t = (p.paymentType || '').toString().toLowerCase();
+        return t.includes('advance') || t.includes('part payment');
+      });
     } else if (key === 'xyz') {
       filtered = filtered.filter(p => {
         const type = (p.paymentType || '').toString().toLowerCase();
@@ -1864,7 +1872,13 @@ const handleCreateJobCard = async () => {
 
   const fetchPayments = async (page = currentPage) => {
   try {
-    const response = await servicePaymentCollectionApi.getAll(page, itemsPerPage);
+    let paymentTypeToFetch = 'all';
+    if (internalMode === 'advance') {
+      paymentTypeToFetch = 'advance payment,part payment';
+    } else if (internalMode === 'full') {
+      paymentTypeToFetch = 'full payment';
+    }
+    const response = await servicePaymentCollectionApi.getAll(page, itemsPerPage, null, paymentTypeToFetch);
     if (!response || !Array.isArray(response.data)) {
       console.error('Invalid response format:', response);
       setPayments([]);
