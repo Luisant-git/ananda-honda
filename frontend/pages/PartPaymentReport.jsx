@@ -11,7 +11,6 @@ const PartPaymentReport = ({ user }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState('part payment');
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ const PartPaymentReport = ({ user }) => {
 
   useEffect(() => {
     handleFilter();
-  }, [fromDate, toDate, paymentTypeFilter, reportData]);
+  }, [fromDate, toDate, reportData]);
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -72,7 +71,7 @@ const PartPaymentReport = ({ user }) => {
         })
         .filter((payment) => {
           const type = payment.paymentType?.toString().toLowerCase().trim();
-          return type === 'part payment' || (payment.selectedParts?.length > 0);
+          return type === 'part payment' || type === 'advance payment' || (payment.selectedParts?.length > 0);
         });
       setReportData(formattedData);
       setFilteredData(formattedData);
@@ -115,21 +114,12 @@ const PartPaymentReport = ({ user }) => {
       });
     }
     
-    if (paymentTypeFilter) {
-      filtered = filtered.filter(item => {
-        const normalizedType = item.paymentType?.toString().toLowerCase().trim();
-        return normalizedType === paymentTypeFilter ||
-          (paymentTypeFilter === 'part payment' && item.selectedParts?.length > 0);
-      });
-    }
-    
     setFilteredData(filtered);
   };
 
   const handleReset = () => {
     setFromDate('');
     setToDate('');
-    setPaymentTypeFilter('part payment');
     fetchReportData();
   };
 
