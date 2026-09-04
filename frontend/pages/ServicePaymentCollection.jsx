@@ -562,7 +562,7 @@ const handleCustomerSelect = async (customer) => {
           setFormData(prev => ({
             ...prev,
             ...lastPaymentPrefill,
-            jobCardNumber: "",
+            jobCardNumber: isXyzPaymentMode ? (closedJobCard.jobCardNumber || "") : "",
             vehicleNumber: closedJobCard.registrationNumber || prev.vehicleNumber,
             serviceTypeId: "",
             serviceType: "",
@@ -683,10 +683,10 @@ if (jobCardToUse) {
 
   defaultJobCardData = {
     ...defaultJobCardData,
-    jobCardNumber: customer.activeJobCard ? (jobCardToUse.jobCardNumber || "") : "", // Only prefill JC number if active
+    jobCardNumber: (customer.activeJobCard || isXyzPaymentMode) ? (jobCardToUse.jobCardNumber || "") : "", // Only prefill JC number if active or in VAS mode
     vehicleNumber: jobCardToUse.registrationNumber || "",
-    serviceTypeId: customer.activeJobCard ? matchedServiceTypeId : "",
-    serviceType: customer.activeJobCard ? serviceTypeName : "",
+    serviceTypeId: (customer.activeJobCard || isXyzPaymentMode) ? matchedServiceTypeId : "",
+    serviceType: (customer.activeJobCard || isXyzPaymentMode) ? serviceTypeName : "",
     vehicleModelId: matchedModelId,
   };
 } else {
