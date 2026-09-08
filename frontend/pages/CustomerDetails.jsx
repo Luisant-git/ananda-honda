@@ -1196,7 +1196,7 @@ const fetchPermissions = async () => {
                   required
                   placeholder="10-digit mobile number"
                   maxLength="10"
-                  disabled={isEditMode}
+                  disabled={isEditMode && !['ADMIN', 'DEVELOPER'].includes(user?.role)}
                 />
                 {isCheckingCustomer && (
                   <div className="absolute right-3 top-8">
