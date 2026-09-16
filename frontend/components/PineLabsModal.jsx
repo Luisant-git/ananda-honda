@@ -73,7 +73,8 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
       if (res.status === 'Success') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
         if (countdownInterval.current) clearInterval(countdownInterval.current);
-        setStatus('Payment Successful!');
+        const modeText = res.paymentMode ? ` (Mode: ${res.paymentMode})` : '';
+        setStatus(`Payment Successful!${modeText}`);
         setTimeout(() => {
           onSuccess(txId);
         }, 3500);
