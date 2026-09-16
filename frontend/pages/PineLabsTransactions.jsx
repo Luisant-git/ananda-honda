@@ -9,6 +9,7 @@ const PineLabsTransactions = ({ embedded = false }) => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('response');
+  const [filterType, setFilterType] = useState('sale');
 
   useEffect(() => {
     fetchTransactions();
@@ -36,7 +37,8 @@ const PineLabsTransactions = ({ embedded = false }) => {
         createdBy: t.user?.username || 'System',
         requestData: t.requestData,
         responseData: t.responseData,
-        cancelData: t.cancelData
+        cancelData: t.cancelData,
+        machineType: t.machineType || 'sale'
       }));
       setTransactions(formatted);
     } catch (error) {
@@ -103,8 +105,10 @@ const PineLabsTransactions = ({ embedded = false }) => {
     );
   };
 
+  const filteredTransactions = transactions.filter(t => t.machineType === filterType);
+
   const handleViewAllLogs = () => {
-    const allLogs = transactions.map(t => ({
+    const allLogs = filteredTransactions.map(t => ({
       transactionId: t.transactionId,
       status: t.status,
       request: t.requestData || null,
@@ -163,11 +167,26 @@ const PineLabsTransactions = ({ embedded = false }) => {
         </div>
       </div>
 
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setFilterType('sale')}
+          className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${filterType === 'sale' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          Sale Transactions
+        </button>
+        <button
+          onClick={() => setFilterType('service')}
+          className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${filterType === 'service' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+        >
+          Service Transactions
+        </button>
+      </div>
+
       <div className="bg-white rounded-lg shadow-md p-4">
         {loading ? (
           <div className="flex justify-center p-8">Loading transactions...</div>
         ) : (
-          <DataTable data={transactions} columns={columns} actionButtons={actionButtons} />
+          <DataTable data={filteredTransactions} columns={columns} actionButtons={actionButtons} />
         )}
       </div>
 
