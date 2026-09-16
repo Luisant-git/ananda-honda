@@ -9,6 +9,8 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
   const [status, setStatus] = useState('');
   const [transactionId, setTransactionId] = useState(null);
   const pollingInterval = useRef(null);
+  const countdownInterval = useRef(null);
+  const [countdown, setCountdown] = useState(15);
   const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
@@ -25,8 +27,13 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
       clearInterval(pollingInterval.current);
       pollingInterval.current = null;
     }
+    if (countdownInterval.current) {
+      clearInterval(countdownInterval.current);
+      countdownInterval.current = null;
+    }
     setStatus('');
     setTransactionId(null);
+    setCountdown(15);
   };
 
   const initiatePayment = async () => {
@@ -43,9 +50,18 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
 
       setTransactionId(response.transactionId);
       setStatus('Waiting for customer to pay on POS machine...');
+      setCountdown(15);
       
-      const interval = setInterval(() => pollStatus(response.transactionId), 3000);
+      const interval = setInterval(() => {
+        setCountdown(15);
+        pollStatus(response.transactionId);
+      }, 15000);
       pollingInterval.current = interval;
+
+      const cInterval = setInterval(() => {
+        setCountdown(prev => (prev > 0 ? prev - 1 : 15));
+      }, 1000);
+      countdownInterval.current = cInterval;
     } catch (error) {
       setStatus('Failed to initiate: ' + (error.message || 'Unknown error'));
     }
@@ -56,12 +72,14 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
       const res = await pineLabsApi.checkStatus(txId);
       if (res.status === 'Success') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
+        if (countdownInterval.current) clearInterval(countdownInterval.current);
         setStatus('Payment Successful!');
         setTimeout(() => {
           onSuccess(txId);
         }, 3500);
       } else if (res.status === 'Failed' || res.status === 'Cancelled') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
+        if (countdownInterval.current) clearInterval(countdownInterval.current);
         setStatus(`Payment ${res.status}`);
       }
     } catch (error) {
@@ -140,7 +158,12 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
             <p className={`text-base font-semibold ${isError ? 'text-red-600' : isSuccess ? 'text-[#00a651]' : 'text-[#00a651]'}`}>
               {status}
             </p>
-            {isWaiting && <p className="text-xs text-green-800/70 mt-1.5 font-medium">Please ask the customer to tap, insert, or swipe their card.</p>}
+            {isWaiting && (
+              <>
+                <p className="text-xs text-green-800/70 mt-1.5 font-medium">Please ask the customer to tap, insert, or swipe their card.</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">Checking status in <span className="font-bold">{countdown}s</span>...</p>
+              </>
+            )}
           </div>
         </div>
 

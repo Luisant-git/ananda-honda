@@ -2189,6 +2189,11 @@ if (formData.hasAdditionalPlan && formData.additionalPlanCollectionIds && formDa
                      (selectedTypeOfMode && (selectedTypeOfMode.typeOfMode.toLowerCase().includes('pos') || selectedTypeOfMode.typeOfMode.toLowerCase().includes('pine')));
   const activePineLabsTxnId = forcedPineLabsTxnId || pineLabsTxnId;
 
+  if (isPineLabs && parseFloat(formData.recAmt) < 1) {
+    toast.error("Pine Labs transactions must be at least 1 Rs.");
+    return;
+  }
+
   if (isPineLabs && !activePineLabsTxnId && !isEditMode) {
     setIsPineLabsModalOpen(true);
     return;

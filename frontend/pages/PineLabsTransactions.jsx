@@ -6,6 +6,8 @@ import DataTable from '../components/DataTable';
 const PineLabsTransactions = ({ embedded = false }) => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -30,7 +32,8 @@ const PineLabsTransactions = ({ embedded = false }) => {
         paymentMode: t.paymentMode || 'POS',
         status: t.status,
         date: new Date(t.createdAt).toLocaleString(),
-        createdBy: t.user?.username || 'System'
+        createdBy: t.user?.username || 'System',
+        responseData: t.responseData
       }));
       setTransactions(formatted);
     } catch (error) {
@@ -62,17 +65,27 @@ const PineLabsTransactions = ({ embedded = false }) => {
   };
 
   const actionButtons = (item) => {
-    if (item.status === 'Pending') {
-      return (
-        <button 
-          onClick={() => handleCheckStatus(item.transactionId)}
-          className="px-3 py-1 bg-brand-surface border border-brand-border text-brand-text-primary rounded hover:bg-brand-hover text-sm shadow-sm transition-colors"
+    return (
+      <div className="flex gap-2">
+        {item.status === 'Pending' && (
+          <button 
+            onClick={() => handleCheckStatus(item.transactionId)}
+            className="px-3 py-1 bg-brand-surface border border-brand-border text-brand-text-primary rounded hover:bg-brand-hover text-sm shadow-sm transition-colors"
+          >
+            Check Status
+          </button>
+        )}
+        <button
+          onClick={() => {
+            setSelectedLog(item.responseData || { message: "No logs found for this transaction" });
+            setIsLogModalOpen(true);
+          }}
+          className="px-3 py-1 bg-gray-100 border border-gray-300 text-gray-700 rounded hover:bg-gray-200 text-sm shadow-sm transition-colors"
         >
-          Check Status
+          View Logs
         </button>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   const columns = [
@@ -119,6 +132,32 @@ const PineLabsTransactions = ({ embedded = false }) => {
           <DataTable data={transactions} columns={columns} actionButtons={actionButtons} />
         )}
       </div>
+
+      {isLogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">Transaction Logs</h2>
+              <button onClick={() => setIsLogModalOpen(false)} className="text-gray-500 hover:text-gray-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
+              <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap break-words">
+                {JSON.stringify(selectedLog, null, 2)}
+              </pre>
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button
+                onClick={() => setIsLogModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium"
+              >
+                Close Logs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
