@@ -141,22 +141,34 @@ export class PineLabsService {
       const resMsg = (pResp.ResponseMessage || '').toUpperCase();
       const resCode = pResp.ResponseCode;
 
+      // Detect Payment Mode (UPI vs CARD)
+      let detectedMode = 'CARD';
+      const pModeStr = String(pResp.PaymentMode || '').toUpperCase();
+      const acqName = String(pResp.AcquirerName || '').toUpperCase();
+      const resMsgStr = String(pResp.ResponseMessage || '').toUpperCase();
+      
+      if (pModeStr === '9' || pModeStr === '8' || pModeStr === 'UPI' || acqName.includes('UPI') || resMsgStr.includes('UPI') || acqName.includes('PHONEPE') || acqName.includes('BHARATPE') || acqName.includes('PAYTM') || acqName.includes('GPAY')) {
+         detectedMode = 'UPI';
+      }
+
       // In Pine Labs, ResponseCode 0 is Success. ResponseCode 1 is usually an Error (like Invalid Device).
       if (resCode == 0 || resMsg === 'APPROVED' || resMsg === 'SUCCESS') {
          if (transaction.status !== 'Success') {
            await this.prisma.paymentTransaction.update({
              where: { id: transaction.id },
-             data: { status: 'Success' }
+             data: { status: 'Success', paymentMode: detectedMode }
            });
            transaction.status = 'Success';
+           transaction.paymentMode = detectedMode;
          }
       } else if (resMsg.includes('CANCELLED') || resMsg.includes('DECLINED') || resMsg.includes('FAILED')) {
          if (transaction.status !== 'Failed' && transaction.status !== 'Cancelled') {
            await this.prisma.paymentTransaction.update({
              where: { id: transaction.id },
-             data: { status: 'Failed' }
+             data: { status: 'Failed', paymentMode: detectedMode }
            });
            transaction.status = 'Failed';
+           transaction.paymentMode = detectedMode;
          }
       }
 
