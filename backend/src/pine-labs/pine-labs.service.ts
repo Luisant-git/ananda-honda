@@ -76,7 +76,10 @@ export class PineLabsService {
 
       await this.prisma.paymentTransaction.update({
         where: { id: transaction.id },
-        data: { responseData: response.data }
+        data: { 
+          requestData: payload,
+          responseData: response.data 
+        }
       });
 
       return {
@@ -222,7 +225,10 @@ export class PineLabsService {
 
       const updatedTxn = await this.prisma.paymentTransaction.update({
         where: { id: transaction.id },
-        data: { status: 'Cancelled' },
+        data: { 
+          status: 'Cancelled',
+          cancelData: { request: payload, response: pResp }
+        },
       });
 
       return updatedTxn;

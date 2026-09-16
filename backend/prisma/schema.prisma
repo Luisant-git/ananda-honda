@@ -431,7 +431,9 @@ model PaymentTransaction {
   amount        Float
   paymentMode   String?
   status        String   @default("Pending") // Pending, Success, Failed, Cancelled
+  requestData   Json?
   responseData  Json?
+  cancelData    Json?
   machineType   String   @default("sale") // "sale" or "service"
   createdBy     Int?
   createdAt     DateTime @default(now())
