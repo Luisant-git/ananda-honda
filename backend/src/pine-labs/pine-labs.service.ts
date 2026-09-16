@@ -14,6 +14,9 @@ export class PineLabsService {
   ) {}
 
   async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number; type?: string }) {
+    if (data.amount < 1) {
+      throw new BadRequestException('Transaction amount must be at least 1 Rs.');
+    }
     const machineType = data.type || 'sale';
     const config = await this.configService.getConfig(machineType);
     if (!config || config.status !== 'Active') {
@@ -183,16 +186,51 @@ export class PineLabsService {
       throw new BadRequestException('Only pending transactions can be cancelled');
     }
 
-    // Call Pine Labs API to cancel the push request on POS
-    // Mocking this call
-    this.logger.log(`Cancelling Pine Labs payment for Txn: ${transactionId}`);
+    const config = await this.configService.getConfig(transaction.machineType || 'sale');
+    if (!config) throw new BadRequestException(`Pine Labs config (${transaction.machineType || 'sale'}) not found`);
 
-    const updatedTxn = await this.prisma.paymentTransaction.update({
-      where: { id: transaction.id },
-      data: { status: 'Cancelled' },
-    });
+    const responseData: any = transaction.responseData;
+    const plutusRef = responseData?.PlutusTransactionReferenceID;
 
-    return updatedTxn;
+    if (!plutusRef) {
+      throw new BadRequestException('Cannot cancel transaction: Plutus Ref ID not found.');
+    }
+
+    try {
+      const payload = {
+        MerchantID: config.merchantId,
+        SecurityToken: config.securityToken,
+        ClientId: config.clientId,
+        StoreId: config.storeId,
+        PlutusTransactionReferenceID: plutusRef
+      };
+
+      const apiUrl = config.environment === 'Production'
+        ? 'https://www.plutuscloudservice.in:8201/API/CloudBasedIntegration/V1/CancelTransaction'
+        : 'https://www.plutuscloudserviceuat.in:8201/API/CloudBasedIntegration/V1/CancelTransaction';
+
+      this.logger.log(`Cancelling Pine Labs payment for Txn: ${transactionId} via API`);
+
+      const response = await axios.post(apiUrl, payload, { headers: { 'Content-Type': 'application/json' } });
+      const pResp = response.data;
+
+      this.logger.log(`Pine Labs Cancel Response: ${JSON.stringify(pResp)}`);
+
+      if (pResp.ResponseCode !== 0 && pResp.ResponseCode !== 12) { // 0 is success, 12 might mean already processed, but we'll stick to error if not 0
+        throw new Error(pResp.ResponseMessage || 'Failed to cancel on Pine Labs');
+      }
+
+      const updatedTxn = await this.prisma.paymentTransaction.update({
+        where: { id: transaction.id },
+        data: { status: 'Cancelled' },
+      });
+
+      return updatedTxn;
+    } catch (error) {
+      this.logger.error(`Failed to cancel Pine Labs payment: ${error.message}`);
+      // Fallback: if we just want to cancel locally if the API fails, we could, but better to enforce it.
+      throw new BadRequestException(error.response?.data?.ResponseMessage || error.message || 'Failed to cancel payment');
+    }
   }
 
   async processWebhook(payload: any) {
