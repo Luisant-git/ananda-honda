@@ -1777,6 +1777,11 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
         referenceId={formData.refNo || salesInvoiceInfo?.invoiceNo || ''}
         createdBy={user?.id}
         machineType="sale"
+        paymentMode={
+          typeOfPayments.find(t => t.id === parseInt(formData.typeOfPaymentId))?.typeOfMode ||
+          paymentModes.find(m => m.id === parseInt(formData.paymentModeId))?.paymentMode ||
+          ''
+        }
         onSuccess={(txId) => {
           setPineLabsTxnId(txId);
           setIsPineLabsModalOpen(false);

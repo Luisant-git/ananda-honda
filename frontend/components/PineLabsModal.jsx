@@ -5,7 +5,7 @@ import PineLabsTransactions from '../pages/PineLabsTransactions';
 import toast from 'react-hot-toast';
 import PineLabsLogoImg from '../assets/Pine Labs-logo.png';
 
-const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, referenceId, createdBy, onSuccess, machineType }) => {
+const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, referenceId, createdBy, onSuccess, machineType, paymentMode }) => {
   const [status, setStatus] = useState('');
   const [transactionId, setTransactionId] = useState(null);
   const pollingInterval = useRef(null);
@@ -46,6 +46,7 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
         mobileNumber,
         createdBy,
         type: machineType || 'sale',
+        paymentMode,
       });
 
       setTransactionId(response.transactionId);
@@ -161,7 +162,13 @@ const PineLabsModal = ({ isOpen, onClose, amount, customerName, mobileNumber, re
             </p>
             {isWaiting && (
               <>
-                <p className="text-xs text-green-800/70 mt-1.5 font-medium">Please ask the customer to tap, insert, or swipe their card.</p>
+                <p className="text-xs text-green-800/70 mt-1.5 font-medium">
+                  {String(paymentMode || '').toUpperCase().includes('UPI')
+                    ? 'Please ask the customer to scan the QR code on the POS machine with their UPI app.'
+                    : String(paymentMode || '').toUpperCase().includes('SWIP') || String(paymentMode || '').toUpperCase().includes('CARD')
+                    ? 'Please ask the customer to tap, insert, or swipe their card.'
+                    : 'Please ask customer to pay via Card or scan UPI QR on the POS machine.'}
+                </p>
                 <p className="text-xs text-gray-500 font-medium mt-1">Checking status in <span className="font-bold">{countdown}s</span>...</p>
               </>
             )}

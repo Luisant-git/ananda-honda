@@ -13,7 +13,7 @@ export class PineLabsService {
     private configService: PineLabsConfigService,
   ) {}
 
-  async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number; type?: string }) {
+  async initiatePayment(data: { amount: number; invoiceId?: string; customerName?: string; mobileNumber?: string; createdBy?: number; type?: string; paymentMode?: string }) {
     if (data.amount < 1) {
       throw new BadRequestException('Transaction amount must be at least 1 Rs.');
     }
@@ -21,6 +21,18 @@ export class PineLabsService {
     const config = await this.configService.getConfig(machineType);
     if (!config || config.status !== 'Active') {
       throw new BadRequestException(`Pine Labs integration (${machineType}) is not configured or active`);
+    }
+
+    // Determine AllowedPaymentMode:
+    // "1" = Card (SWIPING / CARD)
+    // "10" = UPI (UPI)
+    // "0" = All modes
+    let allowedPaymentMode = "0";
+    const modeUpper = (data.paymentMode || '').toUpperCase();
+    if (modeUpper.includes('SWIP') || modeUpper.includes('CARD')) {
+      allowedPaymentMode = "1";
+    } else if (modeUpper.includes('UPI')) {
+      allowedPaymentMode = "10";
     }
 
     // Generate unique transaction ID
@@ -44,7 +56,7 @@ export class PineLabsService {
       const payload: any = {
         TransactionNumber: transactionId,
         SequenceNumber: 1,
-        AllowedPaymentMode: "0", // 0 = Allow all modes
+        AllowedPaymentMode: allowedPaymentMode, // "1" for Card, "10" for UPI, "0" for All
         Amount: Math.round(data.amount * 100), // typically in paisa
         UserID: data.createdBy ? data.createdBy.toString() : "System",
         MerchantID: config.merchantId,
@@ -147,7 +159,7 @@ export class PineLabsService {
       const acqName = String(pResp.AcquirerName || '').toUpperCase();
       const resMsgStr = String(pResp.ResponseMessage || '').toUpperCase();
       
-      if (pModeStr === '9' || pModeStr === '8' || pModeStr === 'UPI' || acqName.includes('UPI') || resMsgStr.includes('UPI') || acqName.includes('PHONEPE') || acqName.includes('BHARATPE') || acqName.includes('PAYTM') || acqName.includes('GPAY')) {
+      if (pModeStr === '10' || pModeStr === '9' || pModeStr === '8' || pModeStr === 'UPI' || acqName.includes('UPI') || resMsgStr.includes('UPI') || acqName.includes('PHONEPE') || acqName.includes('BHARATPE') || acqName.includes('PAYTM') || acqName.includes('GPAY')) {
          detectedMode = 'UPI';
       }
 

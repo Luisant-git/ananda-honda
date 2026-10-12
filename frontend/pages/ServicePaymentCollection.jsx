@@ -4322,6 +4322,11 @@ useEffect(() => {
         referenceId={formData.jobCardNumber || formData.refNo || ''}
         createdBy={user?.id}
         machineType="service"
+        paymentMode={
+          typeOfPayments.find(t => t.id === parseInt(formData.typeOfPaymentId))?.typeOfMode ||
+          paymentModes.find(m => m.id === parseInt(formData.paymentModeId))?.paymentMode ||
+          ''
+        }
         onSuccess={(txId) => {
           setPineLabsTxnId(txId);
           setIsPineLabsModalOpen(false);
