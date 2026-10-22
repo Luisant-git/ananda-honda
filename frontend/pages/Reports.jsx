@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import ConfirmModal from '../components/ConfirmModal';
 import DateFilterButtons from '../components/DateFilterButtons';
 import { paymentCollectionApi } from '../api/paymentCollectionApi.js';
+import { locationApi } from '../api/locationApi.js';
+import SearchableDropdown from '../components/SearchableDropdown.jsx';
 import Loader from '../components/Loader';
 
 const Reports = ({ user }) => {
@@ -12,6 +14,8 @@ const Reports = ({ user }) => {
   const [filteredData, setFilteredData] = useState([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [locations, setLocations] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   useEffect(() => {
@@ -20,12 +24,16 @@ const Reports = ({ user }) => {
 
   useEffect(() => {
     handleFilter();
-  }, [fromDate, toDate, reportData]);
+  }, [fromDate, toDate, locationFilter, reportData]);
 
   const fetchReportData = async () => {
     setIsLoading(true);
     try {
-      const response = await paymentCollectionApi.getAll(1, 999999);
+      const [response, locs] = await Promise.all([
+        paymentCollectionApi.getAll(1, 999999),
+        locationApi.getAll().catch(() => [])
+      ]);
+      setLocations(Array.isArray(locs) ? locs : locs.data || []);
       const formattedData = response.data.map((payment, index) => ({
         sNo: index + 1,
         id: payment.id,
@@ -35,6 +43,7 @@ const Reports = ({ user }) => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        location: payment.customer?.location || 'N/A',
         recAmt: payment.recAmt,
         paymentMode: payment.paymentMode.paymentMode,
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
@@ -71,26 +80,35 @@ const Reports = ({ user }) => {
   };
 
   const handleFilter = () => {
-    if (!fromDate || !toDate) {
-      setFilteredData(reportData);
-      return;
-    }
-    
-    const filtered = reportData.filter(item => {
-      const itemDate = new Date(item.date);
+    let filtered = reportData;
+
+    if (fromDate && toDate) {
       const from = new Date(fromDate);
       from.setHours(0, 0, 0, 0);
       const to = new Date(toDate);
       to.setHours(23, 59, 59, 999);
-      return itemDate >= from && itemDate <= to;
-    });
-    
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.date);
+        return itemDate >= from && itemDate <= to;
+      });
+    }
+
+    if (locationFilter) {
+      const targetLoc = locationFilter.trim().toLowerCase();
+      filtered = filtered.filter(item => {
+        if (!item.location || item.location === 'N/A') return false;
+        const itemLoc = item.location.trim().toLowerCase();
+        return itemLoc === targetLoc || itemLoc.includes(targetLoc) || targetLoc.includes(itemLoc);
+      });
+    }
+
     setFilteredData(filtered);
   };
 
   const handleReset = () => {
     setFromDate('');
     setToDate('');
+    setLocationFilter('');
     setFilteredData(reportData);
   };
 
@@ -231,6 +249,7 @@ const Reports = ({ user }) => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
+    { header: "Location", accessor: "location" },
     { header: "Amount", accessor: "recAmt" },
     { header: "PaymentMode", accessor: "paymentMode" },
     { header: "PaymentType", accessor: "typeOfPayment" },
@@ -248,6 +267,35 @@ const Reports = ({ user }) => {
       ),
     },
   ];
+
+  const locationOptions = useMemo(() => {
+    const locMap = new Map();
+
+    reportData.forEach((item) => {
+      if (item.location && item.location !== 'N/A' && item.location.trim()) {
+        const val = item.location.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const locMatch = locations.find(l => l.officename?.trim().toLowerCase() === key);
+          const label = locMatch?.district ? `${val} - ${locMatch.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    locations.forEach((loc) => {
+      if (loc.officename && loc.officename.trim()) {
+        const val = loc.officename.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const label = loc.district ? `${val} - ${loc.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    return Array.from(locMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [reportData, locations]);
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
@@ -272,7 +320,7 @@ const Reports = ({ user }) => {
       
       <div className="bg-brand-surface p-3 sm:p-4 md:p-6 rounded-lg shadow-sm border border-brand-border">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">From Date</label>
               <input
@@ -291,15 +339,24 @@ const Reports = ({ user }) => {
                 className="w-full bg-white border border-brand-border text-brand-text-primary rounded-lg p-2 focus:ring-brand-accent focus:border-brand-accent text-sm"
               />
             </div>
+            <div>
+              <SearchableDropdown
+                label="Location"
+                value={locationFilter}
+                onChange={(val) => setLocationFilter(val)}
+                placeholder="All Locations"
+                options={locationOptions}
+              />
+            </div>
             <div className="flex gap-2 items-end">
               <button 
                 onClick={handleFilter}
-                className="flex-1 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm">
+                className="flex-1 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm h-[38px]">
                 Filter
               </button>
               <button 
                 onClick={handleReset}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm h-[38px]">
                 Reset
               </button>
             </div>

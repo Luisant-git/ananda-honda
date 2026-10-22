@@ -48,6 +48,8 @@ const PaymentCollection = ({ user }) => {
   const [paymentToCancel, setPaymentToCancel] = useState(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedPayments, setDeletedPayments] = useState([]);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -338,6 +340,7 @@ useEffect(() => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        location: payment.customer?.location || "N/A",
         recAmt: payment.recAmt,
         paymentType: payment.paymentType || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
@@ -379,6 +382,7 @@ useEffect(() => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        location: payment.customer?.location || "N/A",
         recAmt: payment.recAmt,
         paymentType: payment.paymentType || "N/A",
         paymentMode: payment.paymentMode.paymentMode,
@@ -1072,8 +1076,19 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
     if (payment.cancelledAt) {
       return <span className="text-red-600 font-semibold">CANCELLED</span>;
     }
+    const handleView = (payment) => {
+      setSelectedPayment(payment);
+      setIsViewModalOpen(true);
+    };
+
     return (
       <div className="flex gap-2">
+        <button
+          onClick={() => handleView(payment)}
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </button>
         {permissions?.payment_collection?.sales?.edit && (
           <button
             onClick={() => handleEdit(payment)}
@@ -1436,6 +1451,14 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
                       </div>
                       <div>
                         <label className="text-sm text-brand-text-secondary">
+                          Location
+                        </label>
+                        <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
+                          {loadedCustomer.location || 'N/A'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-brand-text-secondary">
                           Status
                         </label>
                         <div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">
@@ -1703,6 +1726,89 @@ serviceJobCardApi.getAll(customer.contactNo).then((results) => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* View Payment Details Modal */}
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Payment Details" maxWidth="max-w-4xl">
+        {selectedPayment && (
+          <div className="space-y-6">
+            {/* Customer Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Customer Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Customer ID</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.custId}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Customer Name</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.name}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Contact Number</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.contactNo}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Address</label>
+                  <div className="text-brand-text-primary">{selectedPayment.address}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Location</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.location || selectedPayment.customer?.location || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-brand-text-primary border-b border-brand-border pb-2 mb-3">Payment Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Receipt No</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.receiptNo}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Date</label>
+                  <div className="text-brand-text-primary font-medium">
+                    {new Date(selectedPayment.date).toLocaleDateString('en-GB')}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Payment Type</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.paymentType}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Received Amount</label>
+                  <div className="text-brand-text-primary font-medium">₹{selectedPayment.recAmt}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Payment Mode</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.paymentMode}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Type of Payment</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.typeOfPayment || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Type of Collection</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.typeOfCollection || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Vehicle Model</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.vehicleModel || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Reference Number</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.refNo || 'N/A'}</div>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="text-xs text-brand-text-secondary uppercase">Remarks</label>
+                  <div className="text-brand-text-primary">{selectedPayment.remarks || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal

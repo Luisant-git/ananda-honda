@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 import DataTable from "../components/DataTable";
@@ -148,6 +148,7 @@ const CustomerDetails = ({ user, defaultStatus = "", title = "Customer Details" 
   const [activeTab, setActiveTab] = useState("enquiries");
   const [filters, setFilters] = useState({
     selectedCustomer: "",
+    location: "",
     fromDate: "",
     toDate: "",
     status: defaultStatus,
@@ -509,6 +510,15 @@ const fetchPermissions = async () => {
       );
     }
 
+    if (currentFilters.location) {
+      const targetLoc = currentFilters.location.trim().toLowerCase();
+      filtered = filtered.filter((customer) => {
+        if (!customer.location) return false;
+        const custLoc = customer.location.trim().toLowerCase();
+        return custLoc === targetLoc || custLoc.includes(targetLoc) || targetLoc.includes(custLoc);
+      });
+    }
+
     if (currentFilters.status) {
       filtered = filtered.filter(
         (customer) => customer.status === currentFilters.status
@@ -539,7 +549,7 @@ const fetchPermissions = async () => {
   };
 
   const handleLoadAll = () => {
-    setFilters({ selectedCustomer: "", fromDate: "", toDate: "", status: defaultStatus });
+    setFilters({ selectedCustomer: "", location: "", fromDate: "", toDate: "", status: defaultStatus });
     if (defaultStatus) {
       setFilteredCustomers(
         customers
@@ -673,7 +683,7 @@ const fetchPermissions = async () => {
       channel: "WALKIN",
       sourceId: "",
       enquiryTypeId: "",
-      status: "Walk in Customer",
+      status: defaultStatus || "Walk in Customer",
       modelId: "",
       variantId: "",
       colourId: "",
@@ -933,6 +943,11 @@ const fetchPermissions = async () => {
     { header: "CustId", accessor: "custId" },
     { header: "Name", accessor: "name" },
     { header: "Contact No", accessor: "contactNo" },
+    { 
+      header: "Location", 
+      accessor: "location",
+      render: (val) => val || '-'
+    },
     { header: "Status", accessor: "status" },
     { 
       header: "Date", 
@@ -992,6 +1007,56 @@ const fetchPermissions = async () => {
     executiveOptions.push({ value: formData.executiveName, label: formData.executiveName });
   }
 
+  const locationOptions = useMemo(() => {
+    const locMap = new Map();
+
+    const relevantCustomers = defaultStatus 
+      ? customers.filter(c => c.status === defaultStatus) 
+      : customers;
+
+    relevantCustomers.forEach((c) => {
+      if (c.location && c.location.trim()) {
+        const val = c.location.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const locMatch = lookupData.locations?.find(
+            (l) => l.officename?.trim().toLowerCase() === key
+          );
+          const label = locMatch?.district ? `${val} - ${locMatch.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    (lookupData.locations || []).forEach((loc) => {
+      if (loc.officename && loc.officename.trim()) {
+        const val = loc.officename.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const label = loc.district ? `${val} - ${loc.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    return Array.from(locMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [lookupData.locations, customers, defaultStatus]);
+
+  const customerOptions = useMemo(() => {
+    return customers
+      .filter((c) => (defaultStatus ? c.status === defaultStatus : true))
+      .filter((c) => {
+        if (!filters.location) return true;
+        const targetLoc = filters.location.trim().toLowerCase();
+        const custLoc = (c.location || "").trim().toLowerCase();
+        return custLoc === targetLoc || custLoc.includes(targetLoc) || targetLoc.includes(custLoc);
+      })
+      .map((c) => ({
+        value: c.custId,
+        label: `${c.name} - ${c.contactNo}`,
+      }));
+  }, [customers, defaultStatus, filters.location]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1032,17 +1097,28 @@ const fetchPermissions = async () => {
       </div>
 
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm ring-1 ring-black/5 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
           <SearchableDropdown
             label="Select Customer"
             value={filters.selectedCustomer}
-            onChange={(value) => setFilters({ ...filters, selectedCustomer: value })}
-            options={customers
-              .filter(c => defaultStatus ? c.status === defaultStatus : true)
-              .map((c) => ({
-                value: c.custId,
-                label: `${c.name} - ${c.contactNo}`,
-              }))}
+            onChange={(value) => {
+              const newFilters = { ...filters, selectedCustomer: value };
+              setFilters(newFilters);
+              handleFilterLoad(newFilters);
+            }}
+            placeholder="All Customers"
+            options={customerOptions}
+          />
+          <SearchableDropdown
+            label="Select Location"
+            value={filters.location}
+            onChange={(value) => {
+              const newFilters = { ...filters, location: value };
+              setFilters(newFilters);
+              handleFilterLoad(newFilters);
+            }}
+            placeholder="All Locations"
+            options={locationOptions}
           />
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-600 mb-1">From:</label>
@@ -1064,14 +1140,14 @@ const fetchPermissions = async () => {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleFilterLoad}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+              onClick={() => handleFilterLoad()}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg h-[42px]"
             >
               Load
             </button>
             <button
               onClick={handleLoadAll}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg h-[42px]"
             >
               Reset
             </button>
@@ -1079,7 +1155,7 @@ const fetchPermissions = async () => {
           {permissions?.master?.customer_details?.add && (
             <button
               onClick={handleAddNew}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg h-[42px]"
             >
               Add Customer
             </button>

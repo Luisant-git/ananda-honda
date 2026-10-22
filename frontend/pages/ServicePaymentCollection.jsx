@@ -1896,6 +1896,7 @@ const handleCreateJobCard = async () => {
       name: payment.customer.name,
       contactNo: payment.customer.contactNo,
       address: payment.customer.address,
+      location: payment.customer?.location || "N/A",
       totalAmt: payment.totalAmt !== undefined && payment.totalAmt !== null
         ? payment.totalAmt
         : payment.recAmt || "N/A",
@@ -1955,6 +1956,7 @@ const handleCreateJobCard = async () => {
         name: payment.customer.name,
         contactNo: payment.customer.contactNo,
         address: payment.customer.address,
+        location: payment.customer?.location || "N/A",
         totalAmt: payment.totalAmt || "N/A",
         recAmt: payment.recAmt,
         paymentType: payment.paymentTypeMaster?.name || payment.paymentType,
@@ -3322,6 +3324,7 @@ useEffect(() => {
                     </div>
                     <div className="space-y-4">
                       <div><label className="text-sm text-brand-text-secondary">Address</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.address}</div></div>
+                      <div><label className="text-sm text-brand-text-secondary">Location</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.location || 'N/A'}</div></div>
                       <div><label className="text-sm text-brand-text-secondary">Status</label><div className="mt-1 p-2 bg-brand-hover rounded-md text-brand-text-primary">{loadedCustomer.status}</div></div>
                       <div className="pt-2 flex justify-start gap-3">
                         {permissions?.payment_collection?.service?.add && (
@@ -4012,6 +4015,10 @@ useEffect(() => {
           <div>
             <label className="text-xs text-brand-text-secondary uppercase">Address</label>
             <div className="text-brand-text-primary">{selectedPayment.address}</div>
+          </div>
+          <div>
+            <label className="text-xs text-brand-text-secondary uppercase">Location</label>
+            <div className="text-brand-text-primary font-medium">{selectedPayment.location || selectedPayment.customer?.location || 'N/A'}</div>
           </div>
         </div>
       </div>

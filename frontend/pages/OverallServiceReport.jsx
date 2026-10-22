@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import DataTable from '../components/DataTable';
 import DateFilterButtons from '../components/DateFilterButtons';
 import { servicePaymentCollectionApi } from '../api/servicePaymentCollectionApi.js';
-import ConfirmModal from '../components/ConfirmModal';
 import { serviceJobCardApi } from '../api/serviceJobcard.js';
+import { customerApi } from '../api/customerApi.js';
+import { locationApi } from '../api/locationApi.js';
+import SearchableDropdown from '../components/SearchableDropdown.jsx';
+import ConfirmModal from '../components/ConfirmModal';
 
 const OverallServiceReport = ({ user }) => {
   const [reportData, setReportData] = useState([]);
@@ -12,6 +15,8 @@ const OverallServiceReport = ({ user }) => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [locations, setLocations] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [maxReceipts, setMaxReceipts] = useState(0);
@@ -24,14 +29,22 @@ const OverallServiceReport = ({ user }) => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Job Cards (Base Data)
-      const jobCards = await serviceJobCardApi.getAll('', false);
+      const [jobCards, response, customers, locs] = await Promise.all([
+        serviceJobCardApi.getAll('', false),
+        servicePaymentCollectionApi.getAll(1, 999999, null, 'all', 'all'),
+        customerApi.getAll().catch(() => []),
+        locationApi.getAll().catch(() => [])
+      ]);
+      setLocations(Array.isArray(locs) ? locs : locs.data || []);
       const jcList = Array.isArray(jobCards) ? jobCards : [];
-
-      // 2. Fetch Payments
-      const response = await servicePaymentCollectionApi.getAll(1, 999999, null, 'all', 'all');
       const paymentsData = response.data || response;
       const paymentList = Array.isArray(paymentsData) ? paymentsData : [];
+
+      const customerMap = new Map();
+      (Array.isArray(customers) ? customers : []).forEach(c => {
+        if (c.contactNo) customerMap.set(c.contactNo.trim(), c);
+        if (c.mobile) customerMap.set(c.mobile.trim(), c);
+      });
 
       // Group payments by jobCardNumber
       const paymentsByJc = {};
@@ -111,12 +124,19 @@ const OverallServiceReport = ({ user }) => {
         }
 
         const phoneNumber = jc.mobileNumber || jc.phone || jc.contactPhone || 'N/A';
+        const cleanPhone = phoneNumber !== 'N/A' ? String(phoneNumber).trim() : '';
+        const matchedCustomer = customerMap.get(cleanPhone);
+        const paymentWithCustomer = jcPayments.find(p => p.customer?.location || p.customer?.name);
+        const customerName = jc.customerName || paymentWithCustomer?.customer?.name || matchedCustomer?.name || 'N/A';
+        const customerLocation = paymentWithCustomer?.customer?.location || matchedCustomer?.location || jc.location || 'N/A';
 
         const rowData = {
           sNo: index + 1,
           jobCardDate: jc.createdAt || jc.date,
           jobCardNo: jcNo,
+          customerName: customerName,
           phoneNumber: phoneNumber,
+          location: customerLocation,
           branchName: jc.branchName || 'Silk Board',
           branchCode: jc.branchCode || 'N/A',
           mainCode: jc.mainCode || 'N/A',
@@ -155,7 +175,7 @@ const OverallServiceReport = ({ user }) => {
 
   useEffect(() => {
     handleFilter();
-  }, [search, fromDate, toDate, statusFilter, reportData]);
+  }, [search, fromDate, toDate, statusFilter, locationFilter, reportData]);
 
   const handleFilter = () => {
     let filtered = reportData;
@@ -177,11 +197,22 @@ const OverallServiceReport = ({ user }) => {
       });
     }
 
+    if (locationFilter) {
+      const targetLoc = locationFilter.trim().toLowerCase();
+      filtered = filtered.filter(item => {
+        if (!item.location || item.location === 'N/A') return false;
+        const itemLoc = item.location.trim().toLowerCase();
+        return itemLoc === targetLoc || itemLoc.includes(targetLoc) || targetLoc.includes(itemLoc);
+      });
+    }
+
     if (search) {
       const lowerSearch = search.toLowerCase();
       filtered = filtered.filter(item => {
         const matchJc = String(item.jobCardNo || '').toLowerCase().includes(lowerSearch);
+        const matchCustomer = String(item.customerName || '').toLowerCase().includes(lowerSearch);
         const matchPhone = String(item.phoneNumber || '').toLowerCase().includes(lowerSearch);
+        const matchLocation = String(item.location || '').toLowerCase().includes(lowerSearch);
         let matchReceipt = false;
         
         // Check dynamic receipt columns
@@ -192,7 +223,7 @@ const OverallServiceReport = ({ user }) => {
           }
         }
         
-        return matchJc || matchPhone || matchReceipt;
+        return matchJc || matchCustomer || matchPhone || matchLocation || matchReceipt;
       });
     }
     
@@ -203,6 +234,7 @@ const OverallServiceReport = ({ user }) => {
     setFromDate('');
     setToDate('');
     setStatusFilter('');
+    setLocationFilter('');
     setSearch('');
     fetchReportData();
   };
@@ -288,7 +320,9 @@ const OverallServiceReport = ({ user }) => {
       },
     },
     { header: "Jobcard No", accessor: "jobCardNo" },
+    { header: "Customer Name", accessor: "customerName" },
     { header: "Phone Number", accessor: "phoneNumber" },
+    { header: "Location", accessor: "location" },
     { header: "Branch Name", accessor: "branchName" },
     { header: "Branch Code", accessor: "branchCode" },
     { header: "Main Code", accessor: "mainCode" },
@@ -335,6 +369,35 @@ const OverallServiceReport = ({ user }) => {
 
   const columns = [...baseColumns1, ...receiptColumns, ...baseColumns2];
 
+  const locationOptions = useMemo(() => {
+    const locMap = new Map();
+
+    reportData.forEach((item) => {
+      if (item.location && item.location !== 'N/A' && item.location.trim()) {
+        const val = item.location.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const locMatch = locations.find(l => l.officename?.trim().toLowerCase() === key);
+          const label = locMatch?.district ? `${val} - ${locMatch.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    locations.forEach((loc) => {
+      if (loc.officename && loc.officename.trim()) {
+        const val = loc.officename.trim();
+        const key = val.toLowerCase();
+        if (!locMap.has(key)) {
+          const label = loc.district ? `${val} - ${loc.district}` : val;
+          locMap.set(key, { value: val, label });
+        }
+      }
+    });
+
+    return Array.from(locMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [reportData, locations]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -373,7 +436,7 @@ const OverallServiceReport = ({ user }) => {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
               <input
                 type="text"
-                placeholder="Search by JC No, Phone, Receipt No..."
+                placeholder="Search by JC No, Customer Name, Phone, Location, Receipt No..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
@@ -382,7 +445,7 @@ const OverallServiceReport = ({ user }) => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
             <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">From Date</label>
               <input
@@ -402,6 +465,15 @@ const OverallServiceReport = ({ user }) => {
               />
             </div>
             <div>
+              <SearchableDropdown
+                label="Location"
+                value={locationFilter}
+                onChange={(val) => setLocationFilter(val)}
+                placeholder="All Locations"
+                options={locationOptions}
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-brand-text-secondary mb-1">Status</label>
               <select
                 value={statusFilter}
@@ -417,17 +489,17 @@ const OverallServiceReport = ({ user }) => {
             <div className="flex gap-2 items-end">
               <button 
                 onClick={handleFilter}
-                className="flex-1 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm">
+                className="flex-1 bg-brand-accent hover:bg-brand-accent-hover text-white font-bold py-2 px-4 rounded-lg text-sm h-[38px]">
                 Filter
               </button>
               <button 
                 onClick={handleReset}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm h-[38px]">
                 Reset
               </button>
               <button 
                 onClick={downloadExcel}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm h-[38px]">
                 Excel
               </button>
             </div>

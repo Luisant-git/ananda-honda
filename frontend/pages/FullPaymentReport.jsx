@@ -50,6 +50,7 @@ const FullPaymentReport = ({ user }) => {
           name: payment.customer?.name || 'N/A',
           contactNo: payment.customer?.contactNo || 'N/A',
           address: payment.customer?.address || 'N/A',
+          location: payment.customer?.location || 'N/A',
           amount: displayTotalAmt,
           recAmt: payment.recAmt,
           paymentType: payment.paymentType,
@@ -478,6 +479,10 @@ const FullPaymentReport = ({ user }) => {
                 <div>
                   <label className="text-xs text-brand-text-secondary uppercase">Address</label>
                   <div className="text-brand-text-primary">{selectedPayment.address}</div>
+                </div>
+                <div>
+                  <label className="text-xs text-brand-text-secondary uppercase">Location</label>
+                  <div className="text-brand-text-primary font-medium">{selectedPayment.location || selectedPayment.customer?.location || 'N/A'}</div>
                 </div>
               </div>
             </div>
