@@ -49,6 +49,7 @@ const Reports = ({ user }) => {
         typeOfPayment: payment.typeOfPayment?.typeOfMode || 'N/A',
         typeOfCollection: payment.typeOfCollection?.typeOfCollect || 'N/A',
         vehicleModel: payment.vehicleModel?.model || 'N/A',
+        salesPersonName: payment.salesPersonName || payment.customer?.assignedExecutive || payment.user?.username || 'Not Assigned',
         enteredBy: payment.user?.username || 'N/A',
         refNo: payment.refNo || 'N/A',
         remarks: payment.remarks || 'N/A',
@@ -255,6 +256,7 @@ const Reports = ({ user }) => {
     { header: "PaymentType", accessor: "typeOfPayment" },
     { header: "CollectionType", accessor: "typeOfCollection" },
     { header: "Vehicle Model", accessor: "vehicleModel" },
+    { header: "Sales Person", accessor: "salesPersonName" },
     { header: "Ref No", accessor: "refNo" },
     { header: "Remarks", accessor: "remarks" },
     {

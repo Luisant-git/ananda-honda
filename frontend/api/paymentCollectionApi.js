@@ -1,6 +1,6 @@
 import config from '../config.js';
 
-const API_URL = `${config.API_BASE_URL}/payment-collections`;
+const API_URL = `${config.API_BASE_URL}/sales-payment-collections`;
 
 export const paymentCollectionApi = {
   getAll: async (page = 1, limit = 10, customerId = null, search = '') => {
