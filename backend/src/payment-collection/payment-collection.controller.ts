@@ -70,6 +70,8 @@ export class PaymentCollectionController {
     @Query('typeOfCollectionId') typeOfCollectionId?: string,
     @Query('vehicleModelId') vehicleModelId?: string,
     @Query('salesPersonName') salesPersonName?: string,
+    @Query('export') isExport?: string,
+    @Query('all') isAll?: string,
   ) {
     return this.paymentCollectionService.findAll({
       page: page ? +page : 1,
@@ -85,6 +87,7 @@ export class PaymentCollectionController {
       typeOfCollectionId: typeOfCollectionId ? +typeOfCollectionId : undefined,
       vehicleModelId: vehicleModelId ? +vehicleModelId : undefined,
       salesPersonName,
+      export: isExport === 'true' || isAll === 'true' || isExport === '1',
     });
   }
 

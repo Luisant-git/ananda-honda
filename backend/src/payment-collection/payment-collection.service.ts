@@ -391,9 +391,10 @@ export class PaymentCollectionService {
       };
     }
 
-    const safeLimit = Math.min(options.limit || 10, 5000);
-    const page = options.page || 1;
-    const skip = (page - 1) * safeLimit;
+    const isExport = options.export === true || (options as any).all === true || (options.limit !== undefined && options.limit >= 5000);
+    const safeLimit = isExport ? 50000 : Math.min(options.limit || 10, 50000);
+    const page = isExport ? 1 : (options.page || 1);
+    const skip = isExport ? 0 : (page - 1) * safeLimit;
     const whereClause = this.buildWhereClause(options);
 
     const [data, total] = await Promise.all([
