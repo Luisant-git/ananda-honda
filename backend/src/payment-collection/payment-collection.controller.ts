@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PaymentCollectionService } from './payment-collection.service';
 
-@Controller('payment-collections')
+@Controller(['sales-payment-collections', 'payment-collections'])
 export class PaymentCollectionController {
   constructor(private readonly paymentCollectionService: PaymentCollectionService) {}
 
@@ -20,14 +20,72 @@ export class PaymentCollectionController {
     return this.paymentCollectionService.getDashboardStats(fromDate, toDate);
   }
 
+  @Get('report')
+  getReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('location') location?: string,
+    @Query('status') status?: string,
+    @Query('paymentModeId') paymentModeId?: string,
+    @Query('typeOfPaymentId') typeOfPaymentId?: string,
+    @Query('typeOfCollectionId') typeOfCollectionId?: string,
+    @Query('vehicleModelId') vehicleModelId?: string,
+    @Query('customerId') customerId?: string,
+    @Query('salesPersonName') salesPersonName?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('export') isExport?: string,
+  ) {
+    return this.paymentCollectionService.getReport({
+      fromDate,
+      toDate,
+      location,
+      status,
+      paymentModeId: paymentModeId ? +paymentModeId : undefined,
+      typeOfPaymentId: typeOfPaymentId ? +typeOfPaymentId : undefined,
+      typeOfCollectionId: typeOfCollectionId ? +typeOfCollectionId : undefined,
+      vehicleModelId: vehicleModelId ? +vehicleModelId : undefined,
+      customerId: customerId ? +customerId : undefined,
+      salesPersonName,
+      search,
+      page: page ? +page : 1,
+      limit: limit ? +limit : 50,
+      export: isExport === 'true' || isExport === '1',
+    });
+  }
+
   @Get()
   findAll(
     @Query('page') page?: string, 
     @Query('limit') limit?: string,
     @Query('customerId') customerId?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('location') location?: string,
+    @Query('status') status?: string,
+    @Query('paymentModeId') paymentModeId?: string,
+    @Query('typeOfPaymentId') typeOfPaymentId?: string,
+    @Query('typeOfCollectionId') typeOfCollectionId?: string,
+    @Query('vehicleModelId') vehicleModelId?: string,
+    @Query('salesPersonName') salesPersonName?: string,
   ) {
-    return this.paymentCollectionService.findAll(page ? +page : 1, limit ? +limit : 10, customerId ? +customerId : undefined, search);
+    return this.paymentCollectionService.findAll({
+      page: page ? +page : 1,
+      limit: limit ? +limit : 10,
+      customerId: customerId ? +customerId : undefined,
+      search,
+      fromDate,
+      toDate,
+      location,
+      status,
+      paymentModeId: paymentModeId ? +paymentModeId : undefined,
+      typeOfPaymentId: typeOfPaymentId ? +typeOfPaymentId : undefined,
+      typeOfCollectionId: typeOfCollectionId ? +typeOfCollectionId : undefined,
+      vehicleModelId: vehicleModelId ? +vehicleModelId : undefined,
+      salesPersonName,
+    });
   }
 
   @Get(':id')

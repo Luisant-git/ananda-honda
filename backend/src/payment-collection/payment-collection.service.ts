@@ -3,6 +3,23 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PdfService } from '../pdf/pdf.service';
 
+export interface PaymentCollectionFilterDto {
+  page?: number;
+  limit?: number;
+  customerId?: number;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  location?: string;
+  status?: string; // 'all' | 'success' | 'active' | 'cancelled'
+  paymentModeId?: number;
+  typeOfPaymentId?: number;
+  typeOfCollectionId?: number;
+  vehicleModelId?: number;
+  salesPersonName?: string;
+  export?: boolean;
+}
+
 @Injectable()
 export class PaymentCollectionService {
   private readonly logger = new Logger(PaymentCollectionService.name);
@@ -12,6 +29,115 @@ export class PaymentCollectionService {
     private whatsappService: WhatsappService,
     private pdfService: PdfService,
   ) {}
+
+  private buildWhereClause(filter: PaymentCollectionFilterDto = {}, extra?: any) {
+    const andConditions: any[] = [{ deletedAt: null }];
+
+    // Status filter
+    if (filter.status) {
+      const s = filter.status.toLowerCase().trim();
+      if (s === 'cancelled') {
+        andConditions.push({ cancelledAt: { not: null } });
+      } else if (s === 'success' || s === 'active') {
+        andConditions.push({ cancelledAt: null });
+      }
+    }
+
+    // Date range filter
+    if (filter.fromDate || filter.toDate) {
+      const dateCondition: any = {};
+      if (filter.fromDate) {
+        const start = new Date(filter.fromDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          dateCondition.gte = start;
+        }
+      }
+      if (filter.toDate) {
+        const end = new Date(filter.toDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          dateCondition.lte = end;
+        }
+      }
+      if (Object.keys(dateCondition).length > 0) {
+        andConditions.push({ date: dateCondition });
+      }
+    }
+
+    // Customer ID filter
+    if (filter.customerId) {
+      andConditions.push({ customerId: filter.customerId });
+    }
+
+    // Customer Location filter
+    if (filter.location && filter.location.trim()) {
+      andConditions.push({
+        customer: {
+          location: { contains: filter.location.trim(), mode: 'insensitive' },
+        },
+      });
+    }
+
+    // Payment Mode filter
+    if (filter.paymentModeId) {
+      andConditions.push({ paymentModeId: filter.paymentModeId });
+    }
+
+    // Type of Payment filter
+    if (filter.typeOfPaymentId) {
+      andConditions.push({ typeOfPaymentId: filter.typeOfPaymentId });
+    }
+
+    // Type of Collection filter
+    if (filter.typeOfCollectionId) {
+      andConditions.push({ typeOfCollectionId: filter.typeOfCollectionId });
+    }
+
+    // Vehicle Model filter
+    if (filter.vehicleModelId) {
+      andConditions.push({ vehicleModelId: filter.vehicleModelId });
+    }
+
+    // Sales Person / Executive filter
+    if (filter.salesPersonName && filter.salesPersonName.trim()) {
+      const salesTerm = filter.salesPersonName.trim();
+      andConditions.push({
+        OR: [
+          { customer: { assignedExecutive: { contains: salesTerm, mode: 'insensitive' } } },
+          { user: { username: { contains: salesTerm, mode: 'insensitive' } } }
+        ]
+      });
+    }
+
+    // Search keyword
+    if (filter.search && filter.search.trim()) {
+      const term = filter.search.trim();
+      andConditions.push({
+        OR: [
+          { receiptNo: { contains: term, mode: 'insensitive' } },
+          { customer: { name: { contains: term, mode: 'insensitive' } } },
+          { customer: { contactNo: { contains: term, mode: 'insensitive' } } },
+          { customer: { custId: { contains: term, mode: 'insensitive' } } },
+          { customer: { assignedExecutive: { contains: term, mode: 'insensitive' } } },
+          { vehicleModel: { model: { contains: term, mode: 'insensitive' } } },
+          { refNo: { contains: term, mode: 'insensitive' } },
+          { remarks: { contains: term, mode: 'insensitive' } },
+          { user: { username: { contains: term, mode: 'insensitive' } } },
+        ],
+      });
+    }
+
+    if (extra) {
+      if (Array.isArray(extra)) {
+        andConditions.push(...extra);
+      } else {
+        andConditions.push(extra);
+      }
+    }
+
+    return andConditions.length === 1 ? andConditions[0] : { AND: andConditions };
+  }
 
   async create(data: { date: string; customerId: number; recAmt: number; paymentType?: string; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string; pineLabsTxnId?: string }) {
     const lastPayment = await this.prisma.paymentCollection.findFirst({
@@ -88,22 +214,187 @@ export class PaymentCollectionService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10, customerId?: number, search?: string) {
-    const safeLimit = Math.min(limit, 5000);
-    const skip = (page - 1) * safeLimit;
+  async getReport(filter: PaymentCollectionFilterDto = {}) {
+    const whereClause = this.buildWhereClause(filter);
 
-    const whereClause: any = { deletedAt: null };
-    if (customerId) {
-      whereClause.customerId = customerId;
-    } else if (search) {
-      whereClause.OR = [
-        { receiptNo: { contains: search } },
-        { customer: { name: { contains: search } } },
-        { customer: { contactNo: { contains: search } } },
-        { vehicleModel: { model: { contains: search } } },
-        { refNo: { contains: search } }
-      ];
+    const isExport = filter.export === true;
+    const limit = isExport ? 20000 : Math.min(filter.limit || 50, 5000);
+    const page = filter.page || 1;
+    const skip = isExport ? 0 : (page - 1) * limit;
+
+    const includeRelations = {
+      customer: true,
+      paymentMode: true,
+      typeOfPayment: true,
+      typeOfCollection: true,
+      vehicleModel: true,
+      user: {
+        select: { id: true, username: true, role: true }
+      },
+      cancelledByUser: {
+        select: { id: true, username: true, role: true }
+      }
+    };
+
+    const successWhere = this.buildWhereClause({ ...filter, status: undefined }, { cancelledAt: null });
+    const cancelledWhere = this.buildWhereClause({ ...filter, status: undefined }, { cancelledAt: { not: null } });
+
+    const [
+      data,
+      totalCount,
+      totalAgg,
+      successAgg,
+      cancelledAgg,
+      modeGroups,
+      collectionGroups
+    ] = await Promise.all([
+      this.prisma.paymentCollection.findMany({
+        where: whereClause,
+        include: includeRelations,
+        orderBy: [{ date: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.paymentCollection.count({ where: whereClause }),
+      this.prisma.paymentCollection.aggregate({
+        where: whereClause,
+        _sum: { recAmt: true },
+      }),
+      this.prisma.paymentCollection.aggregate({
+        where: successWhere,
+        _count: true,
+        _sum: { recAmt: true },
+      }),
+      this.prisma.paymentCollection.aggregate({
+        where: cancelledWhere,
+        _count: true,
+        _sum: { recAmt: true },
+      }),
+      this.prisma.paymentCollection.groupBy({
+        by: ['paymentModeId'],
+        where: successWhere,
+        _sum: { recAmt: true },
+        _count: true,
+      }),
+      this.prisma.paymentCollection.groupBy({
+        by: ['typeOfCollectionId'],
+        where: successWhere,
+        _sum: { recAmt: true },
+        _count: true,
+      }),
+    ]);
+
+    const modeIds = modeGroups.map((g) => g.paymentModeId).filter(Boolean);
+    const paymentModes = modeIds.length > 0
+      ? await this.prisma.paymentMode.findMany({ where: { id: { in: modeIds } } })
+      : [];
+    const modeMap = new Map(paymentModes.map((m) => [m.id, m.paymentMode]));
+
+    const modeBreakdown = modeGroups.map((g) => ({
+      paymentModeId: g.paymentModeId,
+      paymentMode: modeMap.get(g.paymentModeId) || 'Unknown',
+      amount: g._sum.recAmt || 0,
+      count: g._count,
+    }));
+
+    const colIds = collectionGroups.map((g) => g.typeOfCollectionId).filter((id): id is number => id !== null);
+    const collectionTypes = colIds.length > 0
+      ? await this.prisma.typeOfCollection.findMany({ where: { id: { in: colIds } } })
+      : [];
+    const colMap = new Map(collectionTypes.map((c) => [c.id, c.typeOfCollect]));
+
+    const collectionTypeBreakdown = collectionGroups.map((g) => ({
+      typeOfCollectionId: g.typeOfCollectionId,
+      typeOfCollection: g.typeOfCollectionId ? colMap.get(g.typeOfCollectionId) || 'Unknown' : 'Unassigned',
+      amount: g._sum.recAmt || 0,
+      count: g._count,
+    }));
+
+    // Explicitly attach Sales Person Names to each payment record
+    const formattedData = data.map((payment) => {
+      const salesPersonName = payment.customer?.assignedExecutive?.trim() || payment.user?.username?.trim() || 'Not Assigned';
+      const salesExecutive = payment.customer?.assignedExecutive?.trim() || 'Not Assigned';
+      const enteredBy = payment.user?.username || 'N/A';
+      return {
+        ...payment,
+        salesPersonName,
+        salesExecutive,
+        enteredBy,
+      };
+    });
+
+    // Compute sales executive breakdown
+    const executiveMap = new Map<string, { salesPersonName: string; amount: number; count: number }>();
+    formattedData.forEach((item) => {
+      if (!item.cancelledAt) {
+        const name = item.salesPersonName;
+        const key = name.toLowerCase();
+        const existing = executiveMap.get(key);
+        if (existing) {
+          existing.amount = Math.round((existing.amount + item.recAmt) * 100) / 100;
+          existing.count += 1;
+        } else {
+          executiveMap.set(key, {
+            salesPersonName: name,
+            amount: Math.round(item.recAmt * 100) / 100,
+            count: 1,
+          });
+        }
+      }
+    });
+    const salesExecutiveBreakdown = Array.from(executiveMap.values()).sort((a, b) => b.amount - a.amount);
+
+    const totalPages = isExport ? 1 : Math.ceil(totalCount / limit);
+
+    return {
+      summary: {
+        totalRecords: totalCount,
+        totalAmount: totalAgg._sum.recAmt || 0,
+        successRecords: successAgg._count || 0,
+        successAmount: successAgg._sum.recAmt || 0,
+        cancelledRecords: cancelledAgg._count || 0,
+        cancelledAmount: cancelledAgg._sum.recAmt || 0,
+        netCollectedAmount: successAgg._sum.recAmt || 0,
+        salesExecutiveBreakdown,
+        modeBreakdown,
+        collectionTypeBreakdown,
+      },
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages,
+        isExport,
+      },
+      data: formattedData,
+    };
+  }
+
+  async findAll(
+    pageOrOptions: number | PaymentCollectionFilterDto = 1,
+    limit: number = 10,
+    customerId?: number,
+    search?: string,
+    extraOptions?: Partial<PaymentCollectionFilterDto>
+  ) {
+    let options: PaymentCollectionFilterDto;
+
+    if (typeof pageOrOptions === 'object') {
+      options = pageOrOptions;
+    } else {
+      options = {
+        page: pageOrOptions,
+        limit,
+        customerId,
+        search,
+        ...extraOptions
+      };
     }
+
+    const safeLimit = Math.min(options.limit || 10, 5000);
+    const page = options.page || 1;
+    const skip = (page - 1) * safeLimit;
+    const whereClause = this.buildWhereClause(options);
 
     const [data, total] = await Promise.all([
       this.prisma.paymentCollection.findMany({
@@ -114,16 +405,28 @@ export class PaymentCollectionService {
           typeOfPayment: true,
           typeOfCollection: true,
           vehicleModel: true,
-          user: true,
-          cancelledByUser: true
+          user: {
+            select: { id: true, username: true, role: true }
+          },
+          cancelledByUser: {
+            select: { id: true, username: true, role: true }
+          }
         },
-        orderBy: { id: 'desc' },
+        orderBy: [{ date: 'desc' }, { id: 'desc' }],
         skip,
         take: safeLimit
       }),
       this.prisma.paymentCollection.count({ where: whereClause })
     ]);
-    return { data, total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+
+    const formattedData = data.map((payment) => ({
+      ...payment,
+      salesPersonName: payment.customer?.assignedExecutive?.trim() || payment.user?.username?.trim() || 'Not Assigned',
+      salesExecutive: payment.customer?.assignedExecutive?.trim() || 'Not Assigned',
+      enteredBy: payment.user?.username || 'N/A',
+    }));
+
+    return { data: formattedData, total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
   }
 
   async findOne(id: number) {
