@@ -1,9 +1,28 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PaymentCollectionService } from './payment-collection.service';
+import { SalesWebhookService } from './sales-webhook.service';
 
 @Controller(['sales-payment-collections', 'payment-collections'])
 export class PaymentCollectionController {
-  constructor(private readonly paymentCollectionService: PaymentCollectionService) {}
+  constructor(
+    private readonly paymentCollectionService: PaymentCollectionService,
+    private readonly salesWebhookService: SalesWebhookService,
+  ) {}
+
+  @Get('webhook/config')
+  getWebhookConfig() {
+    return this.salesWebhookService.getPublicConfig();
+  }
+
+  @Post('webhook/config')
+  updateWebhookConfig(@Body() body: { url: string; secret?: string }) {
+    return this.salesWebhookService.updateConfig(body.url, body.secret);
+  }
+
+  @Post('webhook/test')
+  testWebhook(@Body() body?: { url?: string; secret?: string }) {
+    return this.salesWebhookService.testWebhook(body?.url, body?.secret);
+  }
 
   @Post()
   create(@Body() createPaymentCollectionDto: { date: string; customerId: number; recAmt: number; paymentModeId: number; typeOfPaymentId?: number; typeOfCollectionId?: number; vehicleModelId?: number; enteredBy?: number; remarks?: string; refNo?: string }) {
