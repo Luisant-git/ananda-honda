@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PdfService } from '../pdf/pdf.service';
-import { SalesWebhookService } from './sales-webhook.service';
 
 export interface PaymentCollectionFilterDto {
   page?: number;
@@ -29,7 +28,6 @@ export class PaymentCollectionService {
     private prisma: PrismaService,
     private whatsappService: WhatsappService,
     private pdfService: PdfService,
-    private salesWebhookService: SalesWebhookService,
   ) {}
 
   private buildWhereClause(filter: PaymentCollectionFilterDto = {}, extra?: any) {
@@ -172,20 +170,9 @@ export class PaymentCollectionService {
         typeOfPayment: true,
         typeOfCollection: true,
         vehicleModel: true,
-        user: {
-          select: { id: true, username: true, role: true }
-        },
-        cancelledByUser: {
-          select: { id: true, username: true, role: true }
-        }
+        user: true
       }
     });
-
-    try {
-      this.salesWebhookService.dispatchWebhook('created', savedPayment);
-    } catch (whErr) {
-      this.logger.error('Error dispatching sales webhook for creation', whErr);
-    }
 
     try {
       if (savedPayment.customer && savedPayment.customer.contactNo) {
@@ -479,7 +466,7 @@ export class PaymentCollectionService {
       delete updateData.enteredBy;
     }
 
-    const updatedPayment = await this.prisma.paymentCollection.update({
+    return this.prisma.paymentCollection.update({
       where: { id },
       data: updateData,
       include: {
@@ -488,53 +475,19 @@ export class PaymentCollectionService {
         typeOfPayment: true,
         typeOfCollection: true,
         vehicleModel: true,
-        user: {
-          select: { id: true, username: true, role: true }
-        },
-        cancelledByUser: {
-          select: { id: true, username: true, role: true }
-        }
+        user: true
       }
     });
-
-    try {
-      this.salesWebhookService.dispatchWebhook('updated', updatedPayment);
-    } catch (whErr) {
-      this.logger.error('Error dispatching sales webhook for update', whErr);
-    }
-
-    return updatedPayment;
   }
 
   async remove(id: number, deletedBy?: number) {
-    const deletedPayment = await this.prisma.paymentCollection.update({
+    return this.prisma.paymentCollection.update({
       where: { id },
       data: {
         deletedAt: new Date(),
         deletedBy: deletedBy || null
-      },
-      include: {
-        customer: true,
-        paymentMode: true,
-        typeOfPayment: true,
-        typeOfCollection: true,
-        vehicleModel: true,
-        user: {
-          select: { id: true, username: true, role: true }
-        },
-        cancelledByUser: {
-          select: { id: true, username: true, role: true }
-        }
       }
     });
-
-    try {
-      this.salesWebhookService.dispatchWebhook('deleted', deletedPayment);
-    } catch (whErr) {
-      this.logger.error('Error dispatching sales webhook for deletion', whErr);
-    }
-
-    return deletedPayment;
   }
 
   async clearAll() {
@@ -542,7 +495,7 @@ export class PaymentCollectionService {
   }
 
   async restore(id: number) {
-    const restoredPayment = await this.prisma.paymentCollection.update({
+    return this.prisma.paymentCollection.update({
       where: { id },
       data: {
         deletedAt: null,
@@ -554,26 +507,13 @@ export class PaymentCollectionService {
         typeOfPayment: true,
         typeOfCollection: true,
         vehicleModel: true,
-        user: {
-          select: { id: true, username: true, role: true }
-        },
-        cancelledByUser: {
-          select: { id: true, username: true, role: true }
-        }
+        user: true
       }
     });
-
-    try {
-      this.salesWebhookService.dispatchWebhook('created', restoredPayment);
-    } catch (whErr) {
-      this.logger.error('Error dispatching sales webhook for restore', whErr);
-    }
-
-    return restoredPayment;
   }
 
   async cancel(id: number, cancelledBy?: number) {
-    const cancelledPayment = await this.prisma.paymentCollection.update({
+    return this.prisma.paymentCollection.update({
       where: { id },
       data: {
         cancelledAt: new Date(),
@@ -585,22 +525,10 @@ export class PaymentCollectionService {
         typeOfPayment: true,
         typeOfCollection: true,
         vehicleModel: true,
-        user: {
-          select: { id: true, username: true, role: true }
-        },
-        cancelledByUser: {
-          select: { id: true, username: true, role: true }
-        }
+        user: true,
+        cancelledByUser: true
       }
     });
-
-    try {
-      this.salesWebhookService.dispatchWebhook('cancelled', cancelledPayment);
-    } catch (whErr) {
-      this.logger.error('Error dispatching sales webhook for cancellation', whErr);
-    }
-
-    return cancelledPayment;
   }
 
   async findDeleted() {
